@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Diagram - Automated Barangay Records and Reporting Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .diagram-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .context-diagram {
+            position: relative;
+            width: 100%;
+            height: 700px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        /* System Box - Center */
+        .system-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #dae8fc;
+            border: 3px solid #6c8ebf;
+            border-radius: 10px;
+            padding: 20px 30px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: #1a5276;
+            box-shadow: 0 4px 12px rgba(108, 142, 191, 0.3);
+            min-width: 280px;
+            z-index: 10;
+        }
+
+        .system-box::before {
+            content: "⚙️ SYSTEM";
+            display: block;
+            font-size: 11px;
+            color: #6c8ebf;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        /* External Entities */
+        .entity {
+            position: absolute;
+            background: #d5e8d4;
+            border: 2px solid #82b366;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #1e8449;
+            box-shadow: 0 3px 8px rgba(130, 179, 102, 0.2);
+            min-width: 160px;
+            z-index: 5;
+        }
+
+        .entity::before {
+            content: "👤 ACTOR";
+            display: block;
+            font-size: 10px;
+            color: #82b366;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Entity Positions */
+        .entity.residents {
+            top: 50%;
+            left: 60px;
+            transform: translateY(-50%);
+        }
+
+        .entity.staff {
+            top: 65%;
+            left: 60px;
+            transform: translateY(-50%);
+        }
+
+        .entity.captain {
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .entity.lgu {
+            top: 18%;
+            right: 60px;
+        }
+
+        .entity.psa {
+            top: 50%;
+            right: 60px;
+            transform: translateY(-50%);
+        }
+
+        .entity.admin {
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Cardinality Labels */
+        .cardinality {
+            position: absolute;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #856404;
+            z-index: 15;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .cardinality.many {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .cardinality.one {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        /* Cardinality Positions */
+        .card-res {
+            top: calc(50% - 14px);
+            left: 175px;
+        }
+
+        .card-staff {
+            top: calc(65% - 14px);
+            left: 175px;
+        }
+
+        .card-captain {
+            top: 68px;
+            left: calc(50% + 110px);
+            transform: translateX(-50%);
+        }
+
+        .card-lgu {
+            top: 128px;
+            right: 185px;
+        }
+
+        .card-psa {
+            top: calc(50% - 14px);
+            right: 185px;
+        }
+
+        .card-admin {
+            bottom: 68px;
+            left: calc(50% + 110px);
+            transform: translateX(-50%);
+        }
+
+        /* Connection Lines */
+        .connection-line {
+            position: absolute;
+            background: #666;
+            z-index: 1;
+        }
+
+        /* Horizontal lines from entities to system */
+        .line-res {
+            top: calc(50% - 1px);
+            left: 220px;
+            width: calc(50% - 220px - 150px);
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .line-staff {
+            top: calc(65% - 1px);
+            left: 220px;
+            width: calc(50% - 220px - 150px);
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .line-captain {
+            top: 110px;
+            left: 50%;
+            width: calc(50% - 220px);
+            height: 2px;
+            transform: translateX(-50%);
+        }
+
+        .line-lgu {
+            top: 200px;
+            right: 180px;
+            width: calc(50% - 150px);
+            height: 2px;
+        }
+
+        .line-psa {
+            top: calc(50% - 1px);
+            right: 180px;
+            width: calc(50% - 150px);
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .line-admin {
+            bottom: 110px;
+            left: 50%;
+            width: calc(50% - 220px);
+            height: 2px;
+            transform: translateX(-50%);
+        }
+
+        /* Data Flows */
+        .data-flow {
+            position: absolute;
+            background: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 6px 10px;
+            font-size: 10px;
+            color: #333;
+            max-width: 140px;
+            text-align: center;
+            line-height: 1.4;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 3;
+        }
+
+        .data-flow.arrow-left {
+            border-left: 3px solid #e74c3c;
+        }
+
+        .data-flow.arrow-right {
+            border-right: 3px solid #3498db;
+        }
+
+        /* Flow positions */
+        .flow-residents-in {
+            top: 42%;
+            left: 22%;
+        }
+
+        .flow-residents-out {
+            top: 56%;
+            left: 22%;
+        }
+
+        .flow-staff-in {
+            top: 62%;
+            left: 22%;
+        }
+
+        .flow-staff-out {
+            top: 70%;
+            left: 22%;
+        }
+
+        .flow-captain-in {
+            top: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .flow-captain-out {
+            top: 26%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .flow-lgu-in {
+            top: 20%;
+            right: 22%;
+        }
+
+        .flow-lgu-out {
+            top: 28%;
+            right: 22%;
+        }
+
+        .flow-psa-in {
+            top: 42%;
+            right: 22%;
+        }
+
+        .flow-psa-out {
+            top: 56%;
+            right: 22%;
+        }
+
+        .flow-admin-in {
+            bottom: 22%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .flow-admin-out {
+            bottom: 14%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .legend-box {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+
+        .legend-box.system {
+            background: #dae8fc;
+            border-color: #6c8ebf;
+        }
+
+        .legend-box.entity {
+            background: #d5e8d4;
+            border-color: #82b366;
+        }
+
+        .legend-arrow {
+            width: 30px;
+            height: 20px;
+            border: 1px solid #666;
+            border-left: 3px solid #e74c3c;
+            border-radius: 4px;
+        }
+
+        .legend-cardinality {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #ffc107;
+            background: #fff3cd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .legend-cardinality.many {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .diagram-container {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Context Diagram</h1>
+        <p>Automated Barangay Records and Reporting Management System</p>
+    </div>
+
+    <div class="diagram-container">
+        <div class="context-diagram">
+            <!-- Connection Lines -->
+            <div class="connection-line line-res"></div>
+            <div class="connection-line line-staff"></div>
+            <div class="connection-line line-captain"></div>
+            <div class="connection-line line-lgu"></div>
+            <div class="connection-line line-psa"></div>
+            <div class="connection-line line-admin"></div>
+
+            <!-- System -->
+            <div class="system-box">
+                Automated Barangay Records and Reporting<br>
+                Management System
+            </div>
+
+            <!-- External Entities -->
+            <div class="entity residents">Residents</div>
+            <div class="entity staff">Barangay Staff</div>
+            <div class="entity captain">Barangay Captain / Officials</div>
+            <div class="entity lgu">LGU / Municipal Government</div>
+            <div class="entity psa">Philippine Statistics Authority (PSA)</div>
+            <div class="entity admin">System Administrator</div>
+
+            <!-- Cardinality Labels -->
+            <div class="cardinality many" title="Many Residents">M</div>
+            <div class="cardinality many" style="top: calc(65% - 14px); left: 175px;" title="Many Staff">M</div>
+            <div class="cardinality one" style="top: 68px; left: calc(50% + 110px); transform: translateX(-50%);" title="One Captain">1</div>
+            <div class="cardinality one" style="top: 128px; right: 185px;" title="One LGU">1</div>
+            <div class="cardinality one" style="top: calc(50% - 14px); right: 185px;" title="One PSA">1</div>
+            <div class="cardinality one" style="bottom: 68px; left: calc(50% + 110px); transform: translateX(-50%);" title="One Admin">1</div>
+
+            <!-- Data Flows -->
+            <div class="data-flow arrow-left flow-residents-in">Personal Information<br>Document Requests<br>Complaints / Feedback</div>
+            <div class="data-flow arrow-right flow-residents-out">Official Documents<br>Receipts / Notifications</div>
+
+            <div class="data-flow arrow-left flow-staff-in">Daily Transactions<br>Records Updates</div>
+            <div class="data-flow arrow-right flow-staff-out">Reports / Forms<br>Schedules</div>
+
+            <div class="data-flow arrow-left flow-captain-in">Requests for Reports<br>Approvals</div>
+            <div class="data-flow arrow-right flow-captain-out">Statistical Reports<br>Dashboard / Fiscal Reports</div>
+
+            <div class="data-flow arrow-left flow-lgu-in">Mandatory Reporting Directives<br>Budget Allocations</div>
+            <div class="data-flow arrow-right flow-lgu-out">Required Reports<br>Population Data</div>
+
+            <div class="data-flow arrow-left flow-psa-in">Vital Records<br>(Birth / Death / Marriage)</div>
+            <div class="data-flow arrow-right flow-psa-out">Event Reports<br>Statistical Summaries</div>
+
+            <div class="data-flow arrow-left flow-admin-in">Configuration Commands<br>User Management</div>
+            <div class="data-flow arrow-right flow-admin-out">System Logs<br>Backup Status / Audit Trails</div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box system"></div>
+                <span><strong>System Boundary</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box entity"></div>
+                <span><strong>External Entity</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-cardinality many">M</div>
+                <span><strong>Many</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-cardinality one">1</div>
+                <span><strong>One</strong></span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-arrow"></div>
+                <span><strong>Data Flow</strong></span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Flowchart - Exact Layout</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 20px; }
+        .header p { font-size: 12px; color: #666; }
+        .diagram-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            width: 100%;
+        }
+        .flowchart {
+            position: relative;
+            width: 100%;
+            height: 750px;
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        /* Green - User Actions */
+        .user-box {
+            position: absolute;
+            background: #d5e8d4;
+            border: 2px solid #82b366;
+            border-radius: 20px;
+            padding: 12px 18px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #1e8449;
+            z-index: 5;
+        }
+        .user-box.external { top: 120px; left: 30px; width: 140px; height: 200px; }
+        .user-box.captain { top: 120px; left: 200px; width: 120px; }
+
+        /* Green Circles - User Actions */
+        .process-circle {
+            position: absolute;
+            background: #d5e8d4;
+            border: 2px solid #82b366;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #1e8449;
+            z-index: 5;
+        }
+        .circle-login { top: 180px; left: 220px; }
+        .circle-enter { top: 280px; left: 220px; }
+        .circle-correct { top: 380px; left: 220px; }
+
+        /* Blue Rounded Rectangle - Interface */
+        .interface-box {
+            position: absolute;
+            background: #dae8fc;
+            border: 2px solid #6c8ebf;
+            border-radius: 15px;
+            padding: 14px 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #1a5276;
+            z-index: 5;
+        }
+        .interface-main { top: 180px; left: 300px; width: 220px; height: 70px; }
+
+        /* Blue Circles - Interface Logic */
+        .process-circle.blue {
+            background: #dae8fc;
+            border-color: #6c8ebf;
+            color: #1a5276;
+        }
+        .circle-validate { top: 100px; left: 380px; }
+        .circle-display { top: 280px; left: 380px; }
+        .circle-store { top: 80px; left: 560px; }
+        .circle-pass { top: 180px; left: 560px; }
+
+        /* Purple - Database */
+        .database-box {
+            position: absolute;
+            background: #e8daef;
+            border: 2px solid #7d3c98;
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #4a235a;
+            z-index: 5;
+        }
+        .db-accounts { top: 50px; left: 420px; width: 160px; }
+
+        /* Red - LLM/Generation */
+        .gen-box {
+            position: absolute;
+            background: #f8cecc;
+            border: 2px solid #b85450;
+            border-radius: 15px;
+            padding: 12px 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #721c24;
+            z-index: 5;
+        }
+        .llm-interface { top: 180px; left: 680px; width: 140px; }
+        .generate-circle {
+            position: absolute;
+            background: #f8cecc;
+            border: 2px solid #b85450;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #721c24;
+            top: 180px;
+            left: 860px;
+            z-index: 5;
+        }
+        .llm-box {
+            position: absolute;
+            background: #f8cecc;
+            border: 2px solid #b85450;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: #721c24;
+            top: 180px;
+            right: 30px;
+            width: 160px;
+            height: 100px;
+            z-index: 5;
+        }
+
+        /* Orange - Data Storage */
+        .storage-box {
+            position: absolute;
+            background: #fff2cc;
+            border: 2px solid #d6b656;
+            border-radius: 6px;
+            padding: 10px 14px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            color: #856404;
+            z-index: 5;
+        }
+        .prompts-box { top: 20px; left: 560px; width: 140px; }
+        .corrections-box { top: 420px; left: 560px; width: 140px; }
+
+        /* Yellow - Training */
+        .training-box {
+            position: absolute;
+            background: #fff9c4;
+            border: 2px solid #fbc02d;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #5d4037;
+            z-index: 5;
+        }
+        .training-algo { top: 520px; left: 560px; width: 180px; }
+        .training-circle {
+            position: absolute;
+            background: #fff9c4;
+            border: 2px solid #fbc02d;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: #5d4037;
+            top: 640px;
+            left: 500px;
+            z-index: 5;
+        }
+
+        /* Dashed circles */
+        .dashed-circle {
+            position: absolute;
+            background: #e3f2fd;
+            border: 2px dashed #6c8ebf;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: #1a5276;
+            z-index: 5;
+        }
+        .store-correct { top: 420px; left: 380px; }
+
+        /* Yellow circles */
+        .process-circle.yellow {
+            background: #fff9c4;
+            border-color: #fbc02d;
+            color: #5d4037;
+        }
+        .read-corrections { top: 520px; left: 480px; }
+        .read-prompts { top: 120px; left: 560px; }
+        .integrate { top: 340px; left: 800px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>System Flowchart</h1>
+        <p>Automated Barangay Records and Reporting Management System</p>
+    </div>
+
+    <div class="diagram-container">
+        <div class="flowchart">
+            <!-- External Users -->
+            <div class="user-box external">External User</div>
+            <div class="user-box captain">Captain</div>
+
+            <!-- Green Circles - User Actions -->
+            <div class="process-circle circle-login">log in</div>
+            <div class="process-circle circle-enter">enter prompt</div>
+            <div class="process-circle circle-correct">correct response</div>
+
+            <!-- Blue Interface -->
+            <div class="interface-box interface-main">website / API interface</div>
+
+            <!-- Blue Circles - Interface Logic -->
+            <div class="process-circle blue circle-validate">validate user login & account</div>
+            <div class="process-circle blue circle-display">display response</div>
+            <div class="process-circle blue circle-store">store prompt</div>
+            <div class="process-circle blue circle-pass">pass prompt to LLM</div>
+
+            <!-- Purple Database -->
+            <div class="database-box db-accounts">Accounts Database</div>
+
+            <!-- Red LLM -->
+            <div class="gen-box llm-interface">LLM interface</div>
+            <div class="generate-circle">generate response</div>
+            <div class="llm-box">Large Language Model</div>
+
+            <!-- Orange Storage -->
+            <div class="storage-box prompts-box">User Prompts</div>
+            <div class="storage-box corrections-box">User Corrections</div>
+
+            <!-- Yellow Training -->
+            <div class="training-box training-algo">Training algorithm</div>
+            <div class="training-circle">integrate into LLM</div>
+
+            <!-- Yellow Circles -->
+            <div class="process-circle yellow read-corrections">read corrections</div>
+            <div class="process-circle yellow read-prompts">read prompts</div>
+            <div class="process-circle yellow integrate">integrate into LLM</div>
+
+            <!-- Dashed Circle -->
+            <div class="dashed-circle store-correct">store wrong response and correction</div>
+        </div>
+
+        <div class="legend" style="margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 8px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #d5e8d4; border: 2px solid #82b366; border-radius: 4px;"></div>
+                <span>User</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #e8daef; border: 2px solid #7d3c98; border-radius: 4px;"></div>
+                <span>Database</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #dae8fc; border: 2px solid #6c8ebf; border-radius: 4px;"></div>
+                <span>Interface</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #f8cecc; border: 2px solid #b85450; border-radius: 4px;"></div>
+                <span>LLM</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #fff2cc; border: 2px solid #d6b656; border-radius: 4px;"></div>
+                <span>Storage</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <div style="width: 24px; height: 18px; background: #fff9c4; border: 2px solid #fbc02d; border-radius: 4px;"></div>
+                <span>Training</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
