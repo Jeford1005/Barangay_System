@@ -359,11 +359,11 @@
                         window.location.href = result.redirect || 'dashboard.php';
                     }, 1000);
                 } else {
-                    const errorMsg = result.message || 'Invalid username or password. Please try again.';
-                    showAlert('loginAlert', errorMsg, 'error');
-                    showSwal('Login Failed', errorMsg, 'error');
-                    triggerShake();
-                }
+                                    const errorMsg = result.message || 'Invalid username or password. Please try again.';
+                                    showAlert('loginAlert', errorMsg, 'error');
+                                    showSwal('Login Failed', errorMsg, 'error');
+                                    // Removed shake effect per user request
+                                }
             } catch (err) {
                 console.error('LOGIN NETWORK ERROR', err);
                 showAlert('loginAlert', 'Network error. Please check your connection and try again.', 'error');
@@ -615,17 +615,6 @@
             });
             input.addEventListener('input', debouncedValidate);
         });
-    }
-
-    // ============================================================
-    // Shake Effect on Error
-    // ============================================================
-    function triggerShake() {
-        const container = document.getElementById('authContainer');
-        if (!container) return;
-        container.classList.remove('shake');
-        void container.offsetWidth; // force reflow
-        container.classList.add('shake');
     }
 
     // ============================================================

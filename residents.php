@@ -448,8 +448,7 @@ $csrf = generate_csrf_token();
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Purok</label>
-                    <select name="purok_id" id="editPurok">
+                    <label for="editPurok">Purok</label> <select name="purok_id" id="editPurok">
                         <option value="">None</option>
                         <?php foreach ($puroks as $p): ?>
                             <option value="<?= (int)$p['id'] ?>"><?= esc($p['purok_name']) ?></option>
@@ -457,12 +456,10 @@ $csrf = generate_csrf_token();
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Contact</label>
-                    <input type="text" name="contact_number" id="editContact">
+                    <label for="editContact">Contact</label> <input type="text" name="contact_number" id="editContact">
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
-                    <select name="status" id="editStatus">
+                    <label for="editStatus">Status</label> <select name="status" id="editStatus">
                         <option>Active</option>
                         <option>Deceased</option>
                         <option>Moved Out</option>

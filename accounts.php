@@ -292,20 +292,20 @@ $action = $_POST['action'] ?? ($_GET['action'] ?? '');
                 <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="accountId">
-                <div class="form-group"><label>Username *</label><input type="text" name="username" id="username" class="form-control" required autocomplete="off"></div>
-                <div class="form-group"><label>Full Name *</label><input type="text" name="full_name" id="fullName" class="form-control" required></div>
-                <div class="form-group"><label>Email *</label><input type="email" name="email" id="email" class="form-control" required></div>
-                <div class="form-group"><label>Password <?= $action==='add'?'*':'(leave blank to keep current)' ?></label><input type="password" name="password" id="password" class="form-control" <?= $action==='add'?'required':'' ?>></div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="form-group">
-                        <label>Role *</label>
-                        <select name="role" id="role" class="form-control" required>
-                            <option value="staff">Staff</option><option value="admin">Admin</option><option value="resident">Resident</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select name="status" id="accountStatus" class="form-control">
+                <div class="form-group"><label for="username">Username *</label><input type="text" name="username" id="username" class="form-control" required autocomplete="off"></div>
+                                <div class="form-group"><label for="fullName">Full Name *</label><input type="text" name="full_name" id="fullName" class="form-control" required autocomplete="name"></div>
+                                <div class="form-group"><label for="email">Email *</label><input type="email" name="email" id="email" class="form-control" required autocomplete="email"></div>
+                                <div class="form-group"><label for="password">Password <?= $action==='add'?'*':'(leave blank to keep current)' ?></label><input type="password" name="password" id="password" class="form-control" <?= $action==='add'?'required':'' ?> autocomplete="new-password"></div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                    <div class="form-group">
+                                        <label for="role">Role *</label>
+                                        <select name="role" id="role" class="form-control" required>
+                                                                    <option value="staff">Staff</option><option value="admin">Admin</option><option value="resident">Resident</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label for="accountStatus">Status</label>
+                                                                <select name="status" id="accountStatus" class="form-control">
                             <option>active</option><option>inactive</option><option>pending</option>
                         </select>
                     </div>

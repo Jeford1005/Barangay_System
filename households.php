@@ -240,12 +240,10 @@ $currentUser = current_user();
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="householdId">
                 <div class="form-group">
-                    <label>Household Number *</label>
-                    <input type="text" name="household_number" id="householdNumber" class="form-control" required>
+                    <label for="householdNumber">Household Number *</label> <input type="text" name="household_number" id="householdNumber" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Head of Family</label>
-                    <select name="head_id" id="headId" class="form-control">
+                    <label for="headId">Head of Family</label> <select name="head_id" id="headId" class="form-control">
                         <option value="">Select Resident</option>
                         <?php foreach ($residents as $r): ?>
                             <option value="<?= $r['id'] ?>"><?= esc($r['first_name'] . ' ' . $r['last_name'] . ($r['suffix'] ? ', ' . $r['suffix'] : '')) ?></option>
@@ -253,12 +251,10 @@ $currentUser = current_user();
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Address *</label>
-                    <input type="text" name="address" id="address" class="form-control" required>
+                    <label for="address">Address *</label> <input type="text" name="address" id="address" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Purok *</label>
-                    <select name="purok_id" id="purokId" class="form-control" required>
+                    <label for="purokId">Purok *</label> <select name="purok_id" id="purokId" class="form-control" required>
                         <option value="">Select Purok</option>
                         <?php foreach ($puroks as $p): ?>
                             <option value="<?= $p['id'] ?>"><?= esc($p['purok_name']) ?></option>
@@ -266,12 +262,10 @@ $currentUser = current_user();
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Number of Members</label>
-                    <input type="number" name="number_of_members" id="members" class="form-control" min="1" value="1">
+                    <label for="members">Number of Members</label> <input type="number" name="number_of_members" id="members" class="form-control" min="1" value="1">
                 </div>
                 <div class="form-group">
-                    <label>House Type</label>
-                    <input type="text" name="house_type" id="houseType" class="form-control" placeholder="e.g., Concrete, Wood, Mixed">
+                    <label for="houseType">House Type</label> <input type="text" name="house_type" id="houseType" class="form-control" placeholder="e.g., Concrete, Wood, Mixed">
                 </div>
             </div>
             <div class="modal-footer">

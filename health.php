@@ -251,8 +251,7 @@ $currentUser = current_user();
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="recordId">
                 <div class="form-group">
-                    <label>Resident *</label>
-                    <select name="resident_id" id="residentId" class="form-control" required>
+                    <label for="residentId">Resident *</label> <select name="resident_id" id="residentId" class="form-control" required>
                         <option value="">Select Resident</option>
                         <?php foreach ($residents as $r): ?>
                             <option value="<?= $r['id'] ?>"><?= esc($r['first_name'] . ' ' . $r['last_name'] . ($r['middle_name'] ? ' '.substr($r['middle_name'],0,1).'.' : '')) ?></option>
@@ -261,27 +260,25 @@ $currentUser = current_user();
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                     <div class="form-group">
-                        <label>Blood Type</label>
-                        <select name="blood_type" id="bloodType" class="form-control">
+                        <label for="bloodType">Blood Type</label> <select name="blood_type" id="bloodType" class="form-control">
                             <option>Unknown</option>
                             <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
                             <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Height (cm)</label><input type="number" name="height_cm" id="heightCm" class="form-control" placeholder="170"></div>
-                    <div class="form-group"><label>Weight (kg)</label><input type="number" step="0.1" name="weight_kg" id="weightKg" class="form-control" placeholder="65.5"></div>
+                    <div class="form-group"><label for="heightCm">Height (cm)</label> <input type="number" name="height_cm" id="heightCm" class="form-control" placeholder="170"></div>
+                    <div class="form-group"><label for="weightKg">Weight (kg)</label> <input type="number" step="0.1" name="weight_kg" id="weightKg" class="form-control" placeholder="65.5"></div>
                 </div>
-                <div class="form-group"><label>BMI</label><input type="number" step="0.1" name="bmi" id="bmi" class="form-control" placeholder="Auto-calculated or manual entry"></div>
+                <div class="form-group"><label for="bmi">BMI</label> <input type="number" step="0.1" name="bmi" id="bmi" class="form-control" placeholder="Auto-calculated or manual entry"></div>
                 <div class="form-group">
-                    <label>Vaccination Status</label>
-                    <select name="vaccination_status" id="vaccinationStatus" class="form-control">
+                    <label for="vaccinationStatus">Vaccination Status</label> <select name="vaccination_status" id="vaccinationStatus" class="form-control">
                         <option>Unknown</option><option>Fully Vaccinated</option><option>Partially Vaccinated</option><option>Not Vaccinated</option>
                     </select>
                 </div>
-                <div class="form-group"><label>Medical Conditions</label><textarea name="medical_conditions" id="medicalConditions" class="form-control" rows="2" placeholder="Hypertension, Diabetes, Asthma..."></textarea></div>
-                <div class="form-group"><label>Allergies</label><textarea name="allergies" id="allergies" class="form-control" rows="2" placeholder="Food, Drug, Environmental..."></textarea></div>
-                <div class="form-group"><label>Last Checkup</label><input type="date" name="last_checkup" id="lastCheckup" class="form-control"></div>
-                <div class="form-group"><label>Notes</label><textarea name="notes" id="healthNotes" class="form-control" rows="2"></textarea></div>
+                <div class="form-group"><label for="medicalConditions">Medical Conditions</label> <textarea name="medical_conditions" id="medicalConditions" class="form-control" rows="2" placeholder="Hypertension, Diabetes, Asthma..."></textarea></div>
+                <div class="form-group"><label for="allergies">Allergies</label> <textarea name="allergies" id="allergies" class="form-control" rows="2" placeholder="Food, Drug, Environmental..."></textarea></div>
+                <div class="form-group"><label for="lastCheckup">Last Checkup</label> <input type="date" name="last_checkup" id="lastCheckup" class="form-control"></div>
+                <div class="form-group"><label for="healthNotes">Notes</label> <textarea name="notes" id="healthNotes" class="form-control" rows="2"></textarea></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('healthModal')">Cancel</button>

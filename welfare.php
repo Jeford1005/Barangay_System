@@ -274,16 +274,15 @@ $beneficiaries = $pdo->query("
                 <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
                 <input type="hidden" name="action" id="formAction" value="add_program">
                 <input type="hidden" name="id" id="programId">
-                <div class="form-group"><label>Program Name *</label><input type="text" name="program_name" id="programName" class="form-control" required></div>
-                <div class="form-group"><label>Description</label><textarea name="description" id="programDesc" class="form-control" rows="3"></textarea></div>
-                <div class="form-group"><label>Beneficiary Type</label><input type="text" name="beneficiary_type" id="beneficiaryType" class="form-control" placeholder="e.g., Senior Citizens, PWD, Indigent"></div>
+                <div class="form-group"><label for="programName">Program Name *</label> <input type="text" name="program_name" id="programName" class="form-control" required></div>
+                <div class="form-group"><label for="programDesc">Description</label> <textarea name="description" id="programDesc" class="form-control" rows="3"></textarea></div>
+                <div class="form-group"><label for="beneficiaryType">Beneficiary Type</label> <input type="text" name="beneficiary_type" id="beneficiaryType" class="form-control" placeholder="e.g., Senior Citizens, PWD, Indigent"></div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="form-group"><label>Start Date</label><input type="date" name="start_date" id="startDate" class="form-control"></div>
-                    <div class="form-group"><label>End Date</label><input type="date" name="end_date" id="endDate" class="form-control"></div>
+                    <div class="form-group"><label for="startDate">Start Date</label> <input type="date" name="start_date" id="startDate" class="form-control"></div>
+                    <div class="form-group"><label for="endDate">End Date</label> <input type="date" name="end_date" id="endDate" class="form-control"></div>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
-                    <select name="status" id="programStatus" class="form-control">
+                    <label for="programStatus">Status</label> <select name="status" id="programStatus" class="form-control">
                         <option>Upcoming</option><option>Ongoing</option><option>Completed</option><option>Cancelled</option>
                     </select>
                 </div>

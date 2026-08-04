@@ -257,26 +257,25 @@ $currentUser = current_user();
                     </div>
                     <div style="flex:1;min-width:250px;">
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-                            <div class="form-group"><label>First Name *</label><input type="text" name="first_name" id="firstName" class="form-control" required></div>
-                            <div class="form-group"><label>Middle Name</label><input type="text" name="middle_name" id="middleName" class="form-control"></div>
-                            <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" id="lastName" class="form-control" required></div>
+                            <div class="form-group"><label for="firstName">First Name *</label> <input type="text" name="first_name" id="firstName" class="form-control" required></div>
+                            <div class="form-group"><label for="middleName">Middle Name</label> <input type="text" name="middle_name" id="middleName" class="form-control"></div>
+                            <div class="form-group"><label for="lastName">Last Name *</label> <input type="text" name="last_name" id="lastName" class="form-control" required></div>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                             <div class="form-group">
-                                <label>Suffix</label>
-                                <select name="suffix" id="suffix" class="form-control">
+                                <label for="suffix">Suffix</label> <select name="suffix" id="suffix" class="form-control">
                                     <option value="">None</option><option>Jr.</option><option>Sr.</option><option>II</option><option>III</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label>Position *</label><input type="text" name="position" id="position" class="form-control" required placeholder="e.g., Barangay Captain"></div>
+                            <div class="form-group"><label for="position">Position *</label> <input type="text" name="position" id="position" class="form-control" required placeholder="e.g., Barangay Captain"></div>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <div class="form-group"><label>Contact Number</label><input type="text" name="contact_number" id="contactNumber" class="form-control"></div>
-                            <div class="form-group"><label>Email</label><input type="email" name="email" id="email" class="form-control"></div>
+                            <div class="form-group"><label for="contactNumber">Contact Number</label> <input type="text" name="contact_number" id="contactNumber" class="form-control"></div>
+                            <div class="form-group"><label for="email">Email</label> <input type="email" name="email" id="email" class="form-control"></div>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <div class="form-group"><label>Term Start</label><input type="date" name="term_start" id="termStart" class="form-control"></div>
-                            <div class="form-group"><label>Term End</label><input type="date" name="term_end" id="termEnd" class="form-control"></div>
+                            <div class="form-group"><label for="termStart">Term Start</label> <input type="date" name="term_start" id="termStart" class="form-control"></div>
+                            <div class="form-group"><label for="termEnd">Term End</label> <input type="date" name="term_end" id="termEnd" class="form-control"></div>
                         </div>
                         <div class="form-group">
                             <label class="checkbox-group"><input type="checkbox" name="is_active" value="1" checked> Active / Currently Serving</label>

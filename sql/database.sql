@@ -13,6 +13,13 @@ CREATE TABLE `users` (
   `resident_id` int(11) DEFAULT NULL,
   `status` enum('active','inactive','pending') NOT NULL DEFAULT 'active',
   `last_login` datetime DEFAULT NULL,
+  `twofa_secret` varchar(255) DEFAULT NULL,
+  `twofa_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `reset_token` varchar(64) DEFAULT NULL,
+  `reset_token_expiry` datetime DEFAULT NULL,
+  `reset_code` varchar(6) DEFAULT NULL,
+  `reset_code_expiry` datetime DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -20,7 +27,9 @@ CREATE TABLE `users` (
   UNIQUE KEY `uk_email` (`email`),
   KEY `idx_role` (`role`),
   KEY `idx_status` (`status`),
-  KEY `idx_resident_id` (`resident_id`)
+  KEY `idx_resident_id` (`resident_id`),
+  KEY `idx_reset_token` (`reset_token`),
+  KEY `idx_reset_code` (`reset_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -354,10 +363,11 @@ INSERT INTO `document_types` (`document_name`, `description`, `fee`, `requires_o
 -- ============================================================
 -- SEED DATA: DEFAULT ADMIN ACCOUNT
 -- Username: admin | Password: Admin@123 (change on first login)
+-- Hash generated with password_hash('Admin@123', PASSWORD_DEFAULT)
 -- ============================================================
 
-INSERT INTO `users` (`username`, `email`, `password`, `full_name`, `role`, `status`) VALUES
-('admin', 'admin@bidduang.gov.ph', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', 'active');
+INSERT INTO `users` (`username`, `email`, `password`, `full_name`, `role`, `status`, `phone_number`) VALUES
+('admin', 'admin@bidduang.gov.ph', '$2y$10$OGnaKFn8sF/SAc5yNjqpeOlfYFbmloXfgCAppTU9okVFSNEtaT8qW', 'System Administrator', 'admin', 'active', '+639XXXXXXXXX');
 
 -- ============================================================
 -- SEED DATA: SAMPLE PUROKS

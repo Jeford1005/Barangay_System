@@ -290,33 +290,30 @@ $currentUser = current_user();
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="caseId">
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-                    <div class="form-group"><label>Case Number *</label><input type="text" name="case_number" id="caseNumber" class="form-control" required></div>
+                    <div class="form-group"><label for="caseNumber">Case Number *</label> <input type="text" name="case_number" id="caseNumber" class="form-control" required></div>
                     <div class="form-group">
-                        <label>Case Type *</label>
-                        <select name="case_type" id="caseType" class="form-control" required>
+                        <label for="caseType">Case Type *</label> <select name="case_type" id="caseType" class="form-control" required>
                             <option>Dispute</option><option>Complaint</option><option>Incident</option><option>Disturbance</option><option>Theft</option><option>Others</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Status</label>
-                        <select name="status" id="status" class="form-control">
+                        <label for="status">Status</label> <select name="status" id="status" class="form-control">
                             <option>Open</option><option>Under Mediation</option><option>Conciliated</option><option>Arbitrated</option><option>Escalated</option><option>Closed</option>
                         </select>
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-                    <div class="form-group"><label>Filing Date *</label><input type="date" name="filing_date" id="filingDate" class="form-control" required></div>
-                    <div class="form-group"><label>Incident Date *</label><input type="date" name="incident_date" id="incidentDate" class="form-control" required></div>
-                    <div class="form-group"><label>Incident Time</label><input type="time" name="incident_time" id="incidentTime" class="form-control"></div>
+                    <div class="form-group"><label for="filingDate">Filing Date *</label> <input type="date" name="filing_date" id="filingDate" class="form-control" required></div>
+                    <div class="form-group"><label for="incidentDate">Incident Date *</label> <input type="date" name="incident_date" id="incidentDate" class="form-control" required></div>
+                    <div class="form-group"><label for="incidentTime">Incident Time</label> <input type="time" name="incident_time" id="incidentTime" class="form-control"></div>
                 </div>
-                <div class="form-group"><label>Incident Location *</label><input type="text" name="incident_location" id="incidentLocation" class="form-control" required></div>
-                <div class="form-group"><label>Involved Parties *</label><textarea name="involved_parties" id="involvedParties" class="form-control" rows="2" required placeholder="Names and roles of involved parties"></textarea></div>
-                <div class="form-group"><label>Narrative *</label><textarea name="narrative" id="narrative" class="form-control" rows="4" required placeholder="Detailed account of the incident"></textarea></div>
-                <div class="form-group"><label>Resolution</label><textarea name="resolution" id="resolution" class="form-control" rows="3" placeholder="Resolution details if available"></textarea></div>
+                <div class="form-group"><label for="incidentLocation">Incident Location *</label> <input type="text" name="incident_location" id="incidentLocation" class="form-control" required></div>
+                <div class="form-group"><label for="involvedParties">Involved Parties *</label> <textarea name="involved_parties" id="involvedParties" class="form-control" rows="2" required placeholder="Names and roles of involved parties"></textarea></div>
+                <div class="form-group"><label for="narrative">Narrative *</label> <textarea name="narrative" id="narrative" class="form-control" rows="4" required placeholder="Detailed account of the incident"></textarea></div>
+                <div class="form-group"><label for="resolution">Resolution</label> <textarea name="resolution" id="resolution" class="form-control" rows="3" placeholder="Resolution details if available"></textarea></div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                     <div class="form-group">
-                        <label>Complainant</label>
-                        <select name="complainant_id" id="complainantId" class="form-control">
+                        <label for="complainantId">Complainant</label> <select name="complainant_id" id="complainantId" class="form-control">
                             <option value="">Select Complainant</option>
                             <?php foreach ($residents as $r): ?>
                                 <option value="<?= $r['id'] ?>"><?= esc($r['first_name'] . ' ' . $r['last_name']) ?></option>
@@ -324,8 +321,7 @@ $currentUser = current_user();
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Respondent</label>
-                        <select name="respondent_id" id="respondentId" class="form-control">
+                        <label for="respondentId">Respondent</label> <select name="respondent_id" id="respondentId" class="form-control">
                             <option value="">Select Respondent</option>
                             <?php foreach ($residents as $r): ?>
                                 <option value="<?= $r['id'] ?>"><?= esc($r['first_name'] . ' ' . $r['last_name']) ?></option>
@@ -333,8 +329,7 @@ $currentUser = current_user();
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Assigned Official</label>
-                        <select name="assigned_official_id" id="assignedOfficialId" class="form-control">
+                        <label for="assignedOfficialId">Assigned Official</label> <select name="assigned_official_id" id="assignedOfficialId" class="form-control">
                             <option value="">Select Official</option>
                             <?php foreach ($officials as $o): ?>
                                 <option value="<?= $o['id'] ?>"><?= esc($o['first_name'] . ' ' . $o['last_name']) ?></option>
@@ -342,7 +337,7 @@ $currentUser = current_user();
                         </select>
                     </div>
                 </div>
-                <div class="form-group"><label>Closed At (if closed)</label><input type="date" name="closed_at" id="closedAt" class="form-control"></div>
+                <div class="form-group"><label for="closedAt">Closed At (if closed)</label> <input type="date" name="closed_at" id="closedAt" class="form-control"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('caseModal')">Cancel</button>
