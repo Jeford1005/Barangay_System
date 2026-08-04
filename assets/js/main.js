@@ -37,12 +37,12 @@
         if (!roleAdminBtn || !roleResidentBtn || !loginRoleInput) return;
 
         roleAdminBtn.addEventListener('click', () => {
-            roleAdminBtn.classList.add('active');
-            roleResidentBtn.classList.remove('active');
-            loginRoleInput.value = 'admin';
-            // Update form placeholders/context if needed
-            updateFormForRole('admin');
-        });
+                    roleAdminBtn.classList.add('active');
+                    roleResidentBtn.classList.remove('active');
+                    loginRoleInput.value = 'administrator';
+                    // Update form placeholders/context if needed
+                    updateFormForRole('administrator');
+                });
 
         roleResidentBtn.addEventListener('click', () => {
             roleResidentBtn.classList.add('active');
@@ -618,17 +618,17 @@
     }
 
     // ============================================================
-    // Initialization
-    // ============================================================
-    function init() {
-        initRoleSwitcher();
-        initRegisterOverlay();
-        initPasswordToggles();
-        initLoginForm();
-        initRegisterForm();
-        initRegisterPageForm();
-        initRealtimeValidation();
-    }
+        // Initialization
+        // ============================================================
+        function init() {
+            initRoleSwitcher();
+            initRegisterOverlay();
+            initPasswordToggles();
+            initLoginForm();
+            initRegisterForm();
+            initRegisterPageForm();
+            initRealtimeValidation();
+        }
 
     // Run when DOM is ready
     if (document.readyState === 'loading') {
