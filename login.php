@@ -21,17 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             exit;
         }
         
-        if (empty($inputUsername || empty($inputPassword)) {
-            $response['message'] = 'Please enter both username and password.';
-            echo json_encode($response);
-            exit;
-        }
-        
-        ($inputUsername) || empty($inputPassword)) {
-            $response['message'] = 'Please enter both username and password.';
-            echo json_encode($response);
-            exit;
-        }
+        if (empty($inputUsername) || empty($inputPassword)) {
+                    $response['message'] = 'Please enter both username and password.';
+                    echo json_encode($response);
+                    exit;
+                }
         
         // Build query: match username OR email
         $stmt = $pdo->prepare("
