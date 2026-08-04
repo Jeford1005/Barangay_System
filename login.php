@@ -21,7 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             exit;
         }
         
-        if (empty($inputUsername) || empty($inputPassword)) {
+        if (empty($inputUsername || empty($inputPassword)) {
+            $response['message'] = 'Please enter both username and password.';
+            echo json_encode($response);
+            exit;
+        }
+        
+        ($inputUsername) || empty($inputPassword)) {
             $response['message'] = 'Please enter both username and password.';
             echo json_encode($response);
             exit;
@@ -230,11 +236,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             flex-direction: column;
         }
         .auth-left {
-            flex: 0 0 50%;
-            justify-content: center;
+            display: none; /* Hide the left panel entirely */
         }
         .auth-right {
-            flex: 0 0 50%;
+            flex: 0 0 100%; /* Take full width */
             justify-content: center;
         }
         .form-panel {
@@ -251,41 +256,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         .role-btn {
             min-height: 48px;
         }
-        /* Welcome message in left panel */
-        .welcome-panel {
-            background: linear-gradient(135deg, #1a5c38 0%, #0d4428 100%);
-            padding: 2.5rem;
-            border-radius: 16px;
-            margin: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        .welcome-panel h2 {
-            color: #fff;
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .welcome-panel p {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        .welcome-panel .badge {
-            display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-top: 1rem;
-        }
     </style>
 </head>
 <body>
     <div class="auth-container" id="authContainer">
-        <!-- Left Panel: Branding + Welcome Message -->
+        <!-- Left Panel: Branding + Welcome Message (HIDDEN) -->
         <div class="auth-left">
+            <!-- This entire section is hidden via CSS -->
             <div class="halftone-bg">
                 <div class="stripe-overlay"></div>
             </div>
