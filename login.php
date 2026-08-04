@@ -230,10 +230,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             flex-direction: column;
         }
         .auth-left {
-            display: none; /* Hide the left panel entirely */
+            flex: 0 0 40%;
+            justify-content: center;
         }
         .auth-right {
-            flex: 0 0 100%; /* Take full width */
+            flex: 0 0 60%;
             justify-content: center;
         }
         .form-panel {
@@ -272,13 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <i class="fas fa-user-shield"></i>
                 </div>
             </div>
-            
-            <!-- Welcome Panel in Green Area -->
-            <div class="welcome-panel">
-                <h2>Welcome to Barangay Bidduang Portal</h2>
-                <p>Your gateway to efficient barangay services, resident management, and community records.</p>
-                <span class="badge">Administrator &bull; Staff &bull; Resident Access</span>
-            </div>
+                     </div>
         </div>
 
         <!-- Right Panel: Forms -->
