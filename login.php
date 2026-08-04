@@ -273,7 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <i class="fas fa-user-shield"></i>
                 </div>
             </div>
-                     </div>
         </div>
 
         <!-- Right Panel: Forms -->
@@ -281,8 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <!-- Login Form -->
             <div class="form-panel login-panel" id="loginPanel">
                 <div class="form-header">
-                    <h2 style="color: #1a5c38; margin-bottom: 0.5rem; font-size: 1.5rem;">Sign In</h2>
-                    <p style="color: #718096;">Select your role and enter credentials</p>
                 </div>
 
                 <!-- Role Switcher -->
