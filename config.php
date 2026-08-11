@@ -132,8 +132,20 @@ $options = [
 try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    // Log error, do not expose details to user
-    error_log('Database Connection Error: ' . $e->getMessage());
+    // Log detailed error for debugging
+    $errorDetails = [
+        'timestamp' => date('c'),
+        'dsn' => $dsn,
+        'host' => DB_HOST,
+        'port' => DB_PORT,
+        'dbname' => DB_NAME,
+        'user' => DB_USER,
+        'pass_set' => !empty(DB_PASS),
+        'error_message' => $e->getMessage(),
+        'error_code' => $e->getCode(),
+        'trace' => $e->getTraceAsString()
+    ];
+    error_log("DATABASE CONNECTION FAILURE:\n" . json_encode($errorDetails, JSON_PRETTY_PRINT));
     
     // Show generic error page
     if (!headers_sent()) {
