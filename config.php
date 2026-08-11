@@ -79,13 +79,11 @@ if ($dbUrl) {
 } else {
     // Local / XAMPP Development Defaults
     // Also supports Railway individual variable format (DB_PASSWORD instead of DB_PASS)
-    $host = getenv('DB_HOST');
-    if (!$host || $host === 'localhost') {
-        // Fallback to Railway's internal DNS resolution
-        $host = 'mysql.railway.internal';
-    }
-    
-    define('DB_HOST', $host);
+    // Environment-aware defaults:
+    //  - Railway web service sets DB_HOST=mysql.railway.internal
+    //  - Vercel project sets DB_HOST=altaria.proxy.rlwy.net
+    //  - Local XAMPP has no DB_HOST -> fallback to 127.0.0.1
+    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
     define('DB_PORT', getenv('DB_PORT') ?: 3306);
     define('DB_NAME', getenv('DB_NAME') ?: 'barangay_bidduang_db');
     define('DB_USER', getenv('DB_USER') ?: 'root');
