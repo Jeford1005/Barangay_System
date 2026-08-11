@@ -67,7 +67,11 @@ if (session_status() === PHP_SESSION_NONE) {
 // Check for Railway's DATABASE_URL / MYSQL_URL connection string first
 $dbUrl = getenv('MYSQL_URL') ?: getenv('DATABASE_URL');
 
-if ($dbUrl) {
+// Debug logging (remove in production)
+$isProduction = (getenv('RAILWAY_ENVIRONMENT') === 'production');
+$debugLog = [];
+
+if ($isProduction && $dbUrl) {
     // Production/Railway Setup (Parse standard mysql://user:***@host:port/dbname URL)
     $dbParts = parse_url($dbUrl);
     
@@ -76,14 +80,41 @@ if ($dbUrl) {
     define('DB_NAME', ltrim($dbParts['path'] ?? '', '/'));
     define('DB_USER', $dbParts['user'] ?? 'root');
     define('DB_PASS', $dbParts['pass'] ?? '');
+    
+    $debugLog[] = "Using MYSQL_URL: host=" . DB_HOST . " port=" . DB_PORT . " db=" . DB_NAME;
 } else {
     // Local / XAMPP Development Defaults
     // Also supports Railway individual variable format (DB_PASSWORD instead of DB_PASS)
-    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    $host = getenv('DB_HOST');
+    if (!$host || $host === 'localhost') {
+        // Fallback to Railway's internal DNS resolution
+        $host = 'mysql.railway.internal';
+    }
+    
+    define('DB_HOST', $host);
     define('DB_PORT', getenv('DB_PORT') ?: 3306);
     define('DB_NAME', getenv('DB_NAME') ?: 'barangay_bidduang_db');
     define('DB_USER', getenv('DB_USER') ?: 'root');
     define('DB_PASS', getenv('DB_PASS') ?: getenv('DB_PASSWORD') ?: '');
+    
+    $debugLog[] = "Using individual vars: host=" . DB_HOST . " port=" . DB_PORT . " user=" . DB_USER;
+}
+
+// Log debug info with full error details
+if ($isProduction) {
+    $fullDebug = [
+        'env_vars' => array_filter(getenv()),
+        'db_config' => [
+            'host' => DB_HOST,
+            'port' => DB_PORT,
+            'db' => DB_NAME,
+            'user' => DB_USER,
+            'pass_set' => !empty(DB_PASS),
+            'dsn' => $dsn
+        ],
+        'debug_log' => $debugLog
+    ];
+    error_log("Railway DB Config: " . json_encode($fullDebug, JSON_PRETTY_PRINT));
 }
 
 define('DB_CHARSET', 'utf8mb4');
