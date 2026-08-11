@@ -61,15 +61,35 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ============================================================
-// DATABASE CONNECTION (PDO - XAMPP Defaults)
+// DATABASE CONNECTION (XAMPP / Railway Ready)
 // ============================================================
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'barangay_bidduang_db');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_CHARSET', 'utf8mb4');
 
-$dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
+// Check for Railway's DATABASE_URL / MYSQL_URL connection string first
+$dbUrl = getenv('MYSQL_URL') ?: getenv('DATABASE_URL');
+
+if ($dbUrl) {
+    // Production/Railway Setup (Parse standard mysql://user:***@host:port/dbname URL)
+    $dbParts = parse_url($dbUrl);
+    
+    define('DB_HOST', $dbParts['host'] ?? 'localhost');
+    define('DB_PORT', $dbParts['port'] ?? 3306);
+    define('DB_NAME', ltrim($dbParts['path'] ?? '', '/'));
+    define('DB_USER', $dbParts['user'] ?? 'root');
+    define('DB_PASS', $dbParts['pass'] ?? '');
+} else {
+    // Local / XAMPP Development Defaults
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    define('DB_PORT', getenv('DB_PORT') ?: 3306);
+    define('DB_NAME', getenv('DB_NAME') ?: 'barangay_bidduang_db');
+    define('DB_USER', getenv('DB_USER') ?: 'root');
+    define('DB_PASS', getenv('DB_PASS') ?: '');
+}
+
+define('DB_CHARSET', 'utf8mb4');
+define('BROADCAST_AUTO_DISPATCH', getenv('BROADCAST_AUTO_DISPATCH') !== 'false');
+
+// Update $dsn to include port
+$dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -241,36 +261,49 @@ function current_user() {
     return null;
 }
 
-// ============================================================
-// AUDIT LOG HELPER
+// =============================================================
+// AUDIT LOGGING (using AuditLogger service)
 // ============================================================
 
 /**
- * Log an action to audit_logs table
+ * Load the AuditLogger class - a reusable, decoupled logging service.
+ * Provides structured logging with sensitive data masking, severity levels,
+ * and non-blocking insert operations.
+ */
+require_once __DIR__ . '/lib/AuditLogger.php';
+
+/**
+ * Legacy-compatible wrapper for AuditLogger.
+ * Logs an action to audit_logs table.
+ *
+ * @deprecated Since v2.0 - Use AuditLogger::log() directly instead.
  */
 function log_audit($action, $entityType = null, $entityId = null, $oldValues = null, $newValues = null) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            INSERT INTO audit_logs 
-                (user_id, action, entity_type, entity_id, old_values, new_values, ip_address, user_agent)
-            VALUES 
-                (:user_id, :action, :entity_type, :entity_id, :old_values, :new_values, :ip_address, :user_agent)
-        ");
-        
-        $stmt->execute([
-            ':user_id'    => $_SESSION['user_id'] ?? null,
-            ':action'     => $action,
-            ':entity_type'=> $entityType,
-            ':entity_id'  => $entityId,
-            ':old_values' => $oldValues ? json_encode($oldValues) : null,
-            ':new_values' => $newValues ? json_encode($newValues) : null,
-            ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-            ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
-        ]);
-    } catch (PDOException $e) {
-        error_log('Audit Log Error: ' . $e->getMessage());
+    $actionMap = [
+        'login'                => ['AUTH', 'Auth', ['event' => 'login'], 'INFO'],
+        'logout'               => ['AUTH', 'Auth', ['event' => 'logout'], 'INFO'],
+        'password_reset'       => ['AUTH', 'Auth', ['event' => 'password_reset'], 'INFO'],
+        'password_reset_request' => ['AUTH', 'Auth', ['event' => 'password_reset_request'], 'INFO'],
+        'login_failed'           => ['AUTH', 'Auth', ['event' => 'login_failed'], 'WARN'],
+        'role_update'          => ['UPDATE', 'Users', null, 'WARN'],
+        'create'               => ['CREATE', null, null, 'INFO'],
+        'read'                 => ['READ', null, null, 'INFO'],
+        'update'               => ['UPDATE', null, null, 'WARN'],
+        'delete'               => ['DELETE', null, null, 'CRITICAL'],
+        'export'               => ['EXPORT', null, null, 'WARN'],
+    ];
+
+    if (isset($actionMap[$action])) {
+        $mapped = $actionMap[$action];
+        $module = $mapped[1] ?? ($entityType ?? 'System');
+        AuditLogger::log($mapped[0], $module, $entityId, $oldValues, $newValues ?? $mapped[2], $mapped[3]);
+    } else {
+        $actionType = strtoupper($action);
+        $validActions = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'EXPORT', 'AUTH'];
+        if (!in_array($actionType, $validActions)) {
+            $actionType = 'READ';
+        }
+        AuditLogger::log($actionType, $entityType ?? 'System', $entityId, $oldValues, $newValues, 'INFO');
     }
 }
 
@@ -278,6 +311,8 @@ function log_audit($action, $entityType = null, $entityId = null, $oldValues = n
 // BASE PATH FOR REDIRECTS
 // ============================================================
 define('BASE_URL', '/BARANGAY_MANAGEMENT');
+define('ADMIN_EMAIL', 'noreply@bidduang.gov.ph');
+define('APP_NAME', 'Barangay Bidduang Management Portal');
 define('UPLOAD_PATH', __DIR__ . '/uploads');
 define('UPLOAD_URL', BASE_URL . '/uploads');
 

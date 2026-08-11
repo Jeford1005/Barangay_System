@@ -9,7 +9,7 @@ require_once __DIR__ . '/config.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barangay Bidduang - Public Portal</title>
     <link rel="shortcut icon" type="image/png" href="assets/img/Brgy_Bidduang.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
     <link rel="stylesheet" href="assets/css/login.css">
     <style>
         .public-portal {

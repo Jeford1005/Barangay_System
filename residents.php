@@ -40,10 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $contact_number = trim($_POST['contact_number'] ?? '');
             $email = trim($_POST['email'] ?? '');
             $voter_status = $_POST['voter_status'] ?? 'Not Registered';
-            $is_pwd = isset($_POST['is_pwd']) ? 1 : 0;
-            $is_senior = isset($_POST['is_senior']) ? 1 : 0;
-            $is_indigent = isset($_POST['is_indigent']) ? 1 : 0;
-            $fourps_beneficiary = isset($_POST['fourps_beneficiary']) ? 1 : 0;
+            $cls = $_POST['classification'] ?? '';
+            $is_senior = $cls === 'senior' ? 1 : 0;
+            $is_pwd = $cls === 'pwd' ? 1 : 0;
+            $is_indigent = $cls === 'indigent' ? 1 : 0;
+            $fourps_beneficiary = $cls === '4ps' ? 1 : 0;
             $household_id = !empty($_POST['household_id']) ? $_POST['household_id'] : null;
             $purok_id = !empty($_POST['purok_id']) ? $_POST['purok_id'] : null;
             $status = $_POST['status'] ?? 'Active';
@@ -142,8 +143,13 @@ if ($search) {
     $params[] = "%$search%";
 }
 if ($statusFilter) {
-    $where[] = "r.status = ?";
-    $params[] = $statusFilter;
+    if (in_array($statusFilter, ['senior', 'pwd', 'indigent'], true)) {
+        $col = $statusFilter === 'senior' ? 'is_senior' : ($statusFilter === 'pwd' ? 'is_pwd' : 'is_indigent');
+        $where[] = "r.$col = 1";
+    } else {
+        $where[] = "r.status = ?";
+        $params[] = $statusFilter;
+    }
 }
 
 $whereSql = implode(' AND ', $where);
@@ -185,58 +191,16 @@ $csrf = generate_csrf_token();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Residents - Barangay Bidduang Portal</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .toast-alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            font-weight: 600;
-            font-size: 14px;
-            animation: slideInDown 0.3s ease-out forwards;
-        }
-        .toast-success { background-color: #dcfce7; color: #166534; border: 1px solid #16a34a; }
-        .toast-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #c0392b; }
-        .toast-close { background: none; border: none; font-size: 18px; color: inherit; cursor: pointer; margin-left: 8px; line-height: 1; }
-        @keyframes slideInDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
     <div class="app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-            <li><a href="residents.php" class="active"><i class="fas fa-users"></i> Residents</a></li>
-            <li><a href="households.php"><i class="fas fa-home"></i> Households</a></li>
-            <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-            <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-            <li><a href="blotter.php"><i class="fas fa-gavel"></i> Blotter</a></li>
-            <li><a href="welfare.php"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-            <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-            <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
-            <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-            <li><a href="logout.php">Logout</a></li>
-        </ul>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <main class="main-content">
         <?php if ($message): ?>
             <div class="toast-alert toast-success" id="floatingAlert">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 <span><?= esc($message) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -244,7 +208,7 @@ $csrf = generate_csrf_token();
 
         <?php if ($error): ?>
             <div class="toast-alert toast-danger" id="floatingAlert">
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation"></i>
                 <span><?= esc($error) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -253,10 +217,7 @@ $csrf = generate_csrf_token();
         <div class="page-header">
             <div>
                 <h1 class="page-title">Resident Management</h1>
-                <p class="page-subtitle">Profiling and records of Barangay Bidduang residents</p>
-            </div>
-            <div class="user-badge">
-                <?php echo esc(ucfirst($user['role'])); ?>
+                <p class="page-subtitle">Profiling and Records of Barangay Bidduang Residents</p>
             </div>
         </div>
 
@@ -294,12 +255,18 @@ $csrf = generate_csrf_token();
                         <i class="fas fa-search"></i>
                         <input type="text" name="search" placeholder="Search by name or contact..." value="<?= esc($search) ?>">
                     </form>
-                    <select class="form-control" style="width:auto;min-width:150px;" onchange="window.location.href='?status='+this.value+'&search=<?= urlencode($search) ?>'">
-                        <option value="">All Status</option>
-                        <option value="Active" <?= $statusFilter==='Active'?'selected':'' ?>>Active</option>
-                        <option value="Deceased" <?= $statusFilter==='Deceased'?'selected':'' ?>>Deceased</option>
-                        <option value="Moved Out" <?= $statusFilter==='Moved Out'?'selected':'' ?>>Moved Out</option>
-                    </select>
+                                        <div class="status-filter-native">
+                        <i class="fas fa-filter" style="color:#8a94a6;margin-right:6px;"></i>
+                        <select class="form-control" style="width:auto;min-width:170px;display:inline-block;" onchange="window.location.href='?status='+this.value+'&search=<?= urlencode($search) ?>'">
+                            <option value="" <?= $statusFilter===''?'selected':'' ?>>All Status</option>
+                            <option value="Active" <?= $statusFilter==='Active'?'selected':'' ?>>Active</option>
+                            <option value="Deceased" <?= $statusFilter==='Deceased'?'selected':'' ?>>Deceased</option>
+                            <option value="Moved Out" <?= $statusFilter==='Moved Out'?'selected':'' ?>>Moved Out</option>
+                            <option value="senior" <?= $statusFilter==='senior'?'selected':'' ?>>♿ Senior Citizen</option>
+                            <option value="pwd" <?= $statusFilter==='pwd'?'selected':'' ?>>🦽 PWD</option>
+                            <option value="indigent" <?= $statusFilter==='indigent'?'selected':'' ?>>🤝 Indigent</option>
+                        </select>
+                    </div>
                     <button class="btn btn-primary" onclick="openModal('addModal')"><i class="fas fa-plus"></i> Add Resident</button>
                 </div>
             </div>
@@ -323,17 +290,22 @@ $csrf = generate_csrf_token();
                         <?php else: ?>
                             <?php foreach ($residents as $r): ?>
                                 <tr>
-                                    <td><?= esc($r['first_name'] . ' ' . $r['last_name']) ?></td>
+                                    <td>
+                                        <div class="name-cell">
+                                            <span class="avatar"><?= esc(strtoupper(substr($r['first_name'], 0, 1) . substr($r['last_name'], 0, 1))) ?></span>
+                                            <span><?= esc($r['first_name'] . ' ' . $r['last_name']) ?></span>
+                                        </div>
+                                    </td>
                                     <td><?= esc(ucfirst($r['gender'])) ?></td>
                                     <td><?= !empty($r['birth_date']) ? esc(date('F j, Y', strtotime($r['birth_date']))) : 'N/A' ?></td>
                                     <td><?= esc($r['purok_name'] ?? 'N/A') ?></td>
                                     <td><?= esc($r['contact_number'] ?? 'N/A') ?></td>
                                     <td>
-                                        <span class="badge <?= $r['status']==='Active' ? 'badge-success' : 'badge-warning' ?>">
+                                        <span class="badge <?= $r['status']==='Active' ? 'badge-success' : ($r['status']==='Deceased' ? 'badge-danger' : 'badge-warning') ?>">
                                             <?= esc($r['status']) ?>
                                         </span>
                                     </td>
-                                    <td>
+                                    <td class="actions">
                                         <button class="btn btn-secondary" onclick="openEditModal(
                                             <?= (int)$r['id'] ?>,
                                             '<?= esc(addslashes($r['first_name'])) ?>',
@@ -342,7 +314,11 @@ $csrf = generate_csrf_token();
                                             '<?= esc($r['gender']) ?>',
                                             '<?= (int)($r['purok_id'] ?? 0) ?>',
                                             '<?= esc(addslashes($r['contact_number'] ?? '')) ?>',
-                                            '<?= esc($r['status']) ?>'
+                                            '<?= esc($r['status']) ?>',
+                                            <?= (int)($r['is_senior'] ?? 0) ?>,
+                                            <?= (int)($r['is_pwd'] ?? 0) ?>,
+                                            <?= (int)($r['is_indigent'] ?? 0) ?>,
+                                            <?= (int)($r['fourps_beneficiary'] ?? 0) ?>
                                         )">Edit</button>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this resident?');">
                                             <input type="hidden" name="action" value="delete">
@@ -404,7 +380,16 @@ $csrf = generate_csrf_token();
                     <input type="text" name="contact_number">
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
+                                    <div class="form-group">
+                    <label>Classification <span style="font-weight:400;color:#6b7280;font-size:.8rem;">(choose one)</span></label>
+                    <div class="chip-group">
+                        <label class="chip chip-senior"><input type="radio" name="classification" value="senior"><span class="chip-box"><i class="fas fa-user-clock"></i> <span class="chip-text">Senior Citizen</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-pwd"><input type="radio" name="classification" value="pwd"><span class="chip-box"><i class="fas fa-wheelchair"></i> <span class="chip-text">PWD</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-indigent"><input type="radio" name="classification" value="indigent"><span class="chip-box"><i class="fas fa-hand-holding-heart"></i> <span class="chip-text">Indigent</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-4ps"><input type="radio" name="classification" value="4ps"><span class="chip-box"><i class="fas fa-hand-holding-usd"></i> <span class="chip-text">4Ps Beneficiary</span> <i class="fas fa-check chip-check"></i></span></label>
+                    </div>
+                </div>
+<label>Status</label>
                     <select name="status">
                         <option>Active</option>
                         <option>Deceased</option>
@@ -459,7 +444,16 @@ $csrf = generate_csrf_token();
                     <label for="editContact">Contact</label> <input type="text" name="contact_number" id="editContact">
                 </div>
                 <div class="form-group">
-                    <label for="editStatus">Status</label> <select name="status" id="editStatus">
+                                    <div class="form-group">
+                    <label>Classification <span style="font-weight:400;color:#6b7280;font-size:.8rem;">(choose one)</span></label>
+                    <div class="chip-group">
+                        <label class="chip chip-senior"><input type="radio" name="classification" value="senior"><span class="chip-box"><i class="fas fa-user-clock"></i> <span class="chip-text">Senior Citizen</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-pwd"><input type="radio" name="classification" value="pwd"><span class="chip-box"><i class="fas fa-wheelchair"></i> <span class="chip-text">PWD</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-indigent"><input type="radio" name="classification" value="indigent"><span class="chip-box"><i class="fas fa-hand-holding-heart"></i> <span class="chip-text">Indigent</span> <i class="fas fa-check chip-check"></i></span></label>
+                        <label class="chip chip-4ps"><input type="radio" name="classification" value="4ps"><span class="chip-box"><i class="fas fa-hand-holding-usd"></i> <span class="chip-text">4Ps Beneficiary</span> <i class="fas fa-check chip-check"></i></span></label>
+                    </div>
+                </div>
+<label for="editStatus">Status</label> <select name="status" id="editStatus">
                         <option>Active</option>
                         <option>Deceased</option>
                         <option>Moved Out</option>
@@ -479,31 +473,25 @@ $csrf = generate_csrf_token();
         document.getElementById(id).style.display = 'none'; 
     }
 
-    function openEditModal(id, first, last, birthDate, gender, purokId, contact, status) {
+    function openEditModal(id, first, last, birthDate, gender, purokId, contact, status, isSenior, isPwd, isIndigent, fourps) {
         document.getElementById('editId').value = id;
         document.getElementById('editFirstName').value = first;
         document.getElementById('editLastName').value = last;
         document.getElementById('editBirthDate').value = birthDate;
-        
+
         document.getElementById('editGender').value = gender || '';
         document.getElementById('editPurok').value = (purokId && purokId > 0) ? purokId : '';
         document.getElementById('editContact').value = contact || '';
         document.getElementById('editStatus').value = status || 'Active';
 
+        var cls = isSenior ? 'senior' : (isPwd ? 'pwd' : (isIndigent ? 'indigent' : (fourps ? '4ps' : '')));
+        var em = document.getElementById('editModal');
+        var radios = em.querySelectorAll('input[name="classification"]');
+        radios.forEach(function(rd){ rd.checked = (rd.value === cls); });
+
         openModal('editModal');
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const alertBox = document.getElementById('floatingAlert');
-        if (alertBox) {
-            setTimeout(function() {
-                alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                alertBox.style.opacity = '0';
-                alertBox.style.transform = 'translateY(-20px)';
-                setTimeout(function() { alertBox.remove(); }, 400);
-            }, 3000);
-        }
-    });
-    </script>
+</script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

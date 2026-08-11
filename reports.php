@@ -8,7 +8,7 @@ $currentUser = current_user();
 // Handle report generation requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_report'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $message = '<div class="toast-alert toast-danger" id="floatingAlert"><i class="fas fa-exclamation-circle"></i> Invalid security token.</div>';
+        $message = '<div class="toast-alert toast-danger" id="floatingAlert"><i class="fas fa-exclamation"></i> Invalid security token.</div>';
     } else {
         $reportType = $_POST['report_type'] ?? '';
         $dateFrom = $_POST['date_from'] ?? '';
@@ -107,42 +107,17 @@ if ($view && $params) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Barangay Bidduang Portal</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
 <div class="app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <nav>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="residents.php"><i class="fas fa-users"></i> Residents</a></li>
-                <li><a href="households.php"><i class="fas fa-home"></i> Households</a></li>
-                <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-                <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-                <li><a href="blotter.php"><i class="fas fa-gavel"></i> Blotter</a></li>
-                <li><a href="welfare.php"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-                <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-                <li><a href="reports.php" class="active"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-                <li><a href="setup.php">Setup</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <main class="main-content">
         <div class="page-header">
             <div>
                 <h1><i class="fas fa-chart-bar"></i> Reports Hub</h1>
                 <p>Generate and view system reports</p>
-            </div>
-            <div class="user-info">
-                <div class="avatar"><?= strtoupper(substr($currentUser['full_name'], 0, 1)) ?></div>
-                <div><strong><?= esc($currentUser['full_name']) ?></strong><br><small class="text-muted"><?= ucfirst($currentUser['role']) ?></small></div>
             </div>
         </div>
 
@@ -260,14 +235,124 @@ if ($view && $params) {
             <div class="card-header"><h2>Quick Reports</h2></div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;">
                 <a href="reports.php?view=residents" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-users"></i> Resident List</a>
-                <a href="reports.php?view=documents" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-file-alt"></i> Document Requests</a>
-                <a href="reports.php?view=blotter" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-gavel"></i> Blotter Cases</a>
+                <a href="reports.php?view=documents" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-file-text"></i> Document Requests</a>
+                <a href="reports.php?view=blotter" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-scale-balanced"></i> Blotter Cases</a>
                 <a href="reports.php?view=welfare" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-hand-holding-heart"></i> Welfare Beneficiaries</a>
                 <a href="reports.php?view=health" class="btn btn-outline" style="justify-content:center;padding:20px;"><i class="fas fa-heartbeat"></i> Health Records</a>
             </div>
         </div>
+
+        <!-- Export Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-file-export"></i> Export Reports</h2>
+            </div>
+            <form id="exportForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
+                    <div class="form-group">
+                        <label>Report Type *</label>
+                        <select name="report_type" class="form-control" required>
+                            <option value="">Select Report for Export</option>
+                            <option value="residents">Resident List</option>
+                            <option value="documents">Document Requests</option>
+                            <option value="blotter">Blotter Cases</option>
+                            <option value="welfare">Welfare Beneficiaries</option>
+                            <option value="health">Health Records</option>
+                            <option value="households">Households</option>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group"><label>Date From</label><input type="date" name="date_from" class="form-control" value="<?= date('Y-01-01') ?>"></div>
+                        <div class="form-group"><label>Date To</label><input type="date" name="date_to" class="form-control" value="<?= date('Y-m-t') ?>"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Format *</label>
+                        <select name="format" class="form-control" required>
+                            <option value="csv">CSV (Microsoft Excel compatible)</option>
+                            <option value="excel">Excel (XLSX)</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 12px; color: #6c757d;">
+                        <i class="fas fa-info"></i>
+                        Sensitive fields (phone numbers, passwords, etc.) are automatically masked in exports per data privacy policy.
+                    </div>
+                </div>
+                <div class="modal-footer" style="position:static;border:none;padding:0 25px 20px;">
+                    <button type="button" class="btn btn-primary" onclick="exportReport()"><i class="fas fa-file-export"></i> Export Report</button>
+                </div>
+            </form>
+        </div>
         <?php endif; ?>
     </main>
 </div>
+<script>
+function exportReport() {
+    const form = document.getElementById('exportForm');
+    const formData = new FormData(form);
+    const reportType = formData.get('report_type');
+    const format = formData.get('format');
+
+    if (!reportType || !format) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Please select a report type and format.', 'error');
+        } else {
+            alert('Please select a report type and format.');
+        }
+        return;
+    }
+
+    const data = new URLSearchParams();
+    data.append('report_type', reportType);
+    data.append('date_from', formData.get('date_from'));
+    data.append('date_to', formData.get('date_to'));
+    data.append('format', format);
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Exporting...',
+            html: 'Please wait while the report is being generated.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+    }
+
+    fetch('api/export-report.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: data
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            const msg = result.message || 'Export completed';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Success', msg, 'success').then(() => {
+                    window.open('uploads/exports/' + result.file_path, '_blank');
+                });
+            } else {
+                alert(msg);
+                window.open('uploads/exports/' + result.file_path, '_blank');
+            }
+        } else {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', result.message, 'error');
+            } else {
+                alert('Error: ' + result.message);
+            }
+        }
+    })
+    .catch(err => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'Network error: ' + err.message, 'error');
+        } else {
+            alert('Network error: ' + err.message);
+        }
+    });
+}
+</script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

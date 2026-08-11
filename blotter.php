@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lib/sms/SmsTriggers.php';
 require_role(['admin', 'staff']);
 
 $message = '';
@@ -27,6 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $assigned_official_id = !empty($_POST['assigned_official_id']) ? $_POST['assigned_official_id'] : null;
             $resolution = trim($_POST['resolution'] ?? '');
             $closed_at = ($status === 'Closed' && !empty($_POST['closed_at'])) ? $_POST['closed_at'] : null;
+            $hearing_date = trim($_POST['hearing_date'] ?? '');
+            $hearing_time = trim($_POST['hearing_time'] ?? '');
+            $lupon_desk = trim($_POST['lupon_desk'] ?? 'Lupon Desk');
 
             if (!$case_number || !$filing_date || !$incident_date || !$incident_location || !$involved_parties || !$narrative) {
                 $error = 'Case Number, Filing Date, Incident Date, Location, Involved Parties, and Narrative are required.';
@@ -46,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($action === 'edit' && $id) {
                     $stmt = $pdo->prepare("UPDATE blotter_cases SET case_number=?, case_type=?, status=?, filing_date=?, incident_date=?, incident_time=?, incident_location=?, involved_parties=?, narrative=?, complainant_id=?, respondent_id=?, assigned_official_id=?, resolution=?, closed_at=? WHERE id=?");
                     $stmt->execute([$case_number, $case_type, $status, $filing_date, $incident_date, $incident_time ?: null, $incident_location, $involved_parties, $narrative, $complainant_id, $respondent_id, $assigned_official_id, $resolution ?: null, $closed_at ?: null, $id]);
+                    if ($hearing_date) {
+                        $pdo->prepare("UPDATE blotter_cases SET hearing_date=?, hearing_time=?, lupon_desk=? WHERE id=?")
+                            ->execute([$hearing_date, $hearing_time ?: null, $lupon_desk, $id]);
+                        try { SmsTriggers::hearingScheduled((int)$id, $hearing_date, $hearing_time ?: 'TBD', $lupon_desk); } catch (Throwable $e) { error_log('SMS hearing trigger: ' . $e->getMessage()); }
+                    }
                     log_audit('update', 'blotter_case', $id, $oldValues);
                     $message = 'Blotter case updated successfully.';
                 }
@@ -119,48 +128,23 @@ $currentUser = current_user();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blotter - Barangay Bidduang Portal</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
 <div class="app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <nav>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="residents.php"><i class="fas fa-users"></i> Residents</a></li>
-                <li><a href="households.php"><i class="fas fa-home"></i> Households</a></li>
-                <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-                <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-                <li><a href="blotter.php" class="active"><i class="fas fa-gavel"></i> Blotter</a></li>
-                <li><a href="welfare.php"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-                <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-                <li><a href="setup.php">Setup</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <main class="main-content">
         <div class="page-header">
             <div>
-                <h1><i class="fas fa-gavel"></i> Blotter & Mediation</h1>
+                <h1><i class="fas fa-scale-balanced"></i> Blotter & Mediation</h1>
                 <p>Incident tracking under Katarungang Pambarangay (Lupong Tagapamayapa)</p>
-            </div>
-            <div class="user-info">
-                <div class="avatar"><?= strtoupper(substr($currentUser['full_name'], 0, 1)) ?></div>
-                <div><strong><?= esc($currentUser['full_name']) ?></strong><br><small class="text-muted"><?= ucfirst($currentUser['role']) ?></small></div>
             </div>
         </div>
 
         <?php if ($message): ?>
             <div class="toast-alert toast-success" id="floatingAlert">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 <span><?= esc($message) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -168,29 +152,15 @@ $currentUser = current_user();
 
         <?php if ($error): ?>
             <div class="toast-alert toast-danger" id="floatingAlert">
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation"></i>
                 <span><?= esc($error) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
         <?php endif; ?>
 
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertBox = document.getElementById('floatingAlert');
-            if (alertBox) {
-                setTimeout(function() {
-                    alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    alertBox.style.opacity = '0';
-                    alertBox.style.transform = 'translateY(-20px)';
-                    setTimeout(function() { alertBox.remove(); }, 400);
-                }, 3000);
-            }
-        });
-        </script>
-
         <!-- Katarungang Stages Legend -->
         <div class="card" style="background:linear-gradient(135deg,#f0f8ff,#fff);border-left:5px solid var(--secondary);">
-            <h2 style="font-size:18px;margin:0 0 12px;"><i class="fas fa-info-circle"></i> Katarungang Pambarangay Stages</h2>
+            <h2 style="font-size:18px;margin:0 0 12px;"><i class="fas fa-info"></i> Katarungang Pambarangay Stages</h2>
             <div style="display:flex;gap:15px;flex-wrap:wrap;">
                 <span class="badge badge-info">1. Open</span>
                 <span class="badge badge-warning">2. Under Mediation</span>
@@ -211,11 +181,11 @@ $currentUser = current_user();
                 <div class="stat-info"><h3><?= number_format($pdo->query("SELECT COUNT(*) FROM blotter_cases WHERE status='Under Mediation'")->fetchColumn()) ?></h3><p>Under Mediation</p></div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon" style="background:var(--accent);"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-icon" style="background:var(--accent);"><i class="fas fa-circle-check"></i></div>
                 <div class="stat-info"><h3><?= number_format($pdo->query("SELECT COUNT(*) FROM blotter_cases WHERE status IN ('Conciliated','Closed')")->fetchColumn()) ?></h3><p>Resolved</p></div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon" style="background:var(--danger);"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="stat-icon" style="background:var(--danger);"><i class="fas fa-exclamation"></i></div>
                 <div class="stat-info"><h3><?= number_format($pdo->query("SELECT COUNT(*) FROM blotter_cases WHERE status='Escalated'")->fetchColumn()) ?></h3><p>Escalated</p></div>
             </div>
         </div>
@@ -249,7 +219,7 @@ $currentUser = current_user();
                     </thead>
                     <tbody>
                         <?php if (empty($cases)): ?>
-                            <tr><td colspan="9"><div class="empty-state"><i class="fas fa-gavel"></i><h3>No cases found</h3><p>File a new case to begin tracking.</p></div></td></tr>
+                            <tr><td colspan="9"><div class="empty-state"><i class="fas fa-scale-balanced"></i><h3>No cases found</h3><p>File a new case to begin tracking.</p></div></td></tr>
                         <?php else: ?>
                             <?php foreach ($cases as $c): ?>
                             <tr>
@@ -263,7 +233,7 @@ $currentUser = current_user();
                                 <td><?= esc($c['official_name'] ?? '-') ?></td>
                                 <td>
                                     <div class="actions">
-                                        <button class="btn btn-sm btn-info" onclick="editCase(<?= $c['id'] ?>)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-info" onclick="editCase(<?= $c['id'] ?>)"><i class="fas fa-pen-to-square"></i></button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteCase(<?= $c['id'] ?>, '<?= esc(addslashes($c['case_number'])) ?>')"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </td>
@@ -306,6 +276,11 @@ $currentUser = current_user();
                     <div class="form-group"><label for="filingDate">Filing Date *</label> <input type="date" name="filing_date" id="filingDate" class="form-control" required></div>
                     <div class="form-group"><label for="incidentDate">Incident Date *</label> <input type="date" name="incident_date" id="incidentDate" class="form-control" required></div>
                     <div class="form-group"><label for="incidentTime">Incident Time</label> <input type="time" name="incident_time" id="incidentTime" class="form-control"></div>
+                </div>
+                <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                    <div class="form-group"><label for="hearingDate">Hearing Date</label> <input type="date" name="hearing_date" id="hearingDate" class="form-control"></div>
+                    <div class="form-group"><label for="hearingTime">Hearing Time</label> <input type="time" name="hearing_time" id="hearingTime" class="form-control"></div>
+                    <div class="form-group"><label for="luponDesk">Lupon Desk</label> <input type="text" name="lupon_desk" id="luponDesk" class="form-control" value="Lupon Desk"></div>
                 </div>
                 <div class="form-group"><label for="incidentLocation">Incident Location *</label> <input type="text" name="incident_location" id="incidentLocation" class="form-control" required></div>
                 <div class="form-group"><label for="involvedParties">Involved Parties *</label> <textarea name="involved_parties" id="involvedParties" class="form-control" rows="2" required placeholder="Names and roles of involved parties"></textarea></div>
@@ -350,7 +325,7 @@ $currentUser = current_user();
 <div class="modal-backdrop" id="deleteModal">
     <div class="modal" style="max-width:450px;">
         <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Confirm Delete</h3>
+            <h3><i class="fas fa-warning" style="color:var(--danger);"></i> Confirm Delete</h3>
             <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
         </div>
         <div class="modal-body">
@@ -397,5 +372,6 @@ function editCase(id) {
 function deleteCase(id, name) { document.getElementById('deleteId').value = id; document.getElementById('deleteName').textContent = name; openModal('deleteModal'); }
 document.querySelectorAll('.modal-backdrop').forEach(el => { el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); }); });
 </script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

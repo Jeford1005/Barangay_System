@@ -127,7 +127,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Register - Barangay Bidduang</title>
         <link rel="shortcut icon" type="image/png" href="assets/img/Brgy_Bidduang.png">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="assets/css/fontawesome.min.css">
         <link rel="stylesheet" href="assets/css/login.css">
         <link rel="stylesheet" href="assets/css/login-fix.css">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
@@ -251,7 +251,7 @@
 
                         <div class="form-group">
                             <label for="regConfirmPassword">
-                                <i class="fas fa-check-circle"></i> Confirm Password
+                                <i class="fas fa-circle-check"></i> Confirm Password
                             </label>
                             <div class="password-wrapper">
                                 <input type="password" id="regConfirmPassword" name="confirm_password" required

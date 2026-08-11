@@ -7,6 +7,24 @@
     'use strict';
 
     // ============================================================
+    // Ensure toasts are always direct children of <body> so that
+    // position:fixed pins them to the viewport (an ancestor with
+    // transform/filter would otherwise break fixed positioning).
+    // ============================================================
+    function reparentToasts() {
+        document.querySelectorAll('.toast-alert').forEach(function (el) {
+            if (el.parentNode !== document.body) {
+                document.body.appendChild(el);
+            }
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', reparentToasts);
+    } else {
+        reparentToasts();
+    }
+
+    // ============================================================
     // Utility: Debounce
     // ============================================================
     function debounce(fn, delay) {
@@ -628,6 +646,7 @@
             initRegisterForm();
             initRegisterPageForm();
             initRealtimeValidation();
+            autoDismissToasts();
         }
 
     // Run when DOM is ready
@@ -636,5 +655,34 @@
     } else {
         init();
     }
+
+
+    // Auto-dismiss server-rendered flash toasts (.toast-alert) after 3 seconds
+    function autoDismissToasts() {
+        document.querySelectorAll('.toast-alert').forEach(function(el) {
+            setTimeout(function() {
+                el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-20px)';
+                setTimeout(function() { el.remove(); }, 400);
+            }, 3000);
+        });
+    }
+
+    // Programmatic toast (e.g. after AJAX actions)
+    window.showToast = function(message, type) {
+        type = type || 'success';
+        const el = document.createElement('div');
+        el.className = 'toast-alert toast-' + type + ' no-print';
+        const icon = type === 'success' ? 'fa-check' : (type === 'danger' ? 'fa-exclamation' : 'fa-info-circle');
+        el.innerHTML = '<i class="fas ' + icon + '"></i> <span>' + message + '</span>';
+        document.body.appendChild(el);
+        setTimeout(function() {
+            el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-20px)';
+            setTimeout(function() { el.remove(); }, 400);
+        }, 3000);
+    };
 
 })();

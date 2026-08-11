@@ -101,48 +101,23 @@ $currentUser = current_user();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Households - Barangay Bidduang Portal</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
 <div class="app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <nav>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="residents.php"><i class="fas fa-users"></i> Residents</a></li>
-                <li><a href="households.php" class="active"><i class="fas fa-home"></i> Households</a></li>
-                <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-                <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-                <li><a href="blotter.php"><i class="fas fa-gavel"></i> Blotter</a></li>
-                <li><a href="welfare.php"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-                <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-                <li><a href="setup.php">Setup</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <main class="main-content">
         <div class="page-header">
             <div>
-                <h1><i class="fas fa-home"></i> Household Management</h1>
+                <h1><i class="fas fa-house"></i> Household Management</h1>
                 <p>Group residents into households and track family units</p>
-            </div>
-            <div class="user-info">
-                <div class="avatar"><?= strtoupper(substr($currentUser['full_name'], 0, 1)) ?></div>
-                <div><strong><?= esc($currentUser['full_name']) ?></strong><br><small class="text-muted"><?= ucfirst($currentUser['role']) ?></small></div>
             </div>
         </div>
 
         <?php if ($message): ?>
             <div class="toast-alert toast-success" id="floatingAlert">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 <span><?= esc($message) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -150,29 +125,15 @@ $currentUser = current_user();
 
         <?php if ($error): ?>
             <div class="toast-alert toast-danger" id="floatingAlert">
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation"></i>
                 <span><?= esc($error) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
         <?php endif; ?>
 
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertBox = document.getElementById('floatingAlert');
-            if (alertBox) {
-                setTimeout(function() {
-                    alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    alertBox.style.opacity = '0';
-                    alertBox.style.transform = 'translateY(-20px)';
-                    setTimeout(function() { alertBox.remove(); }, 400);
-                }, 3000);
-            }
-        });
-        </script>
-
         <div class="stats-row">
             <div class="stat-card">
-                <div class="stat-icon" style="background:var(--secondary);"><i class="fas fa-home"></i></div>
+                <div class="stat-icon" style="background:var(--secondary);"><i class="fas fa-house"></i></div>
                 <div class="stat-info"><h3><?= number_format($pdo->query("SELECT COUNT(*) FROM households")->fetchColumn()) ?></h3><p>Total Households</p></div>
             </div>
             <div class="stat-card">
@@ -200,7 +161,7 @@ $currentUser = current_user();
                     </thead>
                     <tbody>
                         <?php if (empty($householdsList)): ?>
-                            <tr><td colspan="7"><div class="empty-state"><i class="fas fa-home"></i><h3>No households found</h3><p>Click Add Household to create one.</p></div></td></tr>
+                            <tr><td colspan="7"><div class="empty-state"><i class="fas fa-house"></i><h3>No households found</h3><p>Click Add Household to create one.</p></div></td></tr>
                         <?php else: ?>
                             <?php foreach ($householdsList as $h): ?>
                             <tr>
@@ -212,7 +173,7 @@ $currentUser = current_user();
                                 <td><?= esc($h['house_type'] ?: '-') ?></td>
                                 <td>
                                     <div class="actions">
-                                        <button class="btn btn-sm btn-info" onclick="editHousehold(<?= $h['id'] ?>)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-info" onclick="editHousehold(<?= $h['id'] ?>)"><i class="fas fa-pen-to-square"></i></button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteHousehold(<?= $h['id'] ?>, '<?= esc(addslashes($h['household_number'])) ?>')"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </td>
@@ -279,7 +240,7 @@ $currentUser = current_user();
 <div class="modal-backdrop" id="deleteModal">
     <div class="modal" style="max-width:450px;">
         <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Confirm Delete</h3>
+            <h3><i class="fas fa-warning" style="color:var(--danger);"></i> Confirm Delete</h3>
             <button class="modal-close" onclick="closeModal('deleteModal')">&times;</button>
         </div>
         <div class="modal-body">
@@ -324,5 +285,6 @@ document.querySelectorAll('.modal-backdrop').forEach(el => {
     el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 });
 </script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

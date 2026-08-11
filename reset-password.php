@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenValid) {
 
                     <div class="form-group">
                         <label for="confirmPassword">
-                            <i class="fas fa-check-circle"></i> Confirm Password
+                            <i class="fas fa-circle-check"></i> Confirm Password
                         </label>
                         <div class="password-wrapper">
                             <input type="password" id="confirmPassword" name="confirm_password" required
@@ -203,7 +203,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tokenValid) {
         });
         
         // Form validation
-        const form = document.getElementById('resetForm');
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             

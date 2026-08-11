@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         $user = $stmt->fetch();
         
         if (!$user || !password_verify($inputPassword, $user['password'])) {
+            log_audit('login_failed', 'Auth', null, null, ['username' => $inputUsername, 'role' => $inputRole]);
             $response['message'] = 'Invalid username or password. Please try again.';
             echo json_encode($response);
             exit;
@@ -143,12 +144,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $stmt = $pdo->prepare("
         SELECT id, username, email, full_name, role, phone_number, twofa_secret
         FROM users
-        WHERE (username = :identifier OR email = :identifier)
+        WHERE (username = :identifier1 OR email = :identifier2)
         AND status = 'active'
         AND role IN ('admin', 'staff', 'resident')
         LIMIT 1
     ");
-    $stmt->execute([':identifier' => $identifier]);
+    $stmt->execute([':identifier1' => $identifier, ':identifier2' => $identifier]);
     $user = $stmt->fetch();
     
     // Always return success to prevent user enumeration
@@ -162,14 +163,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         // Send reset link via email
         if ($contactMethod === 'email' && $user['email']) {
-            $resetUrl = BASE_URL . '/reset-password.php?token=' . $resetToken;
-            $subject = 'Password Reset - Barangay Bidduang Portal';
+            // Build absolute reset URL
+            $isLocal = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || $_SERVER['HTTP_HOST'] === '127.0.0.1');
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+            $resetUrl = $protocol . $_SERVER['HTTP_HOST'] . BASE_URL . '/reset-password.php?token=' . $resetToken;
+            
+            $subject = 'Password Reset - ' . APP_NAME;
             $message = "
                 <html>
                 <body>
                     <h2>Password Reset Request</h2>
                     <p>Hello {$user['full_name']},</p>
-                    <p>You requested a password reset for your Barangay Bidduang Portal account.</p>
+                    <p>You requested a password reset for your Barangay Bidduang Management Portal account.</p>
                     <p><a href='$resetUrl' style='background:#1a5c38;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;'>Reset Password</a></p>
                     <p>This link expires in 1 hour.</p>
                     <p>If you didn't request this, please ignore this email.</p>
@@ -179,9 +184,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </html>
             ";
             
-            $headers = "From: " . (defined('ADMIN_EMAIL') ? ADMIN_EMAIL : 'noreply@bidduang.gov.ph') . "\r\n";
+            $headers = "From: " . ADMIN_EMAIL . "\r\n";
+            $headers .= "Reply-To: " . ADMIN_EMAIL . "\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            @mail($user['email'], $subject, $message, $headers);
+            
+            // Send email
+            $mailSent = mail($user['email'], $subject, $message, $headers);
+            
+            if (!$mailSent) {
+                // Log the reset URL for local development/debugging
+                // since mail() may not work on XAMPP without a mail server
+                error_log("Password reset email failed to send to {$user['email']}. Reset URL: {$resetUrl}");
+            }
         }
         
         // Send reset code via SMS (if phone_number exists)
@@ -202,6 +216,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'status' => 'success',
         'message' => 'If the account exists, a password reset link has been sent to your email/SMS.'
     ];
+    
+    // In local development, include the reset URL for testing
+    // since mail() may not be configured on XAMPP
+    if ($user && $resetToken) {
+        $isLocalDev = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || ($_SERVER['HTTP_HOST'] ?? '') === '127.0.0.1');
+        if ($isLocalDev) {
+            $response['debug_reset_url'] = 'http://localhost' . BASE_URL . '/reset-password.php?token=' . $resetToken;
+        }
+    }
     echo json_encode($response);
     exit;
 }
@@ -214,8 +237,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <title>Sign In - Barangay Bidduang</title>
     <link rel="shortcut icon" type="image/png" href="assets/img/Brgy_Bidduang.png">
     <link rel="stylesheet" href="assets/css/fontawesome.min.css">
-    <link rel="stylesheet" href="assets/css/login.css">
-    <link rel="stylesheet" href="assets/css/login-fix.css">
+    <link rel="stylesheet" href="assets/css/login.css?v=<?= filemtime(__DIR__ . '/assets/css/login.css') ?>">
+    <link rel="stylesheet" href="assets/css/login-fix.css?v=<?= filemtime(__DIR__ . '/assets/css/login-fix.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <style>
         /* Fix height issues */
@@ -230,11 +253,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             flex-direction: column;
         }
         .auth-left {
-            flex: 0 0 40%;
+            flex: 0 0 50%;
             justify-content: center;
         }
         .auth-right {
-            flex: 0 0 60%;
+            flex: 0 0 50%;
             justify-content: center;
         }
         .form-panel {
@@ -255,9 +278,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 </head>
 <body>
     <div class="auth-container" id="authContainer">
-        <!-- Left Panel: Branding + Welcome Message (HIDDEN) -->
+        <!-- Left Panel: Branding -->
         <div class="auth-left">
-            <!-- This entire section is hidden via CSS -->
             <div class="halftone-bg">
                 <div class="stripe-overlay"></div>
             </div>
@@ -472,7 +494,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
                     <div class="form-group">
                         <label for="regConfirmPassword">
-                            <i class="fas fa-check-circle"></i> Confirm Password
+                            <i class="fas fa-circle-check"></i> Confirm Password
                         </label>
                         <div class="password-wrapper">
                             <input type="password" id="regConfirmPassword" name="confirm_password" required
@@ -549,12 +571,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         function showForgot() {
             document.getElementById('loginPanel').style.display = 'none';
-            forgotOverlay.style.display = 'flex';
+            forgotOverlay.classList.add('active');
         }
         
         function hideForgot() {
-            forgotOverlay.style.display = 'none';
-            document.getElementById('loginPanel').style.display = 'block';
+            forgotOverlay.classList.remove('active');
+            setTimeout(function() {
+                if (!forgotOverlay.classList.contains('active')) {
+                    document.getElementById('loginPanel').style.display = 'block';
+                }
+            }, 300);
             forgotAlert.style.display = 'none';
             forgotForm.reset();
         }
@@ -595,12 +621,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reset Link';
                 
                 if (data.status === 'success') {
-                    Swal.fire({
+                    var swalConfig = {
                         icon: 'success',
                         title: 'Reset Link Sent!',
                         text: data.message,
                         confirmButtonColor: '#1a5c38'
-                    }).then(() => hideForgot());
+                    };
+                    // In local dev, show the reset URL for testing
+                    if (data.debug_reset_url) {
+                        swalConfig.footer = '<a href="' + data.debug_reset_url + '" style="color:#1a5c38;">Click here to reset password (local dev)</a>';
+                    }
+                    Swal.fire(swalConfig).then(() => hideForgot());
                 } else {
                     showAlert(forgotAlert, data.message, 'error');
                 }

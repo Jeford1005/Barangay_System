@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div class="totp-hint">
-                        <i class="fas fa-info-circle"></i>
+                        <i class="fas fa-info"></i>
                         <span>Enter the 6-digit code from your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.)</span>
                     </div>
 

@@ -1,10 +1,3 @@
-
-
--- ============================================================================
---  Cloud SMS Integration Module (appended by Senior Backend Architect)
---  See sql/sms_module_migration.sql for the standalone migration.
--- ============================================================================
-
 -- ============================================================================
 --  Cloud SMS Integration Module — Database Migration
 --  BRRMS (Barangay Records & Reporting Management System)
@@ -94,4 +87,3 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 --  SmsTriggers        : event hooks (Document / Summons / Broadcast)
 --  bin/sms-worker.php : async queue processor (run as daemon/cron)
 -- ============================================================================
-

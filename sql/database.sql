@@ -298,23 +298,54 @@ CREATE TABLE `welfare_beneficiaries` (
 -- ============================================================
 
 CREATE TABLE `audit_logs` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `log_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `user_id` int(11) DEFAULT NULL,
-  `action` varchar(100) NOT NULL,
-  `entity_type` varchar(100) DEFAULT NULL,
-  `entity_id` int(11) DEFAULT NULL,
-  `old_values` text DEFAULT NULL,
-  `new_values` text DEFAULT NULL,
+  `user_role` enum('admin','staff','resident') DEFAULT NULL,
+  `action_type` enum('CREATE','READ','UPDATE','DELETE','EXPORT','AUTH') NOT NULL DEFAULT 'READ',
+  `module_name` varchar(100) NOT NULL,
+  `record_id` varchar(100) DEFAULT NULL,
+  `old_values` json DEFAULT NULL,
+  `new_values` json DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_user` (`user_id`),
-  KEY `idx_entity` (`entity_type`,`entity_id`),
-  KEY `idx_action` (`action`),
-  KEY `idx_created` (`created_at`),
-  CONSTRAINT `fk_audit_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  `severity_level` enum('INFO','WARN','CRITICAL') NOT NULL DEFAULT 'INFO',
+  PRIMARY KEY (`log_id`),
+  KEY `idx_timestamp` (`timestamp`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_module_action` (`module_name`,`action_type`),
+  KEY `idx_action_type` (`action_type`),
+  KEY `idx_severity` (`severity_level`),
+  KEY `idx_user_time` (`user_id`,`timestamp`),
+  KEY `idx_module_time` (`module_name`,`timestamp`),
+  CONSTRAINT `fk_audit_user_new` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- AUDIT LOGS: APPEND-ONLY ENFORCEMENT TRIGGERS
+-- Prevents UPDATE and DELETE operations on audit_logs table.
+-- ============================================================
+-- Trigger: Prevent UPDATE on audit_logs
+DELIMITER $$
+CREATE TRIGGER `trg_audit_logs_no_update`
+BEFORE UPDATE ON `audit_logs`
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Audit logs are append-only. UPDATE operations are not permitted.';
+END$$
+DELIMITER ;
+
+-- Trigger: Prevent DELETE on audit_logs
+DELIMITER $$
+CREATE TRIGGER `trg_audit_logs_no_delete`
+BEFORE DELETE ON `audit_logs`
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Audit logs are append-only. DELETE operations are not permitted.';
+END$$
+DELIMITER ;
 
 -- ============================================================
 -- SYSTEM: SETTINGS
@@ -328,6 +359,213 @@ CREATE TABLE `system_settings` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_setting_key` (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- BROADCAST & COMMUNICATION MODULE
+-- ============================================================
+
+CREATE TABLE `broadcasts` (
+  `id`             BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `category`       ENUM('EMERGENCY','ASSEMBLY','HEALTH','CUSTOM') NOT NULL,
+  `title`          VARCHAR(255) NOT NULL,
+  `message`        TEXT NOT NULL,
+  `sender_id`      INT(11) NOT NULL,
+  `sender_role`    ENUM('admin','staff') NOT NULL,
+  `audience_filter` JSON DEFAULT NULL,
+  `recipient_count` INT(11) DEFAULT 0,
+  `cost`           DECIMAL(10,2) DEFAULT 0.00,
+  `status`         ENUM('DRAFT','SCHEDULED','QUEUED','SENDING','COMPLETED','FAILED','CANCELLED') DEFAULT 'DRAFT',
+  `priority`       TINYINT(1) DEFAULT 1,
+  `scheduled_at`   DATETIME NULL,
+  `sent_at`        DATETIME NULL,
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_created` (`status`,`created_at`),
+  KEY `idx_category` (`category`),
+  KEY `idx_sender` (`sender_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `broadcast_deliveries` (
+  `id`               BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `broadcast_id`     BIGINT(20) UNSIGNED NOT NULL,
+  `recipient_id`     INT(11) DEFAULT NULL,
+  `phone_number`     VARCHAR(20) NOT NULL,
+  `status`           ENUM('PENDING','SENT','DELIVERED','FAILED','CANCELLED') DEFAULT 'PENDING',
+  `gateway_response` TEXT DEFAULT NULL,
+  `gateway_message_id` VARCHAR(100) DEFAULT NULL,
+  `attempts`         TINYINT(1) DEFAULT 0,
+  `sent_at`          DATETIME NULL,
+  `delivered_at`     DATETIME NULL,
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_broadcast_status` (`broadcast_id`,`status`),
+  KEY `idx_phone` (`phone_number`),
+  KEY `idx_status_created` (`status`,`created_at`),
+  CONSTRAINT `fk_broadcast_delivery` FOREIGN KEY (`broadcast_id`)
+    REFERENCES `broadcasts`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `broadcast_templates` (
+  `id`             INT(11) NOT NULL AUTO_INCREMENT,
+  `name`           VARCHAR(100) NOT NULL,
+  `category`       ENUM('EMERGENCY','ASSEMBLY','HEALTH','CUSTOM') NOT NULL,
+  `subject`        VARCHAR(255) NOT NULL,
+  `message_template` TEXT NOT NULL,
+  `merge_tags`     JSON DEFAULT NULL,
+  `is_active`      TINYINT(1) DEFAULT 1,
+  `created_by`     INT(11) DEFAULT NULL,
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_category` (`category`),
+  KEY `idx_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `scheduled_broadcasts` (
+  `id`           BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `broadcast_id` BIGINT(20) UNSIGNED NOT NULL,
+  `scheduled_at` DATETIME NOT NULL,
+  `status`       ENUM('PENDING','PROCESSING','COMPLETED','FAILED','CANCELLED') DEFAULT 'PENDING',
+  `cron_job_id`  VARCHAR(100) DEFAULT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_scheduled` (`scheduled_at`,`status`),
+  KEY `idx_status` (`status`),
+  CONSTRAINT `fk_scheduled_broadcast` FOREIGN KEY (`broadcast_id`)
+    REFERENCES `broadcasts`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `message_queue` (
+  `id`           BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `broadcast_id` BIGINT(20) UNSIGNED NOT NULL,
+  `phone_number` VARCHAR(20) NOT NULL,
+  `message`      TEXT NOT NULL,
+  `gateway`      ENUM('semaphore','itexmo','twilio') DEFAULT 'semaphore',
+  `priority`     TINYINT(1) DEFAULT 1,
+  `attempts`     TINYINT(1) DEFAULT 0,
+  `max_attempts` TINYINT(1) DEFAULT 5,
+  `status`       ENUM('PENDING','PROCESSING','SENT','DELIVERED','FAILED','CANCELLED') DEFAULT 'PENDING',
+  `scheduled_at` DATETIME NULL,
+  `sent_at`      DATETIME NULL,
+  `error_message` TEXT DEFAULT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_status_priority` (`status`,`priority`,`created_at`),
+  KEY `idx_broadcast` (`broadcast_id`),
+  KEY `idx_scheduled` (`scheduled_at`),
+  KEY `idx_phone_created` (`phone_number`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `gateway_credentials` (
+  `id`         INT(11) NOT NULL AUTO_INCREMENT,
+  `provider`   ENUM('semaphore','itexmo','twilio') NOT NULL,
+  `api_key`    TEXT NOT NULL,
+  `api_secret` TEXT DEFAULT NULL,
+  `sender_id`  VARCHAR(50) DEFAULT NULL,
+  `is_active`  TINYINT(1) DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_provider` (`provider`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `documents` (
+  `id`            INT(11) NOT NULL AUTO_INCREMENT,
+  `resident_id`   INT(11) NOT NULL,
+  `document_type` ENUM('clearance','indigency','residency','barangay_pass') NOT NULL,
+  `control_number` VARCHAR(50) NOT NULL,
+  `or_number`     VARCHAR(50) DEFAULT NULL,
+  `or_series`     VARCHAR(20) DEFAULT NULL,
+  `ctc_number`    VARCHAR(50) DEFAULT NULL,
+  `ctc_date`      DATE DEFAULT NULL,
+  `dry_seal`      TINYINT(1) DEFAULT 0,
+  `purpose`       TEXT DEFAULT NULL,
+  `amount`        DECIMAL(10,2) DEFAULT NULL,
+  `status`        ENUM('DRAFT','PENDING_REVIEW','APPROVED','REJECTED','QUEUED_FOR_PRINT','PRINTED_AND_ISSUED') DEFAULT 'DRAFT',
+  `created_by`    INT(11) DEFAULT NULL,
+  `approved_by`   INT(11) DEFAULT NULL,
+  `approved_at`   DATETIME NULL,
+  `printed_at`    DATETIME NULL,
+  `created_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_control` (`control_number`),
+  KEY `idx_resident` (`resident_id`),
+  KEY `idx_status` (`status`),
+  UNIQUE KEY `uk_control_number` (`control_number`),
+  CONSTRAINT `fk_document_resident` FOREIGN KEY (`resident_id`)
+    REFERENCES `residents`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `document_approvals` (
+  `id`           INT(11) NOT NULL AUTO_INCREMENT,
+  `document_id`  INT(11) NOT NULL,
+  `approver_id`  INT(11) NOT NULL,
+  `approver_role` VARCHAR(50) NOT NULL,
+  `action`       ENUM('review','approve','reject') NOT NULL,
+  `notes`        TEXT DEFAULT NULL,
+  `document_hash` VARCHAR(64) DEFAULT NULL,
+  `signature_data` TEXT DEFAULT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_document` (`document_id`),
+  KEY `idx_approver` (`approver_id`),
+  CONSTRAINT `fk_approval_document` FOREIGN KEY (`document_id`)
+    REFERENCES `documents`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_approval_approver` FOREIGN KEY (`approver_id`)
+    REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `print_queue` (
+  `id`            INT(11) NOT NULL AUTO_INCREMENT,
+  `document_id`   INT(11) NOT NULL,
+  `priority`      TINYINT(1) DEFAULT 1,
+  `status`        ENUM('PENDING','PRINTING','COMPLETED','FAILED','REISSUE') DEFAULT 'PENDING',
+  `attempts`      TINYINT(1) DEFAULT 0,
+  `max_attempts`  TINYINT(1) DEFAULT 3,
+  `error_message` TEXT DEFAULT NULL,
+  `queued_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `started_at`    DATETIME NULL,
+  `completed_at`  DATETIME NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_priority_status` (`priority`,`status`,`queued_at`),
+  KEY `idx_document` (`document_id`),
+  CONSTRAINT `fk_print_document` FOREIGN KEY (`document_id`)
+    REFERENCES `documents`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `digital_signatures` (
+  `id`           INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id`      INT(11) NOT NULL,
+  `signature_data` TEXT NOT NULL COMMENT 'Base64 encoded signature image or overlay coords',
+  `document_hash` VARCHAR(64) NOT NULL,
+  `secret_key`   VARCHAR(100) DEFAULT NULL,
+  `is_active`    TINYINT(1) DEFAULT 1,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `expires_at`   DATETIME NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  UNIQUE KEY `uk_user_active` (`user_id`,`is_active`),
+  CONSTRAINT `fk_signature_user` FOREIGN KEY (`user_id`)
+    REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `exported_files` (
+  `id`            INT(11) NOT NULL AUTO_INCREMENT,
+  `exporter_id`   INT(11) NOT NULL,
+  `exporter_role` VARCHAR(50) NOT NULL,
+  `report_type`   VARCHAR(100) NOT NULL,
+  `filter_criteria` JSON DEFAULT NULL,
+  `file_path`     VARCHAR(255) NOT NULL,
+  `record_count`  INT(11) DEFAULT 0,
+  `file_size`     INT(11) DEFAULT NULL,
+  `pii_fields_masked` JSON DEFAULT NULL,
+  `created_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_exporter` (`exporter_id`),
+  KEY `idx_report_type` (`report_type`),
+  KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

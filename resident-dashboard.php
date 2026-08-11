@@ -109,28 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['capture_photo'])) {
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Dashboard - Barangay Bidduang</title>
-    <link rel="stylesheet" href="assets/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . '/assets/css/dashboard.css') ?>">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
     <div class="app">
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Resident Portal</span></div>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="resident-dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> My Dashboard</a></li>
-            <li><a href="resident-dashboard.php#request-doc">Request Document</a></li>
-            <li><a href="resident-dashboard.php#photo-capture">Update Photo</a></li>
-            <li><a href="resident-dashboard.php#request-history">Request History</a></li>
-            <li><a href="logout.php">Logout</a></li>
-        </ul>
-        <div class="sidebar-footer">
-            <p>Welcome, <strong><?php echo esc($user['full_name'] ?? $user['username']); ?></strong></p>
-        </div>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -143,14 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['capture_photo'])) {
 
         <?php if ($successMsg): ?>
             <div class="toast-alert toast-success" id="floatingAlert">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 <span><?= esc($successMsg) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
         <?php endif; ?>
         <?php if ($errorMsg): ?>
             <div class="toast-alert toast-danger" id="floatingAlert">
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation"></i>
                 <span><?= esc($errorMsg) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -162,20 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['capture_photo'])) {
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
         <?php endif; ?>
-
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertBox = document.getElementById('floatingAlert');
-            if (alertBox) {
-                setTimeout(function() {
-                    alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    alertBox.style.opacity = '0';
-                    alertBox.style.transform = 'translateY(-20px)';
-                    setTimeout(function() { alertBox.remove(); }, 400);
-                }, 3000);
-            }
-        });
-        </script>
 
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
             <!-- Resident Info Card -->
@@ -208,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['capture_photo'])) {
 
             <!-- Document Request Form -->
             <div class="card" id="request-doc">
-                <h2 class="card-title"><i class="fas fa-file-alt"></i> Request Document</h2>
+                <h2 class="card-title"><i class="fas fa-file-text"></i> Request Document</h2>
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token" value="<?php echo esc($csrf); ?>">
                     <div class="form-group">
@@ -377,5 +348,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['capture_photo'])) {
     })();
     </script>
     </div>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

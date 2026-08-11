@@ -96,32 +96,11 @@ $beneficiaries = $pdo->query("
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welfare - Barangay Bidduang Portal</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 </head>
 <body>
 <div class="app">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <nav>
-            <ul class="sidebar-nav">
-                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="residents.php"><i class="fas fa-users"></i> Residents</a></li>
-                <li><a href="households.php"><i class="fas fa-home"></i> Households</a></li>
-                <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-                <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-                <li><a href="blotter.php"><i class="fas fa-gavel"></i> Blotter</a></li>
-                <li><a href="welfare.php" class="active"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-                <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-                <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-                <li><a href="setup.php">Setup</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-        </nav>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <main class="main-content">
         <div class="page-header">
@@ -129,15 +108,11 @@ $beneficiaries = $pdo->query("
                 <h1><i class="fas fa-hand-holding-heart"></i> Welfare & Assistance</h1>
                 <p>Manage assistance programs and beneficiary enrollment</p>
             </div>
-            <div class="user-info">
-                <div class="avatar"><?= strtoupper(substr($currentUser['full_name'], 0, 1)) ?></div>
-                <div><strong><?= esc($currentUser['full_name']) ?></strong><br><small class="text-muted"><?= ucfirst($currentUser['role']) ?></small></div>
-            </div>
         </div>
 
         <?php if ($message): ?>
             <div class="toast-alert toast-success" id="floatingAlert">
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-circle-check"></i>
                 <span><?= esc($message) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
@@ -145,25 +120,11 @@ $beneficiaries = $pdo->query("
 
         <?php if ($error): ?>
             <div class="toast-alert toast-danger" id="floatingAlert">
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation"></i>
                 <span><?= esc($error) ?></span>
                 <button onclick="this.parentElement.remove()" class="toast-close">&times;</button>
             </div>
         <?php endif; ?>
-
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const alertBox = document.getElementById('floatingAlert');
-            if (alertBox) {
-                setTimeout(function() {
-                    alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    alertBox.style.opacity = '0';
-                    alertBox.style.transform = 'translateY(-20px)';
-                    setTimeout(function() { alertBox.remove(); }, 400);
-                }, 3000);
-            }
-        });
-        </script>
 
         <div class="stats-row">
             <div class="stat-card">
@@ -204,7 +165,7 @@ $beneficiaries = $pdo->query("
                                 <td><span class="badge badge-<?= $p['status']=='Ongoing'?'success':($p['status']=='Completed'?'secondary':'warning') ?>"><?= esc($p['status']) ?></span></td>
                                 <td>
                                     <div class="actions">
-                                        <button class="btn btn-sm btn-info" onclick="editProgram(<?= $p['id'] ?>)"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-info" onclick="editProgram(<?= $p['id'] ?>)"><i class="fas fa-pen-to-square"></i></button>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this program?')">
                                             <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
                                             <input type="hidden" name="action" value="delete_program">
@@ -357,5 +318,6 @@ document.querySelectorAll('.modal-backdrop').forEach(el => {
     el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 });
 </script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

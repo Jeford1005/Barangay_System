@@ -91,20 +91,6 @@ foreach (['residents', 'documents', 'blotter', 'welfare'] as $key) {
     }
 }
 
-// Recent activities
-$activities = [];
-try {
-    $stmt = $pdo->prepare("
-        SELECT al.action, al.entity_type, al.created_at, u.username
-        FROM audit_logs al
-        LEFT JOIN users u ON al.user_id = u.id
-        ORDER BY al.created_at DESC
-        LIMIT 8
-    ");
-    $stmt->execute();
-    $activities = $stmt->fetchAll();
-} catch (PDOException $e) { /* table may not exist yet */ }
-
 // Monthly document stats for chart
 $chartData = [];
 try {
@@ -161,31 +147,13 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Barangay Bidduang</title>
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= filemtime(__DIR__ . "/assets/css/dashboard.css") ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app">
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/Brgy_Bidduang.png" alt="Barangay Bidduang Seal">
-            <div class="brand-title">Barangay Bidduang<span class="brand-sub">Management Portal</span></div>
-        </div>
-        <ul class="sidebar-nav">
-            <li><a href="dashboard.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-            <li><a href="residents.php"><i class="fas fa-users"></i> Residents</a></li>
-            <li><a href="households.php"><i class="fas fa-home"></i> Households</a></li>
-            <li><a href="officials.php"><i class="fas fa-user-tie"></i> Officials</a></li>
-            <li><a href="documents.php"><i class="fas fa-file-alt"></i> Documents</a></li>
-            <li><a href="blotter.php"><i class="fas fa-gavel"></i> Blotter</a></li>
-            <li><a href="welfare.php"><i class="fas fa-hand-holding-heart"></i> Welfare</a></li>
-            <li><a href="health.php"><i class="fas fa-heartbeat"></i> Health</a></li>
-            <li><a href="reports.php"><i class="fas fa-chart-bar"></i> Reports</a></li>
-            <li><a href="accounts.php"><i class="fas fa-user-cog"></i> Accounts</a></li>
-            <li><a href="logout.php">Logout</a></li>
-        </ul>
-    </aside>
+    <?php include __DIR__ . '/views/sidebar.php'; ?>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -194,12 +162,6 @@ try {
             <div class="header-left">
                 <h1 class="page-title">Hi, <span class="role-badge role-admin"><?= ucfirst(esc($user['role'] ?? 'Admin')); ?></span> Welcome Back!</h1>
                 <p class="page-subtitle">Barangay Bidduang Management Dashboard</p>
-            </div>
-            <div class="header-stats">
-                <div class="header-user">
-                    <span class="header-user-name"><?= esc($user['full_name'] ?? $user['username']); ?></span>
-                    <a href="logout.php" class="header-user-logout">Logout</a>
-                </div>
             </div>
         </div>
 
@@ -233,7 +195,7 @@ try {
                         <?php endif; ?>
                     </p>
                 </div>
-                <div class="metric-icon orange"><i class="fas fa-file-alt"></i></div>
+                <div class="metric-icon orange"><i class="fas fa-file-text"></i></div>
             </div>
             <div class="metric-card">
                 <div class="metric-content">
@@ -362,7 +324,7 @@ try {
                     <i class="fas fa-users"></i> Residents
                 </a>
                 <a href="documents.php" class="quick-link-btn">
-                    <i class="fas fa-file-alt"></i> Documents
+                    <i class="fas fa-file-text"></i> Documents
                 </a>
                 <a href="blotter.php" class="quick-link-btn">
                     <i class="fas fa-clipboard-list"></i> Blotter
@@ -376,36 +338,7 @@ try {
             </div>
         </section>
 
-        <!-- Recent Activities -->
-        <section class="card">
-            <h2 class="card-title"><i class="fas fa-history"></i> Recent Activities</h2>
-            <?php if (empty($activities)): ?>
-                <p style="color: var(--text-muted);">No recent activities recorded.</p>
-            <?php else: ?>
-                <ul class="activity-list">
-                    <?php foreach ($activities as $act): 
-                        $time = date('M d, Y h:i A', strtotime($act['created_at']));
-                        $icon = 'fa-circle';
-                        if (stripos($act['action'], 'login') !== false) $icon = 'fa-sign-in-alt';
-                        elseif (stripos($act['action'], 'create') !== false) $icon = 'fa-plus';
-                        elseif (stripos($act['action'], 'update') !== false) $icon = 'fa-edit';
-                        elseif (stripos($act['action'], 'delete') !== false) $icon = 'fa-trash';
-                    ?>
-                    <li>
-                        <div class="activity-icon"><i class="fas <?= $icon; ?>"></i></div>
-                        <div class="activity-text">
-                            <strong><?= esc($act['username'] ?: 'System'); ?></strong>
-                            <?= esc($act['action']); ?>
-                            <?php if ($act['entity_type']): ?>
-                                on <em><?= esc($act['entity_type']); ?></em>
-                            <?php endif; ?>
-                        </div>
-                        <div class="activity-time"><?= $time; ?></div>
-                    </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-        </section>
+        
     </main>
     </div>
 
@@ -486,5 +419,6 @@ try {
             }
         });
     </script>
+<script src="assets/js/main.js"></script>
 </body>
 </html>
