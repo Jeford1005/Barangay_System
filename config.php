@@ -67,11 +67,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Check for Railway's DATABASE_URL / MYSQL_URL connection string first
 $dbUrl = getenv('MYSQL_URL') ?: getenv('DATABASE_URL');
 
-// Debug logging (remove in production)
-$isProduction = (getenv('RAILWAY_ENVIRONMENT') === 'production');
-$debugLog = [];
-
-if ($isProduction && $dbUrl) {
+if ($dbUrl) {
     // Production/Railway Setup (Parse standard mysql://user:***@host:port/dbname URL)
     $dbParts = parse_url($dbUrl);
     
@@ -80,8 +76,6 @@ if ($isProduction && $dbUrl) {
     define('DB_NAME', ltrim($dbParts['path'] ?? '', '/'));
     define('DB_USER', $dbParts['user'] ?? 'root');
     define('DB_PASS', $dbParts['pass'] ?? '');
-    
-    $debugLog[] = "Using MYSQL_URL: host=" . DB_HOST . " port=" . DB_PORT . " db=" . DB_NAME;
 } else {
     // Local / XAMPP Development Defaults
     // Also supports Railway individual variable format (DB_PASSWORD instead of DB_PASS)
@@ -96,31 +90,12 @@ if ($isProduction && $dbUrl) {
     define('DB_NAME', getenv('DB_NAME') ?: 'barangay_bidduang_db');
     define('DB_USER', getenv('DB_USER') ?: 'root');
     define('DB_PASS', getenv('DB_PASS') ?: getenv('DB_PASSWORD') ?: '');
-    
-    $debugLog[] = "Using individual vars: host=" . DB_HOST . " port=" . DB_PORT . " user=" . DB_USER;
-}
-
-// Log debug info with full error details
-if ($isProduction) {
-    $fullDebug = [
-        'env_vars' => array_filter(getenv()),
-        'db_config' => [
-            'host' => DB_HOST,
-            'port' => DB_PORT,
-            'db' => DB_NAME,
-            'user' => DB_USER,
-            'pass_set' => !empty(DB_PASS),
-            'dsn' => $dsn
-        ],
-        'debug_log' => $debugLog
-    ];
-    error_log("Railway DB Config: " . json_encode($fullDebug, JSON_PRETTY_PRINT));
 }
 
 define('DB_CHARSET', 'utf8mb4');
 define('BROADCAST_AUTO_DISPATCH', getenv('BROADCAST_AUTO_DISPATCH') !== 'false');
 
-// Update $dsn to include port
+// Build DSN with port
 $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -132,20 +107,8 @@ $options = [
 try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    // Log detailed error for debugging
-    $errorDetails = [
-        'timestamp' => date('c'),
-        'dsn' => $dsn,
-        'host' => DB_HOST,
-        'port' => DB_PORT,
-        'dbname' => DB_NAME,
-        'user' => DB_USER,
-        'pass_set' => !empty(DB_PASS),
-        'error_message' => $e->getMessage(),
-        'error_code' => $e->getCode(),
-        'trace' => $e->getTraceAsString()
-    ];
-    error_log("DATABASE CONNECTION FAILURE:\n" . json_encode($errorDetails, JSON_PRETTY_PRINT));
+    // Log error without exposing details
+    error_log('Database Connection Error: ' . $e->getMessage());
     
     // Show generic error page
     if (!headers_sent()) {
