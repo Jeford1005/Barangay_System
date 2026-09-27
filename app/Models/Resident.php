@@ -2,129 +2,109 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Resident extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    public const STATUS_ACTIVE = 'Active';
-    public const STATUS_ARCHIVED = 'Archived';
-
-    public const SEXES = ['Male', 'Female', 'Other'];
-    public const CIVIL_STATUSES = ['Single', 'Married', 'Divorced', 'Widowed', 'Separated'];
+    protected $table = 'residents';
 
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'suffix',
-        'birth_date', 'sex', 'civil_status', 'occupation',
-        'phone', 'email', 'address', 'purok_id', 'household_id', 'status', 'photo_path',
+        'first_name',
+        'last_name',
+        'middle_name',
+        'suffix',
+        'birth_date',
+        'birthplace',
+        'sex',
+        'civil_status',
+        'nationality',
+        'religion',
+        'education_level',
+        'occupation',
+        'spouse_name',
+        'blood_type',
+        'phone_number',
+        'email',
+        'address',
+        'photo',
+        'residency_status',
+        'voter_status',
+        'is_household_head',
+        'status',
+        'purok_id',
+        'household_id',
+        'user_id',
+        'created_by',
+        'updated_by',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'birth_date' => 'date',
+        'voter_status' => 'boolean',
+        'is_household_head' => 'boolean',
+        'purok_id' => 'integer',
+        'household_id' => 'integer',
+        'user_id' => 'integer',
+        'created_by' => 'integer',
+        'updated_by' => 'integer',
+        'status' => 'string',
+        'residency_status' => 'string',
+    ];
+
+    public function setNationalityAttribute($value): void
     {
-        return [
-            'birth_date' => 'date',
-            'age' => 'integer',
-        ];
+        $this->attributes['nationality'] = blank($value) ? 'Filipino' : $value;
     }
 
-    protected static function booted(): void
+    public function purok()
     {
-        // full_name and age are denormalized columns — recompute them on write
-        // so search, sorting and printouts can never drift from the source fields.
-        static::saving(function (Resident $resident): void {
-            $resident->full_name = trim(implode(' ', array_filter([
-                $resident->first_name,
-                $resident->middle_name,
-                $resident->last_name,
-                $resident->suffix,
-            ])));
-
-            $resident->age = $resident->birth_date
-                ? (int) $resident->birth_date->age
-                : $resident->age;
-        });
+        return $this->belongsTo(Purok::class, 'purok_id');
     }
 
-    /* ------------------------------------------------------------------ */
-
-    public function purok(): BelongsTo
+    public function household()
     {
-        return $this->belongsTo(Purok::class);
+        return $this->belongsTo(Household::class, 'household_id');
     }
 
-    public function household(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(Household::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function certificateIssuances(): HasMany
+    public function creator()
     {
-        return $this->hasMany(CertificateIssuance::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function certificateRequests(): HasMany
+    public function updater()
     {
-        return $this->hasMany(CertificateRequest::class);
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function welfareRecords(): HasMany
+    public function scopeActive($query)
     {
-        return $this->hasMany(Welfare::class);
+        return $query->where('status', 'Active');
     }
 
-    public function user(): HasOne
+    public function getFullNameAttribute()
     {
-        return $this->hasOne(User::class);
-    }
-
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('status', self::STATUS_ACTIVE);
-    }
-
-    public function scopeArchived(Builder $query): Builder
-    {
-        return $query->where('status', self::STATUS_ARCHIVED);
-    }
-
-    /** Simple directory search across name, address and phone. */
-    public function scopeSearch(Builder $query, ?string $term): Builder
-    {
-        if (trim((string) $term) === '') {
-            return $query;
+        $name = $this->first_name;
+        if ($this->middle_name) {
+            $name .= ' ' . $this->middle_name;
         }
-
-        return $query->where(function (Builder $q) use ($term): void {
-            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($term)).'%';
-            $q->where('full_name', 'like', $like)
-                ->orWhere('address', 'like', $like)
-                ->orWhere('phone', 'like', $like);
-        });
-    }
-
-    public function isArchived(): bool
-    {
-        return $this->status === self::STATUS_ARCHIVED;
-    }
-
-    /** Address falls back to the household address when the field is blank. */
-    public function resolvedAddress(): string
-    {
-        if (trim((string) $this->address) !== '') {
-            return $this->address;
+        $name .= ' ' . $this->last_name;
+        if ($this->suffix) {
+            $name .= ' ' . $this->suffix;
         }
-
-        return $this->household?->address ?? '';
+        return $name;
     }
 
-    public function scopeForDirectory(Builder $query): Builder
+    public function getAgeAttribute(): ?int
     {
-        return $query->active()->with('purok')->orderBy('last_name')->orderBy('first_name');
+        return $this->birth_date?->age;
     }
 }

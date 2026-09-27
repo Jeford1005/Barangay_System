@@ -2,271 +2,168 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreHouseholdRequest;
-use App\Http\Requests\UpdateHouseholdRequest;
-use App\Models\AuditLog;
 use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\RedirectResponse;
+use App\Services\HouseholdResidentSync;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
-/**
- * Households registry: families of Barangay Bidduang keyed by an auto
- * generated "HH-###" number. Members and the member count live on the
- * residents table — the household only mirrors the count.
- */
 class HouseholdController extends Controller
 {
-    /** @var list<string> */
-    private const TRACKED = [
-        'household_number', 'address', 'purok_id', 'head_resident_id',
-        'house_type', 'ownership', 'status',
-    ];
-
-    /* ------------------------------------------------------------------ */
-    /* Listing                                                             */
-    /* ------------------------------------------------------------------ */
-
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $search = trim((string) $request->query('q'));
-        $purokId = $this->purokFilter($request->query('purok_id'));
+        $query = Household::with(['purok', 'head']);
 
-        $rows = Household::query()
-            ->with(['purok', 'head'])
-            ->when($search !== '', function (Builder $query) use ($search): void {
-                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%';
+        // Search - sanitized input
+        if ($request->filled('search')) {
+            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $query->where(function ($q) use ($search) {
+                $q->where('household_code', 'like', '%'.$search.'%')
+                    ->orWhere('street', 'like', '%'.$search.'%')
+                    ->orWhere('barangay', 'like', '%'.$search.'%');
+            });
+        }
 
-                $query->where(function (Builder $query) use ($like): void {
-                    $query->where('household_number', 'like', $like)
-                        ->orWhere('address', 'like', $like);
-                });
-            })
-            ->when($purokId !== null, fn (Builder $query): Builder => $query->where('purok_id', $purokId))
-            ->orderBy('household_number')
-            ->paginate(20)
-            ->withQueryString();
+        // Filter by purok
+        if ($request->filled('purok_id')) {
+            $query->where('purok_id', $request->integer('purok_id'));
+        }
 
-        return view('households.index', [
-            'rows' => $rows,
-            'search' => $search,
-            'purokId' => $purokId,
-            'puroks' => Purok::orderBy('code')->get(),
-        ]);
+        $households = $query->orderBy('household_code')->paginate(20);
+
+        $puroks = Purok::pluck('name', 'id');
+
+        return view('household.index', compact('households', 'puroks'))
+            ->with('i', ($request->input('page', 1) - 1) * $households->perPage());
     }
 
-    public function show(Household $household): View
+    public function create()
     {
-        return view('households.show', [
-            'household' => $household->load(['purok', 'head']),
-            'members' => $household->members()
-                ->with('purok')
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->get(),
-        ]);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Create / update                                                     */
-    /* ------------------------------------------------------------------ */
-
-    public function create(): View
-    {
-        return view('households.create', [
-            'household' => null,
-            'nextNumber' => Household::nextNumber(),
-            'puroks' => Purok::orderBy('code')->get(),
-            'heads' => $this->headOptions(null),
-        ]);
-    }
-
-    public function store(StoreHouseholdRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
-        $headId = $data['head_resident_id'] ?? null;
-
-        $household = DB::transaction(function () use ($data, $headId): Household {
-            $household = Household::create([
-                'household_number' => $data['household_number'],
-                'address' => $data['address'],
-                'purok_id' => $data['purok_id'] ?? null,
-                'head_resident_id' => $headId,
-                'house_type' => $data['house_type'],
-                'ownership' => $data['ownership'],
-                'status' => $data['status'],
-                'member_count' => 0,
-            ]);
-
-            if ($headId !== null) {
-                // The head is (by definition) a member of this household.
-                Resident::findOrFail($headId)
-                    ->forceFill(['household_id' => $household->id])
-                    ->save();
-            }
-
-            $household->syncMemberCount();
-
-            return $household;
-        });
-
-        AuditLog::record('created', 'household', $household->id, null, $household->only(self::TRACKED) + [
-            'member_count' => $household->member_count,
-        ]);
-
-        return redirect()
-            ->route('households.show', $household)
-            ->with('status', "Household {$household->household_number} created.");
-    }
-
-    public function edit(Household $household): View
-    {
-        return view('households.edit', [
-            'household' => $household->load('head'),
-            'puroks' => Purok::orderBy('code')->get(),
-            'heads' => $this->headOptions($household),
-        ]);
-    }
-
-    public function update(UpdateHouseholdRequest $request, Household $household): RedirectResponse
-    {
-        $data = $request->validated();
-        $headId = $data['head_resident_id'] ?? null;
-
-        $before = $household->only(self::TRACKED) + ['member_count' => $household->member_count];
-
-        DB::transaction(function () use ($household, $data, $headId): void {
-            $household->fill([
-                'household_number' => $data['household_number'],
-                'address' => $data['address'],
-                'purok_id' => $data['purok_id'] ?? null,
-                'head_resident_id' => $headId,
-                'house_type' => $data['house_type'],
-                'ownership' => $data['ownership'],
-                'status' => $data['status'],
-            ])->save();
-
-            if ($headId !== null) {
-                Resident::findOrFail($headId)
-                    ->forceFill(['household_id' => $household->id])
-                    ->save();
-            }
-
-            // Clearing the head never moves members — only the count changes.
-            $household->syncMemberCount();
-        });
-
-        $after = $data + ['member_count' => $household->member_count];
-        [$changedBefore, $changedAfter] = $this->changedFields($before, $after);
-
-        AuditLog::record('updated', 'household', $household->id, $changedBefore, $changedAfter);
-
-        return redirect()
-            ->route('households.show', $household)
-            ->with('status', "Household {$household->household_number} updated.");
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Delete (administrator only)                                        */
-    /* ------------------------------------------------------------------ */
-
-    public function destroy(Household $household): RedirectResponse
-    {
-        abort_unless(auth()->user()?->isAdmin() ?? false, 403);
-
-        $before = $household->only(self::TRACKED) + ['member_count' => $household->member_count];
-
-        DB::transaction(function () use ($household): void {
-            // Detach first, then drop the head reference, then the record.
-            $household->members()->update(['household_id' => null]);
-            $household->forceFill(['head_resident_id' => null])->save();
-            $household->delete();
-        });
-
-        AuditLog::record('deleted', 'household', $household->id, $before, null);
-
-        return redirect()
-            ->route('households.index')
-            ->with('status', "Household {$household->household_number} deleted.");
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Helpers                                                             */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Residents eligible to head a household: active and either free-standing
-     * or already part of the household being edited. The sitting head is kept
-     * in the list even if they have since been archived.
-     *
-     * @return Collection<int, Resident>
-     */
-    private function headOptions(?Household $household): Collection
-    {
-        return Resident::query()
-            ->with('purok')
-            ->where(function (Builder $query) use ($household): void {
-                $query->where('status', Resident::STATUS_ACTIVE);
-
-                if ($household?->head_resident_id) {
-                    $query->orWhere('id', $household->head_resident_id);
-                }
-            })
-            ->when(
-                $household === null,
-                fn (Builder $query): Builder => $query->whereNull('household_id'),
-                fn (Builder $query): Builder => $query->where(function (Builder $query) use ($household): void {
-                    $query->whereNull('household_id')
-                        ->orWhere('household_id', $household->id);
-                }),
-            )
+        $puroks = Purok::pluck('name', 'id');
+        $residents = Resident::active()
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->get();
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix']);
+
+        return view('household.create', compact('puroks', 'residents'));
     }
 
-    private function purokFilter(mixed $value): ?int
+    public function store(Request $request, HouseholdResidentSync $householdResidentSync)
     {
-        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+        $validated = $this->validateHousehold($request);
+        $validated['created_by'] = Auth::id();
+
+        DB::beginTransaction();
+        try {
+            $household = Household::create($validated);
+            $householdResidentSync->syncHouseholdHead($household, $validated['head_of_household_id'] ?? null);
+            DB::commit();
+            Cache::forget('auth.household-options');
+
+            return redirect()->route('households.index')
+                ->with('success', 'Household created successfully.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to create household.'])->withInput();
+        }
     }
 
-    /**
-     * Only the fields that actually differ, so the audit trail stays readable.
-     *
-     * @param  array<string, mixed>  $before
-     * @param  array<string, mixed>  $after
-     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
-     */
-    private function changedFields(array $before, array $after): array
+    public function edit(Household $household)
     {
-        $changedBefore = [];
-        $changedAfter = [];
+        $puroks = Purok::pluck('name', 'id');
+        $residents = Resident::active()
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix']);
 
-        foreach ($after as $key => $newValue) {
-            $oldValue = $this->scalar($before[$key] ?? null);
+        return view('household.edit', compact('household', 'puroks', 'residents'));
+    }
 
-            if ($oldValue === $this->scalar($newValue)) {
-                continue;
-            }
+    public function update(Request $request, Household $household, HouseholdResidentSync $householdResidentSync)
+    {
+        $validated = $this->validateHousehold($request, $household->id);
+        $validated['updated_by'] = Auth::id();
 
-            $changedBefore[$key] = $before[$key] ?? null;
-            $changedAfter[$key] = $newValue;
+        DB::beginTransaction();
+        try {
+            $household->update($validated);
+            $householdResidentSync->syncHouseholdHead($household, $validated['head_of_household_id'] ?? null);
+            DB::commit();
+            Cache::forget('auth.household-options');
+
+            return redirect()->route('households.index')
+                ->with('success', 'Household updated successfully.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to update household.'])->withInput();
+        }
+    }
+
+    public function destroy(Household $household)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        DB::beginTransaction();
+        try {
+            $household->delete();
+            DB::commit();
+            Cache::forget('auth.household-options');
+
+            return redirect()->route('households.index')
+                ->with('success', 'Household deleted successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to delete household.']);
+        }
+    }
+
+    private function validateHousehold(Request $request, $householdId = null)
+    {
+        $rules = [
+            'household_code' => 'required|string|max:20|unique:households,household_code',
+            'purok_id' => 'nullable|integer|exists:puroks,id',
+            'sitio' => 'nullable|string|max:100',
+            'street' => 'nullable|string|max:150',
+            'barangay' => 'nullable|string|max:100',
+            'municipality' => 'nullable|string|max:100',
+            'province' => 'nullable|string|max:100',
+            'region' => 'nullable|string|max:50',
+            'zip_code' => ['nullable', 'string', 'max:10', 'regex:/^[0-9]{4,10}$/'],
+            'house_type' => 'required|in:Single,Duplex,Apartment,Townhouse,Other',
+            'lot_area' => 'nullable|string|max:50',
+            'floor_area' => 'nullable|string|max:50',
+            'year_built' => 'nullable|integer|min:1800|max:'.date('Y'),
+            'ownership' => 'required|in:Owned,Rented,Leased,Occupied',
+            'num_members' => 'required|integer|min:1|max:4294967295',
+            'head_of_household_id' => ['nullable', 'integer', Rule::exists('residents', 'id')->where('status', 'Active')],
+            'status' => 'required|in:Occupied,Vacant,Under Construction',
+            'remarks' => 'nullable|string|max:1000',
+        ];
+
+        if ($householdId) {
+            $rules['household_code'] = 'required|string|max:20|unique:households,household_code,'.$householdId;
         }
 
-        return [$changedBefore, $changedAfter];
-    }
-
-    private function scalar(mixed $value): ?string
-    {
-        if ($value instanceof \DateTimeInterface) {
-            return $value->format('Y-m-d');
-        }
-
-        return $value === null || $value === '' ? null : (string) $value;
+        return $request->validate($rules, [
+            'zip_code.regex' => 'The ZIP code must contain digits only.',
+            'purok_id.integer' => 'Please select a purok from the list, or leave it unassigned.',
+            'purok_id.exists' => 'The selected purok is no longer available. Please choose another.',
+            'head_of_household_id.integer' => 'Please select a head of household from the list.',
+            'head_of_household_id.exists' => 'The selected resident is no longer available. Please choose another.',
+        ]);
     }
 }

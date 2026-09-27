@@ -2,42 +2,58 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-/** A certificate/permit/clearance type in the barangay catalog. */
 class Document extends Model
 {
-    use HasFactory;
-
-    public const TYPES = ['Certificate', 'Permit', 'Clearance', 'ID', 'Other'];
-    public const STATUSES = ['Active', 'Inactive', 'Draft'];
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'code', 'title', 'description', 'document_type', 'fee', 'status',
+        'code',
+        'title',
+        'description',
+        'category',
+        'document_type',
+        'requirements',
+        'fee',
+        'status',
+        'created_by',
+        'updated_by',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'fee' => 'decimal:2',
+    ];
+
+    public function creator()
     {
-        return [
-            'fee' => 'decimal:2',
-        ];
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function issuances(): HasMany
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function issuances()
     {
         return $this->hasMany(CertificateIssuance::class);
     }
 
-    public function requests(): HasMany
+    public function requests()
     {
         return $this->hasMany(CertificateRequest::class);
     }
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive($query)
     {
         return $query->where('status', 'Active');
+    }
+
+    public function scopeCertificate($query)
+    {
+        return $query->whereIn('document_type', ['Certificate', 'Clearance']);
     }
 }

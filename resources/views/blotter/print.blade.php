@@ -1,415 +1,302 @@
 <!DOCTYPE html>
-{{--
-    Standalone POLICE/BLOTTER CASE SHEET.
-
-    Deliberately outside the app layout: a self-contained A4 sheet with its
-    own <style> block and a single window.print() — the only page in the
-    system allowed inline CSS/JS (it must print cleanly on its own).
---}}
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Case Sheet {{ $blotter->case_number }} &middot; Barangay Bidduang</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/bidduang-seal.png') }}">
-
+    <title>Case Sheet {{ $blotter->case_number }} — Barangay Management System</title>
     <style>
-        * { box-sizing: border-box; }
-
-        html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        /* Self-contained print stylesheet: this page never loads the app
+           bundle, so the official form is immune to app styling changes. */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            margin: 0;
-            background: #e2e8f0;
-            color: #0f172a;
-            font-family: Georgia, 'Times New Roman', serif;
-            font-size: 13px;
-            line-height: 1.5;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 11.5pt;
+            line-height: 1.45;
+            color: #000;
+            background: #f0f0f0;
+            padding: 16px;
         }
 
-        /* ── screen-only toolbar ─────────────────────────────────────── */
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            justify-content: space-between;
-            max-width: 8.5in;
-            margin: 24px auto 0;
-            padding: 0 4px;
-            font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-        }
-
-        .toolbar a {
-            color: #0369a1;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .toolbar a:hover { text-decoration: underline; }
-
-        .btn {
-            border: 0;
-            border-radius: 8px;
-            background: #0f172a;
-            color: #fff;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 9px 18px;
-        }
-
-        .btn:hover { background: #1e293b; }
-
-        /* ── the sheet ───────────────────────────────────────────────── */
         .sheet {
-            width: 100%;
-            max-width: 8.5in;
-            margin: 16px auto 40px;
+            max-width: 186mm; /* A4 width minus 2×12mm margins */
+            margin: 0 auto;
             background: #fff;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, .14);
-            padding: 0.55in 0.6in;
+            padding: 18mm 16mm;
+            box-shadow: 0 1px 4px rgba(0,0,0,.25);
         }
 
+        /* ---------- Letterhead ---------- */
         .letterhead {
             display: flex;
             align-items: center;
-            gap: 18px;
-            text-align: center;
+            gap: 14px;
+            border-bottom: 2.5pt double #000;
+            padding-bottom: 10pt;
         }
-
-        .letterhead .seal { width: 74px; height: 74px; flex: 0 0 auto; }
-
-        .lh-text { flex: 1; }
-
-        .letterhead p { margin: 0; }
-
-        .lh-republic {
-            font-size: 13px;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }
-
-        .lh-province { font-size: 12px; margin-top: 3px !important; color: #334155; }
-
-        .lh-barangay {
-            font-size: 21px;
-            font-weight: 700;
-            margin-top: 6px !important;
-            letter-spacing: .04em;
-        }
-
-        .lh-office { font-size: 13px; font-style: italic; color: #334155; }
-
-        .rule { border: 0; border-top: 2px solid #0f172a; margin: 14px 0 4px; }
-
-        .rule-thin { border: 0; border-top: 1px solid #94a3b8; margin: 4px 0 18px; }
+        .letterhead img { width: 68px; height: 68px; object-fit: contain; }
+        .letterhead .lines { flex: 1; text-align: center; line-height: 1.3; }
+        .letterhead .rep  { font-size: 9.5pt; letter-spacing: .08em; }
+        .letterhead .brgy { font-size: 15pt; font-weight: bold; letter-spacing: .14em; text-transform: uppercase; }
+        .letterhead .office { font-size: 10pt; font-style: italic; }
 
         .doc-title {
-            margin: 14px 0 2px;
             text-align: center;
-            font-size: 17px;
-            font-weight: 700;
-            letter-spacing: .18em;
+            margin: 14pt 0 4pt;
+            font-size: 14pt;
+            font-weight: bold;
+            letter-spacing: .22em;
             text-transform: uppercase;
         }
-
         .doc-sub {
-            margin: 0 0 18px;
             text-align: center;
-            font-size: 13px;
-            color: #334155;
+            font-size: 9.5pt;
+            color: #333;
+            margin-bottom: 12pt;
         }
 
-        /* ── details table ───────────────────────────────────────────── */
-        table.details {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 18px;
-        }
-
-        table.details th,
-        table.details td {
-            border: 1px solid #94a3b8;
-            padding: 7px 10px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        table.details th {
-            width: 17%;
-            background: #f1f5f9;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-        }
-
-        table.details td { width: 33%; }
-
-        .badge {
-            display: inline-block;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 10px;
-        }
-
-        .badge-amber { background: #fef3c7; color: #92400e; }
-        .badge-sky { background: #e0f2fe; color: #075985; }
-        .badge-emerald { background: #d1fae5; color: #065f46; }
-        .badge-slate { background: #e2e8f0; color: #334155; }
-
-        /* ── party blocks ────────────────────────────────────────────── */
-        .parties {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 18px;
-        }
-
-        .party {
-            flex: 1;
-            border: 1px solid #94a3b8;
-            padding: 10px 12px;
-        }
-
-        .party h2 {
-            margin: 0 0 6px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            color: #334155;
-        }
-
-        .party-name { margin: 0; font-size: 15px; font-weight: 700; }
-
-        .party-line { margin: 4px 0 0; font-size: 12px; color: #334155; }
-
-        .party-line span {
-            display: inline-block;
-            min-width: 62px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            color: #64748b;
-        }
-
-        /* ── narrative / resolution boxes ────────────────────────────── */
-        .box {
-            border: 1px solid #94a3b8;
-            padding: 10px 12px;
-            margin-bottom: 18px;
-        }
-
-        .box h2 {
-            margin: 0 0 8px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            color: #334155;
-        }
-
-        .box p {
-            margin: 0;
-            white-space: pre-wrap;
-            text-align: justify;
-        }
-
-        /* ── signatures ──────────────────────────────────────────────── */
-        .signatures {
-            display: flex;
-            gap: 26px;
-            margin-top: 34px;
-        }
-
-        .sign { flex: 1; text-align: center; }
-
-        .sign-title { margin: 0 0 34px; font-size: 12px; font-weight: 700; }
-
-        .sign-line { border-top: 1px solid #0f172a; padding-top: 5px; }
-
-        .sign-name { margin: 0; font-size: 13px; font-weight: 700; }
-
-        .sign-role { margin: 1px 0 0; font-size: 11px; color: #475569; }
-
-        /* ── footer ──────────────────────────────────────────────────── */
-        .doc-footer {
+        /* ---------- Case meta strip ---------- */
+        .case-meta {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            border-top: 1px solid #cbd5e1;
-            margin-top: 26px;
-            padding-top: 8px;
-            font-size: 10.5px;
-            color: #64748b;
+            border: 1pt solid #000;
+            border-left: 4pt solid #000;
+            padding: 7pt 10pt;
+            font-size: 10.5pt;
+            margin-bottom: 14pt;
+        }
+        .case-meta b { font-size: 12pt; letter-spacing: .05em; }
+
+        /* ---------- Sections ---------- */
+        section { margin-bottom: 12pt; break-inside: avoid; }
+        h2 {
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            border-bottom: 0.75pt solid #000;
+            padding-bottom: 2pt;
+            margin-bottom: 7pt;
         }
 
-        @page { size: A4; margin: 14mm; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5pt 18pt; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .field { border-bottom: 0.5pt dotted #555; padding: 1pt 2pt 2pt; min-height: 15pt; }
+        .field .lbl {
+            display: block;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #444;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .empty { color: #777; font-style: italic; font-size: 10pt; }
+
+        .narrative {
+            border: 0.75pt solid #000;
+            padding: 8pt 10pt;
+            min-height: 70pt;
+            text-align: justify;
+            white-space: pre-wrap;
+        }
+
+        /* ---------- Signatures ---------- */
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 26pt 40pt;
+            margin-top: 26pt;
+            break-inside: avoid;
+        }
+        .sig { text-align: center; font-size: 10pt; }
+        .sig .line { border-top: 0.75pt solid #000; margin-bottom: 3pt; }
+        .sig .name { font-weight: bold; }
+        .sig .role { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: #333; }
+
+        .cert {
+            margin-top: 18pt;
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #222;
+        }
+
+        .printed-note {
+            margin-top: 14pt;
+            font-size: 8pt;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            border-top: 0.5pt solid #999;
+            padding-top: 4pt;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* ---------- Toolbar (screen only) ---------- */
+        .toolbar {
+            max-width: 186mm;
+            margin: 0 auto 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .toolbar button, .toolbar a {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            padding: 9px 16px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #1d4ed8;
+            text-decoration: none;
+            cursor: pointer;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .toolbar .primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+        /* ---------- Print ---------- */
+        @page { size: A4 portrait; margin: 12mm; }
 
         @media print {
-            body { background: #fff; font-size: 12.5px; }
-
-            .no-print { display: none !important; }
-
-            .sheet {
-                margin: 0;
-                max-width: none;
-                width: auto;
-                padding: 0;
-                box-shadow: none;
-            }
-
-            .box, .party, table.details th, table.details td { break-inside: avoid; }
+            body { background: #fff; padding: 0; }
+            .sheet { box-shadow: none; padding: 0; max-width: none; }
+            .toolbar { display: none !important; }
+            .printed-note .pagenum::after { content: 'Page ' counter(page); }
+            section, .case-meta, .signatures { break-inside: avoid; }
         }
     </style>
 </head>
 <body>
     <div class="toolbar no-print">
-        <a href="{{ route('blotter.index') }}">&larr; Back to blotter</a>
-        <button type="button" data-print class="btn">Print case sheet</button>
+        <button type="button" class="primary" onclick="window.print()">Print this sheet</button>
+        <a href="{{ route('blotter.edit', $blotter) }}">Back to case</a>
     </div>
 
-    <article class="sheet">
+    <div class="sheet">
         <header class="letterhead">
-            <img class="seal"
-                 src="{{ asset('images/bidduang-seal.png') }}"
-                 alt="Official seal of Barangay Bidduang"
-                 width="74" height="74">
-            <div class="lh-text">
-                <p class="lh-republic">Republic of the Philippines</p>
-                <p class="lh-province">Province of — &middot; Municipality/City of —</p>
-                <p class="lh-barangay">Barangay Bidduang</p>
-                <p class="lh-office">Office of the Punong Barangay</p>
+            <img src="{{ asset('images/bidduang-seal.png') }}" alt="Barangay Bidduang official seal">
+            <div class="lines">
+                <div class="rep">Republic of the Philippines</div>
+                <div class="rep">Province of&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;· Municipality/City of&nbsp;&nbsp;&nbsp;—</div>
+                <div class="brgy">Barangay Bidduang</div>
+                <div class="office">Office of the Barangay — Blotter &amp; Records Section</div>
             </div>
         </header>
 
-        <hr class="rule">
-        <hr class="rule-thin">
+        <h1 class="doc-title">Blotter Case Sheet</h1>
+        <p class="doc-sub">Official record of an incident entered into the barangay blotter</p>
 
-        <h1 class="doc-title">Police/Blotter Case Sheet</h1>
-        <p class="doc-sub">Case No. {{ $blotter->case_number }}</p>
-
-        <table class="details">
-            <tbody>
-                <tr>
-                    <th>Case No.</th>
-                    <td>{{ $blotter->case_number }}</td>
-                    <th>Incident date</th>
-                    <td>{{ $blotter->incident_date?->format('F j, Y') }}</td>
-                </tr>
-                <tr>
-                    <th>Incident time</th>
-                    <td>{{ $blotter->incident_time?->format('H:i') ?: 'Not recorded' }}</td>
-                    <th>Incident type</th>
-                    <td>{{ $blotter->incident_type }}</td>
-                </tr>
-                <tr>
-                    <th>Location</th>
-                    <td>{{ $blotter->location }}</td>
-                    <th>Purok</th>
-                    <td>{{ $blotter->purok?->label() ?? 'Not assigned' }}</td>
-                </tr>
-                <tr>
-                    <th>Arrest made</th>
-                    <td>{{ $blotter->arrest_made }}</td>
-                    <th>Status</th>
-                    <td>
-                        @php($badgeClass = match ($blotter->status) {
-                            'Open' => 'badge-amber',
-                            'Pending' => 'badge-sky',
-                            'Resolved' => 'badge-emerald',
-                            default => 'badge-slate',
-                        })
-                        <span class="badge {{ $badgeClass }}">{{ $blotter->status }}</span>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Handling officer</th>
-                    <td colspan="3">{{ $blotter->handling_officer ?: 'Not yet assigned' }}</td>
-                </tr>
-                <tr>
-                    <th>Recorded by</th>
-                    <td colspan="3">
-                        {{ $blotter->recorder?->name ?? 'Barangay office' }}
-                        on {{ $blotter->created_at->format('F j, Y \a\t H:i') }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <div class="parties">
-            <section class="party">
-                <h2>Complainant</h2>
-                <p class="party-name">{{ $blotter->complainant_name }}</p>
-                <p class="party-line"><span>Contact</span> {{ $blotter->complainant_contact ?: '—' }}</p>
-            </section>
-
-            <section class="party">
-                <h2>Respondent</h2>
-                <p class="party-name">{{ $blotter->respondent_name ?: 'Unknown / not recorded' }}</p>
-                <p class="party-line"><span>Contact</span> {{ $blotter->respondent_contact ?: '—' }}</p>
-            </section>
+        <div class="case-meta">
+            <span>Case No. <b>{{ $blotter->case_number }}</b></span>
+            <span>Status: <b>{{ $blotter->status }}</b></span>
+            <span>Recorded: <b>{{ $blotter->created_at?->format('M j, Y') ?? '—' }}</b></span>
         </div>
 
-        <section class="box">
-            <h2>Narrative</h2>
-            <p>{{ $blotter->narrative }}</p>
+        <section>
+            <h2>I. Complainant</h2>
+            <div class="grid">
+                <span class="field"><span class="lbl">Full Name</span>{{ $blotter->complainant_name }}</span>
+                <span class="field"><span class="lbl">Registered Resident</span>
+                    @if ($blotter->complainant)
+                        {{ $blotter->complainant->full_name }}
+                    @else
+                        <span class="empty">Walk-in / not registered</span>
+                    @endif
+                </span>
+                <span class="field"><span class="lbl">Address</span>@if (filled($blotter->complainant_address)){{ $blotter->complainant_address }}@else<span class="empty">Not provided</span>@endif</span>
+                <span class="field"><span class="lbl">Contact No.</span>@if (filled($blotter->complainant_phone)){{ $blotter->complainant_phone }}@else<span class="empty">Not provided</span>@endif</span>
+            </div>
         </section>
 
-        @if (trim((string) $blotter->resolution_notes) !== '')
-            <section class="box">
-                <h2>Resolution notes</h2>
-                <p>{{ $blotter->resolution_notes }}</p>
-            </section>
-        @endif
+        <section>
+            <h2>II. Respondent (Accused)</h2>
+            <div class="grid">
+                <span class="field"><span class="lbl">Full Name</span>{{ $blotter->accused_name }}</span>
+                <span class="field"><span class="lbl">Registered Resident</span>
+                    @if ($blotter->accused)
+                        {{ $blotter->accused->full_name }}
+                    @else
+                        <span class="empty">Walk-in / not registered</span>
+                    @endif
+                </span>
+                <span class="field"><span class="lbl">Address</span>@if (filled($blotter->accused_address)){{ $blotter->accused_address }}@else<span class="empty">Not provided</span>@endif</span>
+                <span class="field"><span class="lbl">Contact No.</span>@if (filled($blotter->accused_phone)){{ $blotter->accused_phone }}@else<span class="empty">Not provided</span>@endif</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>III. Incident Details</h2>
+            <div class="grid grid-3">
+                <span class="field"><span class="lbl">Complaint Type</span>{{ $blotter->complaint_type }}@if (filled($blotter->complaint_subtype)) — {{ $blotter->complaint_subtype }}@endif</span>
+                <span class="field"><span class="lbl">Date of Incident</span>{{ $blotter->complaint_date->format('F j, Y') }}</span>
+                <span class="field"><span class="lbl">Time</span>@if ($blotter->complaint_time){{ $blotter->complaint_time->format('g:i A') }}@else<span class="empty">Not recorded</span>@endif</span>
+            </div>
+            <div class="grid" style="margin-top: 5pt;">
+                <span class="field"><span class="lbl">Arrest Made</span>{{ $blotter->arrest_made }}</span>
+                <span class="field"><span class="lbl">Investigator</span>@if (filled($blotter->investigator)){{ $blotter->investigator }}@else<span class="empty">None assigned</span>@endif</span>
+            </div>
+        </section>
+
+        <section>
+            <h2>IV. Alleged Offense / Narrative of the Incident</h2>
+            <div class="narrative">{{ $blotter->alleged_offense }}</div>
+        </section>
+
+        <section>
+            <h2>V. Disposition / Action Taken</h2>
+            @if (filled($blotter->disposition))
+                <div class="narrative" style="min-height: 50pt;">{{ $blotter->disposition }}@if ($blotter->disposition_date)&nbsp;&nbsp;—&nbsp;<i>dated {{ $blotter->disposition_date->format('F j, Y') }}</i>@endif</div>
+            @else
+                <div class="narrative" style="min-height: 50pt;"><span class="empty">Pending — no disposition recorded as of this printing.</span></div>
+            @endif
+        </section>
+
+        <section>
+            <h2>VI. Handling</h2>
+            <div class="grid">
+                <span class="field"><span class="lbl">Handling Officer</span>
+                    @if ($blotter->officer)
+                        {{ $blotter->officer->full_name }}@if ($blotter->officer->position) — {{ $blotter->officer->position }}@endif
+                    @else
+                        <span class="empty">None assigned</span>
+                    @endif
+                </span>
+                <span class="field"><span class="lbl">Encoded By</span>{{ $blotter->creator?->email ?? 'Unknown' }}</span>
+            </div>
+            @if (filled($blotter->remarks))
+                <div class="grid" style="margin-top: 5pt;">
+                    <span class="field"><span class="lbl">Remarks</span>{{ $blotter->remarks }}</span>
+                </div>
+            @endif
+        </section>
+
+        <p class="cert">
+            I certify that the foregoing is a true and correct extract of the entries
+            appearing in the official barangay blotter for Case No. {{ $blotter->case_number }}.
+        </p>
 
         <div class="signatures">
-            <div class="sign">
-                <p class="sign-title">Received by</p>
-                <div class="sign-line">
-                    <p class="sign-name">{{ $punong?->full_name ?? '—' }}</p>
-                    <p class="sign-role">Punong Barangay</p>
-                </div>
+            <div class="sig">
+                <div class="line"></div>
+                @if ($blotter->officer)
+                    <div class="name">{{ $blotter->officer->full_name }}</div>
+                    <div class="role">Handling Officer</div>
+                @else
+                    <div class="name">&nbsp;</div>
+                    <div class="role">Prepared by (name &amp; signature)</div>
+                @endif
             </div>
-
-            <div class="sign">
-                <p class="sign-title">Handling officer</p>
-                <div class="sign-line">
-                    <p class="sign-name">{{ $blotter->handling_officer ?: '—' }}</p>
-                    <p class="sign-role">Case handler</p>
-                </div>
-            </div>
-
-            <div class="sign">
-                <p class="sign-title">Complainant</p>
-                <div class="sign-line">
-                    <p class="sign-name">{{ $blotter->complainant_name }}</p>
-                    <p class="sign-role">In person / on record</p>
-                </div>
+            <div class="sig">
+                <div class="line"></div>
+                <div class="name">&nbsp;</div>
+                <div class="role">Punong Barangay</div>
             </div>
         </div>
 
-        <footer class="doc-footer">
-            <span>{{ $blotter->case_number }}</span>
-            <span>Printed {{ $printedAt->format('M j, Y \a\t H:i') }}</span>
-            <span>Barangay Management System</span>
+        <footer class="printed-note">
+            <span>Printed {{ now()->format('M j, Y g:i A') }} · Barangay Management System</span>
+            <span class="pagenum"></span>
         </footer>
-    </article>
-
-    <script>
-        document.addEventListener('click', function (event) {
-            var trigger = event.target instanceof Element ? event.target.closest('[data-print]') : null;
-
-            if (trigger) {
-                event.preventDefault();
-                window.print();
-            }
-        });
-    </script>
+    </div>
 </body>
 </html>

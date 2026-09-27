@@ -2,137 +2,125 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StorePurokRequest;
-use App\Http\Requests\UpdatePurokRequest;
-use App\Models\AuditLog;
 use App\Models\Purok;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
-/**
- * Purok (zone) registry.
- *
- * Browsing is open to every office user (`puroks.view`); every write action
- * repeats the administrator check inline on top of the route middleware.
- */
 class PurokController extends Controller
 {
-    /** Purok list with resident / household counts. */
-    public function index(): View
+    public function index(Request $request)
     {
-        $puroks = Purok::query()
-            ->withCount(['residents', 'households'])
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        $query = Purok::query();
 
-        return view('puroks.index', ['puroks' => $puroks]);
-    }
-
-    /** Standalone "new purok" page (the same form also lives in a dialog on the index). */
-    public function create(): View
-    {
-        return view('puroks.create', ['purok' => new Purok()]);
-    }
-
-    public function store(StorePurokRequest $request): RedirectResponse
-    {
-        $data = $request->safe()->only(['name', 'code', 'description']);
-
-        // The code column is NOT NULL: fall back to the next free P# code.
-        if (blank($data['code'] ?? null)) {
-            $data['code'] = $this->nextAvailableCode();
+        if ($request->filled('search')) {
+            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $query->where('name', 'like', '%'.$search.'%')
+                ->orWhere('code', 'like', '%'.$search.'%');
         }
 
-        $purok = Purok::create($data);
+        $puroks = $query->orderBy('name')->paginate(20);
 
-        AuditLog::record('created', 'purok', $purok->id, null, $purok->only(['name', 'code', 'description']));
-
-        return redirect()
-            ->route('puroks.index')
-            ->with('status', "Purok “{$purok->name}” ({$purok->code}) created.");
+        return view('purok.index', compact('puroks'))
+            ->with('i', ($request->input('page', 1) - 1) * $puroks->perPage());
     }
 
-    public function edit(Purok $purok): View
+    public function create()
     {
-        return view('puroks.edit', ['purok' => $purok]);
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        return view('purok.create');
     }
 
-    public function update(UpdatePurokRequest $request, Purok $purok): RedirectResponse
+    public function store(Request $request)
     {
-        $data = $request->safe()->only(['name', 'code', 'description']);
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
-        // A blank code means "leave the current code alone" (column is NOT NULL).
-        if (blank($data['code'] ?? null)) {
-            unset($data['code']);
+        $validated = $this->validatePurok($request);
+        $validated['created_by'] = Auth::id();
+
+        DB::beginTransaction();
+        try {
+            $purok = Purok::create($validated);
+            DB::commit();
+            Cache::forget('auth.purok-options');
+
+            return redirect()->route('puroks.index')
+                ->with('success', 'Purok created successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to create purok.'])->withInput();
         }
-
-        $before = [];
-        $after = [];
-
-        foreach ($data as $key => $value) {
-            $current = $purok->getAttribute($key);
-
-            if ((string) $current !== (string) $value) {
-                $before[$key] = $current;
-                $after[$key] = $value;
-            }
-        }
-
-        $purok->fill($data)->save();
-
-        AuditLog::record('updated', 'purok', $purok->id, $before ?: null, $after ?: null);
-
-        return redirect()
-            ->route('puroks.index')
-            ->with('status', "Purok “{$purok->name}” updated.");
     }
 
-    /** Deleting is refused while the purok still owns residents or households. */
-    public function destroy(Request $request, Purok $purok): RedirectResponse
+    public function edit(Purok $purok)
     {
-        if (! ($request->user()?->isAdmin() ?? false)) {
-            abort(403, 'Only administrators can delete puroks.');
-        }
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
-        $residents = $purok->residents()->count();
-        $households = $purok->households()->count();
-
-        if ($residents > 0 || $households > 0) {
-            return redirect()->back()->with(
-                'error',
-                "“{$purok->name}” cannot be deleted yet — it still has {$residents} resident(s) and {$households} household(s). Move or archive them first."
-            );
-        }
-
-        $snapshot = $purok->only(['name', 'code', 'description']);
-
-        $purok->delete();
-
-        AuditLog::record('deleted', 'purok', $purok->id, $snapshot, null);
-
-        return redirect()
-            ->route('puroks.index')
-            ->with('status', "Purok “{$snapshot['name']}” deleted.");
+        return view('purok.edit', compact('purok'));
     }
 
-    /** Next free "P1", "P2" … code so a blank code never breaks the NOT NULL column. */
-    private function nextAvailableCode(): string
+    public function update(Request $request, Purok $purok)
     {
-        $highest = Purok::query()
-            ->pluck('code')
-            ->filter(fn ($code): bool => (bool) preg_match('/^P(\d+)$/', (string) $code))
-            ->map(fn ($code): int => (int) preg_replace('/\D+/', '', (string) $code))
-            ->max();
+        abort_unless(Auth::user()?->isAdmin(), 403);
 
-        $number = (int) $highest;
+        $validated = $this->validatePurok($request, $purok->id);
 
-        do {
-            $number++;
-            $code = 'P'.$number;
-        } while (Purok::where('code', $code)->exists());
+        DB::beginTransaction();
+        try {
+            $purok->update($validated);
+            DB::commit();
+            Cache::forget('auth.purok-options');
 
-        return $code;
+            return redirect()->route('puroks.index')
+                ->with('success', 'Purok updated successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to update purok.'])->withInput();
+        }
+    }
+
+    public function destroy(Purok $purok)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $hasResidents = $purok->residents()->exists();
+        $hasHouseholds = $purok->households()->exists();
+
+        if ($hasResidents || $hasHouseholds) {
+            return redirect()->route('puroks.index')
+                ->with('error', 'Cannot delete purok that has associated residents or households.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $purok->delete();
+            DB::commit();
+            Cache::forget('auth.purok-options');
+
+            return redirect()->route('puroks.index')
+                ->with('success', 'Purok deleted successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to delete purok.']);
+        }
+    }
+
+    private function validatePurok(Request $request, $purokId = null)
+    {
+        $rules = [
+            'name' => 'required|string|max:50|unique:puroks,name',
+            'code' => 'nullable|string|max:10',
+        ];
+
+        if ($purokId) {
+            $rules['name'] = 'required|string|max:50|unique:puroks,name,'.$purokId;
+        }
+
+        return $request->validate($rules);
     }
 }

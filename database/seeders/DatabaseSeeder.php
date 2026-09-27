@@ -2,197 +2,269 @@
 
 namespace Database\Seeders;
 
-use App\Models\Document;
 use App\Models\Household;
 use App\Models\Official;
 use App\Models\Purok;
 use App\Models\Resident;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database. Every row is keyed on a natural key
-     * (firstOrCreate / updateOrCreate) so `php artisan db:seed` is re-runnable.
+     * Seed the application's database.
      *
-     * Demo credentials, all with password "password":
-     *   admin@barangay.local    — administrator
-     *   staff@barangay.local    — barangay staff
-     *   resident@barangay.local — resident (matched to the demo resident below)
+     * The run is wrapped in a transaction and keyed on natural keys, so
+     * re-running `db:seed` updates the sample rows instead of aborting partway
+     * with a unique-constraint error and a half-applied dataset.
      */
     public function run(): void
     {
-        /* ------------------------------- accounts ------------------------------ */
+        DB::transaction(function (): void {
+            $this->seed();
+        });
+    }
 
-        User::updateOrCreate(
+    private function seed(): void
+    {
+        // Create default admin user
+        $admin = User::firstOrCreate(
             ['email' => 'admin@barangay.local'],
             [
-                'name' => 'Barangay Administrator',
-                'password' => 'password',
-                'role' => User::ROLE_ADMIN,
-                'status' => User::STATUS_ACTIVE,
-                'approved_at' => now(),
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'user_type' => 'admin',
+                'status' => 'approved',
             ],
         );
 
-        User::updateOrCreate(
+        // Create staff user. Existing installations are not changed by this
+        // seeder; administrators can explicitly review and assign the role.
+        $staff = User::firstOrCreate(
             ['email' => 'staff@barangay.local'],
             [
-                'name' => 'Barangay Staff',
-                'password' => 'password',
-                'role' => User::ROLE_STAFF,
-                'status' => User::STATUS_ACTIVE,
-                'approved_at' => now(),
+                'name' => 'Staff User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'user_type' => 'staff',
+                'status' => 'approved',
             ],
         );
 
-        User::updateOrCreate(
+        // Create sample puroks
+        $puroks = [
+            ['name' => 'Purok 1', 'code' => 'P1', 'created_by' => $admin->id],
+            ['name' => 'Purok 2', 'code' => 'P2', 'created_by' => $admin->id],
+            ['name' => 'Purok 3', 'code' => 'P3', 'created_by' => $admin->id],
+            ['name' => 'Purok 4', 'code' => 'P4', 'created_by' => $admin->id],
+            ['name' => 'Purok 5', 'code' => 'P5', 'created_by' => $admin->id],
+        ];
+
+        foreach ($puroks as $purokData) {
+            Purok::firstOrCreate(['code' => $purokData['code']], $purokData);
+        }
+
+        // Create sample households
+        $purok1 = Purok::where('code', 'P1')->first();
+        $purok2 = Purok::where('code', 'P2')->first();
+
+        $households = [
+            [
+                'household_code' => 'HH-001',
+                'purok_id' => $purok1->id,
+                'street' => 'Main Street',
+                'barangay' => 'Sample Barangay',
+                'municipality' => 'Sample Municipality',
+                'province' => 'Sample Province',
+                'house_type' => 'Single',
+                'ownership' => 'Owned',
+                'num_members' => 4,
+                'status' => 'Occupied',
+                'created_by' => $admin->id,
+            ],
+            [
+                'household_code' => 'HH-002',
+                'purok_id' => $purok1->id,
+                'street' => 'Second Street',
+                'barangay' => 'Sample Barangay',
+                'municipality' => 'Sample Municipality',
+                'province' => 'Sample Province',
+                'house_type' => 'Duplex',
+                'ownership' => 'Rented',
+                'num_members' => 3,
+                'status' => 'Occupied',
+                'created_by' => $admin->id,
+            ],
+            [
+                'household_code' => 'HH-003',
+                'purok_id' => $purok2->id,
+                'street' => 'Third Street',
+                'barangay' => 'Sample Barangay',
+                'municipality' => 'Sample Municipality',
+                'province' => 'Sample Province',
+                'house_type' => 'Single',
+                'ownership' => 'Owned',
+                'num_members' => 5,
+                'status' => 'Occupied',
+                'created_by' => $admin->id,
+            ],
+        ];
+
+        foreach ($households as $householdData) {
+            Household::firstOrCreate(
+                ['household_code' => $householdData['household_code']],
+                $householdData,
+            );
+        }
+
+        // Create sample residents
+        $household1 = Household::where('household_code', 'HH-001')->first();
+        $household2 = Household::where('household_code', 'HH-002')->first();
+
+        $residents = [
+            [
+                'first_name' => 'Juan',
+                'middle_name' => 'Santos',
+                'last_name' => 'Dela Cruz',
+                'birth_date' => '1985-05-15',
+                'birthplace' => 'Manila',
+                'sex' => 'Male',
+                'civil_status' => 'Married',
+                'nationality' => 'Filipino',
+                'religion' => 'Roman Catholic',
+                'occupation' => 'Teacher',
+                'phone_number' => '09171234567',
+                'email' => 'juan.delacruz@example.com',
+                'address' => 'Main Street, Sample Barangay',
+                'voter_status' => true,
+                'is_household_head' => true,
+                'status' => 'Active',
+                'purok_id' => $purok1->id,
+                'household_id' => $household1->id,
+                'user_id' => null,
+                'created_by' => $admin->id,
+            ],
+            [
+                'first_name' => 'Maria',
+                'middle_name' => 'Garcia',
+                'last_name' => 'Dela Cruz',
+                'birth_date' => '1987-08-20',
+                'birthplace' => 'Quezon City',
+                'sex' => 'Female',
+                'civil_status' => 'Married',
+                'nationality' => 'Filipino',
+                'religion' => 'Roman Catholic',
+                'occupation' => 'Nurse',
+                'phone_number' => '09181234567',
+                'email' => 'maria.delacruz@example.com',
+                'address' => 'Main Street, Sample Barangay',
+                'voter_status' => true,
+                'is_household_head' => false,
+                'status' => 'Active',
+                'purok_id' => $purok1->id,
+                'household_id' => $household1->id,
+                'user_id' => null,
+                'created_by' => $admin->id,
+            ],
+            [
+                'first_name' => 'Pedro',
+                'middle_name' => 'Reyes',
+                'last_name' => 'Santos',
+                'birth_date' => '1990-03-10',
+                'birthplace' => 'Cebu',
+                'sex' => 'Male',
+                'civil_status' => 'Single',
+                'nationality' => 'Filipino',
+                'religion' => 'Roman Catholic',
+                'occupation' => 'Engineer',
+                'phone_number' => '09191234567',
+                'email' => 'pedro.santos@example.com',
+                'address' => 'Second Street, Sample Barangay',
+                'voter_status' => true,
+                'is_household_head' => true,
+                'status' => 'Active',
+                'purok_id' => $purok1->id,
+                'household_id' => $household2->id,
+                'user_id' => null,
+                'created_by' => $staff->id,
+            ],
+        ];
+
+        foreach ($residents as $residentData) {
+            Resident::firstOrCreate(['email' => $residentData['email']], $residentData);
+        }
+
+        // Update household heads
+        $resident1 = Resident::where('email', 'juan.delacruz@example.com')->first();
+        $household1->update(['head_of_household_id' => $resident1->id]);
+
+        $resident3 = Resident::where('email', 'pedro.santos@example.com')->first();
+        $household2->update(['head_of_household_id' => $resident3->id]);
+
+        // Create sample barangay officials
+        $officials = [
+            [
+                'first_name' => 'Jose',
+                'middle_name' => 'Ramos',
+                'last_name' => 'Fernandez',
+                'birth_date' => '1975-06-15',
+                'sex' => 'Male',
+                'office' => 'Barangay Hall',
+                'position' => 'Barangay Captain',
+                'barangay' => 'Sample Barangay',
+                'municipality' => 'Sample Municipality',
+                'province' => 'Sample Province',
+                'phone_number' => '09201234567',
+                'email' => 'captain@barangay.local',
+                'term_start' => '2023-01-01',
+                'term_end' => '2026-12-31',
+                'status' => 'Active',
+                'created_by' => $admin->id,
+            ],
+            [
+                'first_name' => 'Anna',
+                'middle_name' => 'Cruz',
+                'last_name' => 'Torres',
+                'birth_date' => '1980-09-22',
+                'sex' => 'Female',
+                'office' => 'Barangay Hall',
+                'position' => 'Barangay Kagawad',
+                'barangay' => 'Sample Barangay',
+                'municipality' => 'Sample Municipality',
+                'province' => 'Sample Province',
+                'phone_number' => '09211234567',
+                'email' => 'kagawad1@barangay.local',
+                'term_start' => '2023-01-01',
+                'term_end' => '2026-12-31',
+                'status' => 'Active',
+                'created_by' => $admin->id,
+            ],
+        ];
+
+        foreach ($officials as $officialData) {
+            Official::firstOrCreate(['email' => $officialData['email']], $officialData);
+        }
+
+        // Demo resident account: the portal resolves everything through
+        // user->residentProfile (residents.user_id), so the account must be
+        // linked to a resident row or the portal renders empty.
+        $resident = User::firstOrCreate(
             ['email' => 'resident@barangay.local'],
             [
-                'name' => 'Juan Santos Dela Cruz',
-                'password' => 'password',
-                'role' => User::ROLE_RESIDENT,
-                'status' => User::STATUS_ACTIVE,
-                'approved_at' => now(),
+                'name' => 'Juan Dela Cruz',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'user_type' => 'resident',
+                'status' => 'approved',
             ],
         );
 
-        /* -------------------------------- puroks ------------------------------- */
-
-        $puroks = collect([
-            ['name' => 'Purok 1', 'code' => 'P1', 'description' => 'Barangay center / Barangay Hall area'],
-            ['name' => 'Purok 2', 'code' => 'P2', 'description' => 'North residential area'],
-            ['name' => 'Purok 3', 'code' => 'P3', 'description' => 'Farm road area'],
-            ['name' => 'Purok 4', 'code' => 'P4', 'description' => 'Riverside area'],
-            ['name' => 'Purok 5', 'code' => 'P5', 'description' => 'South / highway area'],
-        ])->mapWithKeys(fn (array $purok) => [
-            $purok['code'] => Purok::firstOrCreate(['code' => $purok['code']], $purok),
-        ]);
-
-        /* -------------------------- certificate catalog ------------------------ */
-
-        Document::updateOrCreate(['code' => 'CLR'], [
-            'title' => 'Barangay Clearance',
-            'description' => 'Certifies the resident is of good moral character with no pending case.',
-            'document_type' => 'Clearance',
-            'fee' => 50,
-            'status' => 'Active',
-        ]);
-
-        Document::updateOrCreate(['code' => 'COR'], [
-            'title' => 'Certificate of Residency',
-            'description' => 'Certifies the resident is a bona fide resident of the barangay.',
-            'document_type' => 'Certificate',
-            'fee' => 30,
-            'status' => 'Active',
-        ]);
-
-        Document::updateOrCreate(['code' => 'IND'], [
-            'title' => 'Certificate of Indigency',
-            'description' => 'Certifies the resident belongs to an indigent family.',
-            'document_type' => 'Certificate',
-            'fee' => 0,
-            'status' => 'Active',
-        ]);
-
-        /* ------------------------------- officials ----------------------------- */
-
-        Official::updateOrCreate(
-            ['full_name' => 'Jose Ramos Fernandez', 'position' => 'Punong Barangay'],
-            [
-                'term_start' => '2023-01-01',
-                'term_end' => '2026-12-31',
-                'contact' => '0917-000-0001',
-                'status' => Official::STATUS_ACTIVE,
-            ],
-        );
-
-        Official::updateOrCreate(
-            ['full_name' => 'Anna Cruz Torres', 'position' => 'Barangay Kagawad'],
-            [
-                'term_start' => '2023-01-01',
-                'term_end' => '2026-12-31',
-                'contact' => '0917-000-0002',
-                'status' => Official::STATUS_ACTIVE,
-            ],
-        );
-
-        /* ------------------------------ households ----------------------------- */
-
-        $households = collect([
-            ['household_number' => 'HH-001', 'address' => '12 Main Street', 'purok' => 'P1', 'house_type' => 'Single', 'ownership' => 'Owned'],
-            ['household_number' => 'HH-002', 'address' => '34 Second Street', 'purok' => 'P1', 'house_type' => 'Duplex', 'ownership' => 'Rented'],
-            ['household_number' => 'HH-003', 'address' => '56 Third Street', 'purok' => 'P2', 'house_type' => 'Single', 'ownership' => 'Owned'],
-        ])->mapWithKeys(fn (array $h) => [
-            $h['household_number'] => Household::firstOrCreate(
-                ['household_number' => $h['household_number']],
-                [
-                    'address' => $h['address'],
-                    'purok_id' => $puroks[$h['purok']]->id,
-                    'house_type' => $h['house_type'],
-                    'ownership' => $h['ownership'],
-                    'status' => 'Occupied',
-                    'member_count' => 0,
-                ],
-            ),
-        ]);
-
-        /* -------------------------------- residents ---------------------------- */
-
-        $residents = collect([
-            [
-                'first_name' => 'Juan', 'middle_name' => 'Santos', 'last_name' => 'Dela Cruz',
-                'birth_date' => '1985-04-12', 'sex' => 'Male', 'civil_status' => 'Married',
-                'occupation' => 'Farmer', 'phone' => '0917-123-4567',
-                'email' => 'resident@barangay.local', 'address' => '12 Main Street',
-                'purok' => 'P1', 'household' => 'HH-001',
-            ],
-            [
-                'first_name' => 'Maria', 'middle_name' => 'Garcia', 'last_name' => 'Dela Cruz',
-                'birth_date' => '1990-09-23', 'sex' => 'Female', 'civil_status' => 'Married',
-                'occupation' => 'Storekeeper', 'phone' => '0917-123-4568',
-                'email' => 'maria.delacruz@example.com', 'address' => '12 Main Street',
-                'purok' => 'P1', 'household' => 'HH-001',
-            ],
-            [
-                'first_name' => 'Pedro', 'middle_name' => 'Reyes', 'last_name' => 'Santos',
-                'birth_date' => '1978-01-05', 'sex' => 'Male', 'civil_status' => 'Widowed',
-                'occupation' => 'Driver', 'phone' => '0917-123-4569',
-                'email' => 'pedro.santos@example.com', 'address' => '34 Second Street',
-                'purok' => 'P1', 'household' => 'HH-002',
-            ],
-        ])->mapWithKeys(fn (array $r) => [
-            $r['email'] => Resident::firstOrCreate(
-                ['email' => $r['email']],
-                [
-                    'first_name' => $r['first_name'],
-                    'middle_name' => $r['middle_name'],
-                    'last_name' => $r['last_name'],
-                    'birth_date' => $r['birth_date'],
-                    'sex' => $r['sex'],
-                    'civil_status' => $r['civil_status'],
-                    'occupation' => $r['occupation'],
-                    'phone' => $r['phone'],
-                    'address' => $r['address'],
-                    'purok_id' => $puroks[$r['purok']]->id,
-                    'household_id' => $households[$r['household']]->id,
-                    'status' => Resident::STATUS_ACTIVE,
-                ],
-            ),
-        ]);
-
-        /* --------------------- household heads + member counts ------------------ */
-
-        $households['HH-001']->forceFill(['head_resident_id' => $residents['resident@barangay.local']->id])->save();
-        $households['HH-002']->forceFill(['head_resident_id' => $residents['pedro.santos@example.com']->id])->save();
-
-        $households->each(fn (Household $household) => $household->syncMemberCount());
-
-        // The demo resident account now points at its profile (also lazily
-        // resolved by User::linkedResident() through the matching email).
-        User::where('email', 'resident@barangay.local')->first()
-            ?->forceFill(['resident_id' => $residents['resident@barangay.local']->id])
-            ->save();
+        $demoResident = Resident::where('email', 'juan.delacruz@example.com')->first();
+        if ($demoResident && $demoResident->user_id !== $resident->id) {
+            $demoResident->update(['user_id' => $resident->id]);
+        }
     }
 }

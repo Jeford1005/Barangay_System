@@ -6,21 +6,23 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Route middleware: ->middleware('admin') — administrator screens only. */
 class EnsureUserIsAdmin
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  Closure(Request): (Response)  $next
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        $user = auth()->user();
 
-        if ($user === null) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         if (! $user->isAdmin()) {
-            return redirect()
-                ->route('dashboard')
-                ->with('error', 'You do not have permission to open that page.');
+            return redirect()->route('dashboard');
         }
 
         return $next($request);

@@ -2,32 +2,25 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    public const ROLE_ADMIN = 'admin';
+
+    public const ROLE_STAFF = 'staff';
+
+    public const ROLE_RESIDENT = 'resident';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    public const ROLE_ADMIN = 'admin';
-    public const ROLE_STAFF = 'staff';
-    public const ROLE_RESIDENT = 'resident';
-
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_ACTIVE = 'active';
-    public const STATUS_REJECTED = 'rejected';
-    public const STATUS_SUSPENDED = 'suspended';
-
     /**
-     * Privilege columns (role, status, approved_at, reviewed_by, suspended_*)
-     * are intentionally NOT mass assignable. They are written only through
-     * forceFill() in code paths that already passed an authorization check.
+     * The attributes that are mass assignable.
      *
      * @var list<string>
      */
@@ -35,9 +28,19 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'user_type',
+        'status',
+        'approved_at',
+        'reviewed_by',
+        'rejection_reason',
+        'suspended_at',
+        'suspended_by',
+        'suspension_reason',
     ];
 
     /**
+     * The attributes that should be hidden for serialization.
+     *
      * @var list<string>
      */
     protected $hidden = [
@@ -46,6 +49,8 @@ class User extends Authenticatable
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -54,153 +59,113 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'approved_at' => 'datetime',
+            'reviewed_by' => 'integer',
             'suspended_at' => 'datetime',
+            'suspended_by' => 'integer',
         ];
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Roles                                                               */
-    /* ------------------------------------------------------------------ */
+    public function residentProfile()
+    {
+        return $this->belongsTo(Resident::class, 'id', 'user_id');
+    }
+
+    public function residentApplication()
+    {
+        return $this->hasOne(ResidentApplication::class);
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function suspender()
+    {
+        return $this->belongsTo(User::class, 'suspended_by');
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isApproved() && ! $this->isSuspended();
+    }
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->user_type === self::ROLE_ADMIN;
     }
 
     public function isStaff(): bool
     {
-        return $this->role === self::ROLE_STAFF;
+        return $this->user_type === self::ROLE_STAFF;
     }
 
-    public function isResident(): bool
-    {
-        return $this->role === self::ROLE_RESIDENT;
-    }
-
-    /** Admins and staff work in the barangay office; residents use the portal. */
     public function isOfficeUser(): bool
     {
         return $this->isAdmin() || $this->isStaff();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Status                                                              */
-    /* ------------------------------------------------------------------ */
-
-    public function isActive(): bool
+    public function roleLabel(): string
     {
-        return $this->status === self::STATUS_ACTIVE;
+        return match ($this->user_type) {
+            self::ROLE_ADMIN => 'Administrator',
+            self::ROLE_STAFF => 'Staff',
+            self::ROLE_RESIDENT => 'Resident',
+            default => ucfirst((string) $this->user_type),
+        };
     }
-
-    public function isPending(): bool
-    {
-        return $this->status === self::STATUS_PENDING;
-    }
-
-    public function scopeActive(Builder $query): Builder
-    {
-        return $query->where('status', self::STATUS_ACTIVE);
-    }
-
-    public function scopePending(Builder $query): Builder
-    {
-        return $query->where('status', self::STATUS_PENDING);
-    }
-
-    public function scopeWithRole(Builder $query, string $role): Builder
-    {
-        return $query->where('role', $role);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Relations                                                           */
-    /* ------------------------------------------------------------------ */
-
-    public function reviewedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'reviewed_by');
-    }
-
-    public function resident(): BelongsTo
-    {
-        return $this->belongsTo(Resident::class);
-    }
-
-    /** The pending self-registration submitted with this account. */
-    public function residentApplication(): HasOne
-    {
-        return $this->hasOne(ResidentApplication::class);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Permissions — single source of truth for role capability            */
-    /* ------------------------------------------------------------------ */
 
     /**
-     * The exact staff capability list (office users get these 17, admins get
-     * everything, residents get none — they only use the self-service portal).
+     * Central permission map for the initial fixed roles.
      *
-     * @var list<string>
+     * Administrators intentionally receive every permission. Staff receive
+     * only day-to-day operational permissions; administrator controls are
+     * not listed here.
      */
-    private const STAFF_PERMISSIONS = [
-        'operations.access',
-        'dashboard.view',
-        'residents.view',
-        'residents.manage',
-        'households.view',
-        'households.manage',
-        'puroks.view',
-        'blotter.view',
-        'blotter.manage',
-        'welfare.view',
-        'welfare.intake',
-        'certificates.view',
-        'certificates.issue',
-        'certificate-requests.view',
-        'resident-changes.view',
-        'reports.view',
-        'analytics.view',
-    ];
-
     public function hasPermission(string $permission): bool
     {
         if ($this->isAdmin()) {
             return true;
         }
 
-        if ($this->isStaff()) {
-            return in_array($permission, self::STAFF_PERMISSIONS, true);
-        }
-
-        return false;
+        return $this->isStaff() && in_array($permission, [
+            'operations.access',
+            'dashboard.view',
+            'residents.view',
+            'residents.manage',
+            'households.view',
+            'households.manage',
+            'puroks.view',
+            'blotter.view',
+            'blotter.manage',
+            'welfare.view',
+            'welfare.intake',
+            'certificates.view',
+            'certificates.issue',
+            'certificate-requests.view',
+            'resident-changes.view',
+            'reports.view',
+            'analytics.view',
+        ], true);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Resident profile link                                               */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * The resident record this account represents.
-     *
-     * Falls back to an email match so a resident registered in the office
-     * system automatically picks up their profile on first portal visit.
-     */
-    public function linkedResident(): ?Resident
+    public function scopeActive($query)
     {
-        if ($this->resident_id !== null) {
-            return Resident::find($this->resident_id);
-        }
-
-        if (! $this->isResident()) {
-            return null;
-        }
-
-        $resident = Resident::where('email', $this->email)->first();
-
-        if ($resident !== null) {
-            $this->forceFill(['resident_id' => $resident->id])->saveQuietly();
-        }
-
-        return $resident;
+        return $query->where('status', 'approved')->whereNull('suspended_at');
     }
 }

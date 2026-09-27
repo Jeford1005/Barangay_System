@@ -9,28 +9,25 @@ use App\Models\Purok;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\ViewErrorBag;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Show the login view.
+     * Display the login view.
      */
     public function create(): View
     {
-        // Registration validates into the "register" error bag so its errors
-        // never paint under the sign-in fields — reopen the dialog when that
-        // bag has messages, otherwise the feedback would stay hidden.
-        $errors = session('errors');
-        $registerFailed = $errors instanceof ViewErrorBag
-            && $errors->getBag('register')->any();
-
         return view('auth.login', [
-            'openResetModal' => (bool) session('reset_modal'),
-            'openRegisterModal' => (bool) session('register_modal') || $registerFailed,
-            'puroks' => Purok::orderBy('code')->get(['id', 'code', 'name']),
-            'households' => Household::orderBy('household_number')->get(['id', 'household_number', 'address']),
+            // Remaining resend cooldown, so the forgot-password dialog's
+            // countdown is honest right after a page reload.
+            'resetCooldown' => PasswordResetCodeController::cooldownRemaining(),
+
+            // Dropdown options for the create-account dialog on the login page
+            // (same lists the standalone registration form uses).
+            'puroks' => Cache::remember('auth.purok-options', now()->addMinutes(5), fn () => Purok::orderBy('name')->get(['id', 'name'])),
+            'households' => Cache::remember('auth.household-options', now()->addMinutes(5), fn () => Household::orderBy('household_code')->get(['id', 'household_code', 'street'])),
         ]);
     }
 
@@ -43,11 +40,19 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+
+        // Role-aware landing: residents go to their own portal; office users
+        // (administrators and staff) go to the management dashboard.
+        $default = $user->user_type === 'resident'
+            ? route('resident.portal')
+            : route('dashboard');
+
+        return redirect()->intended($default);
     }
 
     /**
-     * Log the authenticated user out of the application.
+     * Destroy an authenticated session.
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -57,6 +62,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect('/');
     }
 }

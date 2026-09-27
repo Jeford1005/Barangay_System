@@ -1,0 +1,258 @@
+PROGRESS REPORT — COPY-PASTE VERSION
+Barangay Management System
+Paste each value into the matching PDF field. Instructor sections omitted.
+Names/dates in [brackets] are yours to fill.
+
+=====================================================================
+FORM 1 — SOFTWARE PROJECT PROGRESS REPORT
+=====================================================================
+
+Software Project Title:
+Barangay Management System - Web-Based Records and Services for the Barangay Hall
+
+Section:
+[your section]
+
+Instructor:
+[your instructor]
+
+Reporting Period:
+September 1, 2026 to September 22, 2026
+
+Date Submitted:
+September 22, 2026
+
+---------------------------------------------------------------------
+I. PROJECT TEAM  (one line per member: Name / Major Responsibility)
+---------------------------------------------------------------------
+
+Row 1 Name: [name 1]
+Row 1 Responsibility: Project Manager/Leader - coordination, Git version control, module integration
+
+Row 2 Name: [name 2]
+Row 2 Responsibility: System Analyst - barangay workflow analysis, role-based access rules (admin/staff vs resident)
+
+Row 3 Name: [name 3]
+Row 3 Responsibility: UI Designer - branded login, responsive navigation, color-coded CRUD actions (green/blue/amber/red)
+
+Row 4 Name: [name 4]
+Row 4 Responsibility: Programmer/Developer - Laravel 13 app: controllers, views, middleware, auth, email, printable reports
+
+Row 5 Name: [name 5]
+Row 5 Responsibility: Database Developer - schema, migrations, relationships, factories, seeders, audit-log design
+
+(Solo project: keep Row 1 with your name, Responsibility: "Performed all roles - full-stack development and documentation".)
+
+---------------------------------------------------------------------
+II. OVERALL PROJECT PROGRESS
+---------------------------------------------------------------------
+
+Overall Completion: 85
+
+Phase rows (type the status word + % Complete):
+
+Project Planning: Completed - 100
+Requirements Analysis: Completed - 100
+System Design: Completed - 100
+Database Design: Completed - 100
+User Interface Design: Completed - 100
+System Development/Coding: Ongoing - 90
+Module Integration: Ongoing - 95
+Testing: Ongoing - 85
+Debugging: Ongoing - 85
+Documentation: Ongoing - 60
+Final Presentation/Defense: Not Started - 0
+
+---------------------------------------------------------------------
+III.A MODULES/FEATURES DEVELOPED
+---------------------------------------------------------------------
+
+Module 1: Authentication and Security - login, registration, password reset via 6-digit email code with cooldown and masked hint, email verification - Developer: [name] - Completed
+Module 2: Role-Based Access and Account Approvals - middleware gating; resident self-registration with admin approve/reject and email notifications - Developer: [name] - Completed
+Module 3: Resident Records - 25-field profiles, search, filters by purok/household/status, archive/restore - Developer: [name] - Completed
+Module 4: Household and Purok Management - full CRUD, linked to residents - Developer: [name] - Completed
+Module 5: Blotter Records - auto case numbers (BLTR-YYYY-####), walk-in or registered parties, disposition-before-closing rule - Developer: [name] - Completed
+Module 6: Social Welfare Assistance - request intake, approval requires date + amount, release requires full trail - Developer: [name] - Completed
+Module 7: Audit Log and Mail Health - user/IP/timestamp logging of sensitive actions; SMTP health check with test email - Developer: [name] - Completed
+Module 8: Printable Reports - official blotter case sheet, resident directory by purok, audit certification extract, print-ready lists - Developer: [name] - Completed
+Module 9: Resident Portal - resident views own record, updates own contact info - Developer: [name] - Ongoing
+
+---------------------------------------------------------------------
+III.B DATABASE DEVELOPMENT
+---------------------------------------------------------------------
+
+Database Component (connection/config): Completed - SQLite in development, MySQL-ready via .env
+Database Structure: Completed - normalized Laravel migrations, one per table
+Tables: Completed - users, residents, households, puroks, officials, blotter, welfare, audit_logs, password_reset_tokens, sessions, cache, jobs
+Primary/Foreign Keys: Completed - FKs to residents/officials/users with onDelete set null so unlinking never breaks records
+Relationships: Completed - Blotter to complainant/accused/officer/encoder; Welfare to beneficiary; Household to purok; Resident to household/purok/user
+Queries: Completed - per-module search/filter, pagination, dashboard counters, race-safe case-number sequencing in a locked transaction
+Data Validation: Completed - server-side validation on every form: required fields, enum statuses, no future dates, workflow integrity rules
+
+---------------------------------------------------------------------
+IV. USER INTERFACE / USER EXPERIENCE PROGRESS
+---------------------------------------------------------------------
+
+Login: Completed - branded split-screen with barangay seal, forgot-password dialog with clipboard auto-fill
+Dashboards 1: Completed - admin dashboard with live module counters
+Dashboards 2: Ongoing - resident portal (own record view done, more self-service planned)
+Dashboards 3: Completed - audit log page (searchable, filterable)
+Transactions 1: Completed - resident records CRUD
+Transactions 2: Completed - household CRUD
+Transactions 3: Completed - purok CRUD
+Transactions 4: Completed - blotter intake with case numbering
+Transactions 5: Completed - welfare assistance intake and approval workflow
+Transactions 6: Completed - account approvals with email notifications
+Reports 1: Completed - printable blotter case sheet (letterhead, certification, signature blocks)
+Reports 2: Completed - print-ready index lists, all modules (A4 landscape, repeating headers)
+Reports 3: Completed - audit log certification extract with scope header
+Reports 4: Not Started - welfare disbursement summary (planned)
+
+---------------------------------------------------------------------
+V. PROBLEMS AND CHALLENGES ENCOUNTERED
+---------------------------------------------------------------------
+
+Problem 1: Broken auth scaffolding prevented the app from booting
+Effect: Blocked all development
+Solution: Created the missing auth controllers and verified with php artisan route:list
+Status: Resolved
+
+Problem 2: Password-reset expiry check never fired (Carbon 3 diffInMinutes returns a signed value)
+Effect: Reset flow unusable
+Solution: Corrected with abs(); added regression tests
+Status: Resolved
+
+Problem 3: Empty optional field violated a NOT NULL column on real browser submissions (tests missed it because they omitted the key)
+Effect: 500 error on welfare form submission
+Solution: Normalized input to the column default; added a browser-accurate regression test
+Status: Resolved
+
+Problem 4: All module navigation links hidden below 640px width
+Effect: Mobile users could not reach any module
+Solution: Added hamburger menu from a shared nav partial
+Status: Resolved
+
+Problem 5: Heavy duplication across views and scripts (~1,600 lines)
+Effect: High maintenance risk; copies drifting apart
+Solution: Extracted shared Blade components and form partials
+Status: Resolved
+
+Problem 6: Real email delivery requires Gmail app-password setup outside the system
+Effect: Password-reset email unverified in production config
+Solution: Built mail health check page and php artisan mail:check with test-email sender; documented setup; log mailer used locally
+Status: Ongoing
+
+=====================================================================
+FORM 2 — SRS PROJECT PROGRESS REPORT
+=====================================================================
+
+Project Title:
+Barangay Management System
+
+Section:
+[your section]
+
+Date of Report:
+September 22, 2026
+
+Instructor:
+[your instructor]
+
+---------------------------------------------------------------------
+I. PROJECT TEAM  (Name / Role / % Contribution)
+---------------------------------------------------------------------
+
+Row 1: [name 1] - Project Leader: coordination, integration, version control - [e.g., 25]
+Row 2: [name 2] - Requirements Analyst: barangay workflow analysis, access rules - [e.g., 20]
+Row 3: [name 3] - Documentation: SRS drafting, user manual - [e.g., 20]
+Row 4: [name 4] - System Designer: architecture, UI design, diagrams - [e.g., 20]
+Row 5: [name 5] - Programmer/Developer: Laravel implementation, database - [e.g., 15]
+
+(Solo project: one row, your name, "All roles", 100.)
+
+---------------------------------------------------------------------
+II. PROJECT PROGRESS SUMMARY
+---------------------------------------------------------------------
+
+Overall Project Completion: 85
+
+Component rows (status word + % Complete + short remark):
+
+1. Project Background: Completed - 100 - paper-based records context established
+2. Problem Statement: Completed - 100 - slow retrieval, no accountability trail, manual blotter/welfare tracking
+3. Project Objectives: Completed - 100 - measurable objectives tied to modules
+4. Scope and Limitations: Completed - 100 - web-based; excludes payroll/accounting
+5. Stakeholder Identification: Completed - 100 - Punong Barangay, secretary, staff, residents
+6. Requirements Elicitation: Completed - 100 - interview, observation, document review
+7. Functional Requirements: Completed - 100 - mapped to implemented modules
+8. Nonfunctional Requirements: Completed - 100 - security, accessibility, accountability, portability
+9. User Requirements: Completed - 100 - per-role needs defined
+10. System Requirements: Completed - 100 - PHP 8.3, Laravel 13, SQLite/MySQL, Tailwind, Vite, SMTP
+11. Use Case Diagram: Completed - 100 - admin, resident, guest, mail-system actors
+12. Use Case Descriptions: Completed - 100 - 17 use cases, main + alternate flows (docs/srs/use-case-descriptions.md)
+13. Data Flow Diagram: Completed - 100 - context, Level 1, two Level 2 decompositions, balancing notes (docs/srs/data-flow-diagrams.md)
+14. ERD / Data Requirements: Completed - 100 - matches implemented schema
+15. Requirements Validation: Completed - 100 - checklist mapping every requirement to test evidence (docs/srs/requirements-validation-checklist.md)
+16. SRS Documentation: Ongoing - 90 - assembled; final formatting pending
+
+---------------------------------------------------------------------
+III. ACCOMPLISHMENTS DURING THIS PERIOD
+---------------------------------------------------------------------
+
+Reporting Period: September 1, 2026 to September 22, 2026
+
+1. Implemented complete authentication: login, resident registration, account-approval emails, password reset via 6-digit email code with resend cooldown.
+2. Built five admin modules - residents, households, puroks, blotter, social welfare - with role-based middleware gating.
+3. Implemented accountability: audit logging (user, IP, timestamp) for password resets and record changes, plus a searchable audit-log page.
+4. Produced printable outputs: official blotter case sheet with letterhead and signature blocks; resident directory grouped by purok with counts; certification extract of the audit log.
+5. Grew the automated test suite to 171 tests / 673 assertions, all passing, with a regression test for every defect found.
+6. Completed accessibility (WCAG AA contrast, keyboard navigation, focus management), mobile responsiveness, and removed ~1,600 lines of duplicated code.
+
+---------------------------------------------------------------------
+IV.A REQUIREMENTS ELICITATION
+---------------------------------------------------------------------
+
+Stakeholders Consulted:
+Punong Barangay; Barangay Secretary; records staff (encoders); residents
+
+Elicitation Methods - mark these:
+Interview: [x]
+Observation: [x]
+Questionnaire/Survey: [ ]
+Focus Group: [ ]
+Document Review: [x]
+Other: [ ]
+
+Date Conducted:
+[date of your consultation/visit]
+
+Major Findings:
+Resident records, household rosters, and purok lists are kept on paper and in spreadsheets, making searches slow and error-prone. The blotter is a handwritten logbook with inconsistent case numbering; producing an official copy means copying by hand. Welfare assistance requests are tracked ad hoc with no record of approved versus released amounts. Account resets currently require a personal visit; the barangay wants email-based self-service. Officials need an accountability trail (who changed what, when, from where) for audit purposes.
+
+---------------------------------------------------------------------
+V. PROBLEMS AND CHALLENGES ENCOUNTERED
+---------------------------------------------------------------------
+
+Problem 1: Converting informal interviews into testable requirements
+Action Taken: Wrote each requirement as a module acceptance criterion, now asserted by automated tests
+Status: Resolved
+
+Problem 2: Keeping SRS diagrams in sync with fast-moving implementation
+Action Taken: ERD validated directly against migrations; DFDs finalized against running code
+Status: Resolved
+
+Problem 3: Real email delivery depends on Gmail app-password configuration outside the system
+Action Taken: Documented setup; built mail health check with test email
+Status: Ongoing
+
+---------------------------------------------------------------------
+VII. TEAM MEMBER CONTRIBUTION
+---------------------------------------------------------------------
+
+Member 1: [name] - [tasks, e.g., auth modules, blotter, test suite] - ___%
+Member 2: [name] - [tasks] - ___%
+Member 3: [name] - [tasks] - ___%
+Member 4: [name] - [tasks] - ___%
+Member 5: [name] - [tasks] - ___%
+
+(Solo project: one row - your name, "All modules and documentation", 100.)

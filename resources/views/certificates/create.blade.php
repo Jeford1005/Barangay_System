@@ -1,142 +1,116 @@
-@extends('layouts.app')
-
-@section('title', 'New certificate')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Issue Certificate" subtitle="A control number (e.g. CLR-{{ date('Y') }}-0001) is assigned automatically on save, then the certificate opens ready to print." />
+@endsection
 
 @section('content')
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">New certificate</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Pick the resident and the document, state the purpose, and the system reserves the next control number.
-            </p>
-        </div>
+{{-- Form card: also the dialog fragment (fetched with ?fragment=1). --}}
+<div class="bg-white {{ request()->boolean('fragment') ? '' : 'rounded-xl shadow overflow-hidden' }} {{ request()->boolean('fragment') ? 'max-w-none' : 'max-w-4xl mx-auto' }}">
+    <form action="{{ route('certificates.store') }}" method="POST" class="{{ request()->boolean('fragment') ? 'p-0' : 'p-6' }} space-y-8">
+        @csrf
 
-        <a href="{{ route('certificates.index') }}"
-           class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-            &larr; Back to certificates
-        </a>
-    </div>
-
-    <div class="max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-        <form method="POST" action="{{ route('certificates.store') }}"
-              data-submit-loading data-loading-label="Issuing…"
-              class="space-y-5">
-            @csrf
-
-            <div>
-                <label for="resident_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Resident</label>
-                <select id="resident_id"
-                        name="resident_id"
-                        required
-                        class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('resident_id') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                    <option value="">Choose an active resident…</option>
-                    @foreach ($residents as $resident)
-                        <option value="{{ $resident['id'] }}"
-                                @selected((string) old('resident_id', $selectedResident) === (string) $resident['id'])>
-                            {{ $resident['label'] }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('resident_id')
-                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-                <p class="mt-1.5 text-xs text-slate-400">Archived residents cannot be issued certificates.</p>
-            </div>
-
-            <div>
-                <label for="document_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Document</label>
-                <select id="document_id"
-                        name="document_id"
-                        required
-                        class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('document_id') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                    <option value="">Choose a certificate or clearance…</option>
-                    @foreach ($documents as $document)
-                        <option value="{{ $document->id }}" @selected(old('document_id') == $document->id)>
-                            {{ $document->code }} — {{ $document->title }} (₱{{ number_format((float) $document->fee, 2) }})
-                        </option>
-                    @endforeach
-                </select>
-                @error('document_id')
-                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-                <p class="mt-1.5 text-xs text-slate-400">Only active certificates and clearances appear here.</p>
-            </div>
-
-            <div>
-                <label for="purpose" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Purpose</label>
-                <input id="purpose"
-                       type="text"
-                       name="purpose"
-                       value="{{ old('purpose') }}"
-                       required
-                       maxlength="255"
-                       placeholder="e.g. Local employment requirement"
-                       autocomplete="off"
-                       class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('purpose') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                @error('purpose')
-                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div class="grid gap-5 sm:grid-cols-2">
-                <div>
-                    <label for="copies" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Copies</label>
-                    <select id="copies"
-                            name="copies"
-                            required
-                            class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('copies') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                        @for ($copy = 1; $copy <= 5; $copy++)
-                            <option value="{{ $copy }}" @selected((string) old('copies', '1') === (string) $copy)>
-                                {{ $copy }} {{ $copy > 1 ? 'copies' : 'copy' }}
+        <fieldset>
+            <legend class="text-sm font-semibold text-gray-900 mb-4">Certificate</legend>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="document_id" class="block text-sm font-medium text-gray-700">Certificate Type <span class="text-red-500">*</span></label>
+                    <select name="document_id" id="document_id" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <option value="">Choose a certificate…</option>
+                        @foreach ($documents as $document)
+                            <option value="{{ $document->id }}"
+                                data-fee="{{ $document->fee }}"
+                                data-requirements="{{ e($document->requirements) }}"
+                                @selected(old('document_id') == $document->id)>
+                                {{ $document->code }} — {{ $document->title }} (₱{{ number_format((float) $document->fee, 2) }})
                             </option>
-                        @endfor
-                    </select>
-                    @error('copies')
-                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                @if (auth()->user()->isAdmin())
-                    <div>
-                        <label for="fee" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Fee override <span class="text-slate-400 normal-case font-normal">(admin)</span>
-                        </label>
-                        <input id="fee"
-                               type="number"
-                               name="fee"
-                               value="{{ old('fee') }}"
-                               min="0"
-                               max="9999"
-                               step="0.01"
-                               placeholder="Catalog fee"
-                               class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('fee') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                        @error('fee')
-                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1.5 text-xs text-slate-400">Leave blank to charge the catalog fee. Staff always pay the catalog fee.</p>
-                    </div>
-                @endif
-            </div>
-
-            @if ($errors->any())
-                <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <ul class="list-disc space-y-1 pl-5">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
                         @endforeach
-                    </ul>
+                    </select>
+                    @error('document_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <p id="requirements-hint" class="mt-1 hidden text-sm text-gray-500"></p>
                 </div>
-            @endif
 
-            <div class="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
-                <button type="submit"
-                        class="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-wait disabled:opacity-70">
-                    Issue certificate
-                </button>
-                <a href="{{ route('certificates.index') }}" class="text-sm font-medium text-slate-500 transition hover:text-slate-800">
-                    Cancel
-                </a>
+                <div class="sm:col-span-2">
+                    <label for="resident_id" class="block text-sm font-medium text-gray-700">Resident <span class="text-red-500">*</span></label>
+                    <select name="resident_id" id="resident_id" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <option value="">Choose a resident…</option>
+                        @foreach ($residents as $resident)
+                            <option value="{{ $resident->id }}" @selected(old('resident_id') == $resident->id)>
+                                {{ $resident->full_name }}@if($resident->purok) — {{ $resident->purok->name }}@endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('resident_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="purpose" class="block text-sm font-medium text-gray-700">Purpose <span class="text-red-500">*</span></label>
+                    <input type="text" name="purpose" id="purpose" required maxlength="255"
+                        value="{{ old('purpose') }}" placeholder="e.g. Local employment, school requirement, medical assistance"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    @error('purpose') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="copies" class="block text-sm font-medium text-gray-700">Copies <span class="text-red-500">*</span></label>
+                    <input type="number" name="copies" id="copies" required min="1" max="5" step="1" inputmode="numeric" value="{{ old('copies', 1) }}"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    @error('copies') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="fee" class="block text-sm font-medium text-gray-700">Fee (₱)</label>
+                    @if (auth()->user()?->isAdmin())
+                     <input type="number" name="fee" id="fee" min="0" max="9999" step="0.01" inputmode="decimal"
+                        value="{{ old('fee') }}" placeholder="Standard fee applies"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                    <p class="mt-1 text-xs text-gray-500">Defaults to the posted fee. Leave blank to charge the standard price, or set 0 to waive.</p>
+                    @error('fee') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                     @else
+                         <p class="mt-1 text-xs text-gray-500">The posted catalog fee applies. Fee waivers and overrides require an administrator.</p>
+                     @endif
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="remarks" class="block text-sm font-medium text-gray-700">Remarks</label>
+                    <textarea name="remarks" id="remarks" rows="2" maxlength="1000"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ old('remarks') }}</textarea>
+                    @error('remarks') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
             </div>
-        </form>
-    </div>
+        </fieldset>
+
+        <x-form.actions cancel-href="{{ route('certificates.index') }}" submit-label="Issue & Print" />
+    </form>
+</div>
+
+<script>
+    // Live fee default + requirements hint while the clerk picks a type.
+    (function () {
+        var select = document.getElementById('document_id');
+        var fee = document.getElementById('fee');
+        var hint = document.getElementById('requirements-hint');
+        if (!select) return;
+
+        function sync() {
+            var opt = select.options[select.selectedIndex];
+            if (!opt || !opt.value) {
+                if (fee) fee.value = '';
+                hint.classList.add('hidden');
+                return;
+            }
+            if (fee) fee.placeholder = parseFloat(opt.dataset.fee || 0).toFixed(2);
+            if (opt.dataset.requirements) {
+                hint.textContent = 'Requirements: ' + opt.dataset.requirements.split('\n').join(', ');
+                hint.classList.remove('hidden');
+            } else {
+                hint.classList.add('hidden');
+            }
+        }
+        select.addEventListener('change', sync);
+        sync();
+    })();
+</script>
 @endsection
+</x-app-layout>

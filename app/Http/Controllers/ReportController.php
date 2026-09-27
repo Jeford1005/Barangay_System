@@ -4,332 +4,323 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Blotter;
-use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
 use App\Models\Welfare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
-/**
- * Live-computed barangay reports: population, blotter and welfare.
- *
- * Every figure is queried on the fly (nothing is cached) and every report is
- * printable through Tailwind `print:` variants plus a [data-print] button.
- */
 class ReportController extends Controller
 {
-    /** Age brackets with their exact printed labels. */
-    private const AGE_BRACKETS = [
-        ['label' => '0–6 (Child)', 'min' => 0, 'max' => 6],
-        ['label' => '7–17 (Minor)', 'min' => 7, 'max' => 17],
-        ['label' => '18–30 (Youth)', 'min' => 18, 'max' => 30],
-        ['label' => '31–45 (Adult)', 'min' => 31, 'max' => 45],
-        ['label' => '46–59 (Middle-aged)', 'min' => 46, 'max' => 59],
-        ['label' => '60+ (Senior)', 'min' => 60, 'max' => null],
-    ];
-
-    public function index(): View
+    public function index()
     {
         return view('reports.index');
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Population                                                          */
-    /* ------------------------------------------------------------------ */
-
-    public function population(Request $request): View
-    {
-        [$from, $to] = $this->resolveRange($request, defaultRange: false);
-
-        $residents = Resident::active()
-            ->when($from !== null, fn ($query) => $query->whereDate('created_at', '>=', $from))
-            ->when($to !== null, fn ($query) => $query->whereDate('created_at', '<=', $to))
-            ->get(['purok_id', 'sex', 'age']);
-
-        $puroks = Purok::orderBy('code')->get();
-
-        $grouped = [];
-        foreach ($residents as $resident) {
-            $grouped[$resident->purok_id ?? 'none'][] = $resident;
-        }
-
-        $rows = [];
-
-        foreach ($puroks as $purok) {
-            $rows[] = $this->populationLine($purok->label(), $grouped[$purok->id] ?? []);
-        }
-
-        $rows[] = $this->populationLine('No Purok Assigned', $grouped['none'] ?? []);
-
-        $totals = ['male' => 0, 'female' => 0, 'other' => 0, 'total' => 0];
-        foreach ($rows as $row) {
-            foreach ($totals as $key => $value) {
-                $totals[$key] = $value + $row[$key];
-            }
-        }
-
-        $bracketCounts = array_fill_keys(array_column(self::AGE_BRACKETS, 'label'), 0);
-        foreach ($residents as $resident) {
-            $bracketCounts[$this->bracketLabel((int) $resident->age)]++;
-        }
-
-        $brackets = collect(self::AGE_BRACKETS)
-            ->map(fn (array $bracket): array => [
-                'label' => $bracket['label'],
-                'count' => $bracketCounts[$bracket['label']],
-                'pct' => $totals['total'] > 0
-                    ? round($bracketCounts[$bracket['label']] / $totals['total'] * 100, 1)
-                    : 0.0,
-            ])
-            ->all();
-
-        $households = Household::query()
-            ->when($from !== null, fn ($query) => $query->whereDate('created_at', '>=', $from))
-            ->when($to !== null, fn ($query) => $query->whereDate('created_at', '<=', $to))
-            ->count();
-
-        $this->logPrinted($request, 'population', compact('from', 'to'));
-
-        return view('reports.population', [
-            'rows' => $rows,
-            'totals' => $totals,
-            'brackets' => $brackets,
-            'households' => $households,
-            'from' => $from,
-            'to' => $to,
-        ]);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Blotter                                                             */
-    /* ------------------------------------------------------------------ */
-
-    public function blotter(Request $request): View
-    {
-        [$from, $to] = $this->resolveRange($request, defaultRange: true);
-
-        $cases = Blotter::query()
-            ->with('purok')
-            ->when($from !== null, fn ($query) => $query->whereDate('incident_date', '>=', $from))
-            ->when($to !== null, fn ($query) => $query->whereDate('incident_date', '<=', $to))
-            ->orderByDesc('incident_date')
-            ->orderByDesc('id')
-            ->get();
-
-        // Incident type → count + per-status breakdown, most frequent first.
-        $byType = [];
-        foreach ($cases as $case) {
-            if (! isset($byType[$case->incident_type])) {
-                $byType[$case->incident_type] = array_merge(
-                    ['type' => $case->incident_type, 'total' => 0],
-                    array_fill_keys(Blotter::STATUSES, 0),
-                );
-            }
-
-            $byType[$case->incident_type]['total']++;
-
-            if (isset($byType[$case->incident_type][$case->status])) {
-                $byType[$case->incident_type][$case->status]++;
-            }
-        }
-        $byType = collect($byType)->sortByDesc('total')->values();
-
-        $statusTotals = [];
-        foreach (Blotter::STATUSES as $status) {
-            $statusTotals[$status] = $cases->where('status', $status)->count();
-        }
-        $arrests = $cases->where('arrest_made', 'Yes')->count();
-
-        // Last 12 months (anchored on the end of the selected range), zero-filled.
-        $anchor = $to !== null ? Carbon::parse($to) : now();
-        $buckets = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month = $anchor->copy()->startOfMonth()->subMonths($i);
-            $buckets[$month->format('Y-m')] = ['label' => $month->format('M Y'), 'count' => 0];
-        }
-        foreach ($cases as $case) {
-            $key = $case->incident_date->format('Y-m');
-            if (isset($buckets[$key])) {
-                $buckets[$key]['count']++;
-            }
-        }
-        $peak = max(1, max(array_column($buckets, 'count')));
-        $monthlyTrend = collect($buckets)
-            ->map(fn (array $bucket): array => $bucket + [
-                'pct' => round($bucket['count'] / $peak * 100, 1),
-            ])
-            ->values();
-
-        $this->logPrinted($request, 'blotter', compact('from', 'to'));
-
-        return view('reports.blotter', [
-            'byType' => $byType,
-            'statusTotals' => $statusTotals,
-            'arrests' => $arrests,
-            'totalCases' => $cases->count(),
-            'monthlyTrend' => $monthlyTrend,
-            'recent' => $cases->take(10)->values(),
-            'from' => $from,
-            'to' => $to,
-        ]);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Welfare                                                             */
-    /* ------------------------------------------------------------------ */
-
-    public function welfare(Request $request): View
-    {
-        [$from, $to] = $this->resolveRange($request, defaultRange: true);
-
-        $records = Welfare::query()
-            ->with('resident')
-            ->when($from !== null, fn ($query) => $query->whereDate('request_date', '>=', $from))
-            ->when($to !== null, fn ($query) => $query->whereDate('request_date', '<=', $to))
-            ->orderByDesc('request_date')
-            ->orderByDesc('id')
-            ->get();
-
-        $statusTotals = [];
-        foreach (Welfare::STATUSES as $status) {
-            $statusTotals[$status] = $records->where('status', $status)->count();
-        }
-
-        $requestedTotal = $records->sum(fn (Welfare $record): float => (float) $record->requested_amount);
-        $approvedTotal = $records
-            ->filter(fn (Welfare $record): bool => in_array($record->status, ['Approved', 'Released'], true))
-            ->sum(fn (Welfare $record): float => $this->granted($record));
-        $releasedTotal = $records
-            ->filter(fn (Welfare $record): bool => $record->status === 'Released')
-            ->sum(fn (Welfare $record): float => $this->granted($record));
-
-        $byType = $records
-            ->groupBy('assistance_type')
-            ->map(function ($group): array {
-                $approved = $group
-                    ->filter(fn (Welfare $record): bool => in_array($record->status, ['Approved', 'Released'], true));
-
-                return [
-                    'type' => $group->first()->assistance_type,
-                    'count' => $group->count(),
-                    'requested' => $group->sum(fn (Welfare $record): float => (float) $record->requested_amount),
-                    'approved' => $approved->sum(fn (Welfare $record): float => $this->granted($record)),
-                    'released' => $group
-                        ->filter(fn (Welfare $record): bool => $record->status === 'Released')
-                        ->sum(fn (Welfare $record): float => $this->granted($record)),
-                ];
-            })
-            ->sortByDesc('count')
-            ->values();
-
-        $this->logPrinted($request, 'welfare', compact('from', 'to'));
-
-        return view('reports.welfare', [
-            'statusTotals' => $statusTotals,
-            'totalRecords' => $records->count(),
-            'requestedTotal' => $requestedTotal,
-            'approvedTotal' => $approvedTotal,
-            'releasedTotal' => $releasedTotal,
-            'byType' => $byType,
-            'from' => $from,
-            'to' => $to,
-        ]);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Helpers                                                             */
-    /* ------------------------------------------------------------------ */
-
     /**
-     * Validate and resolve the shared ?from=&to= date range.
-     *
-     * Blotter/welfare default to the first day of the previous month → today;
-     * the population report defaults to all time (no range at all).
-     *
-     * @return array{0: string|null, 1: string|null}
+     * Population report: residents grouped by purok, with sex and
+     * standard age-bracket breakdowns. Printable.
      */
-    private function resolveRange(Request $request, bool $defaultRange): array
+    public function population(Request $request)
     {
-        $validated = $request->validate([
-            'from' => ['nullable', 'date', 'before_or_equal:today'],
-            'to' => ['nullable', 'date', 'before_or_equal:today'],
-        ]);
+        [$from, $to, $asOf] = $this->dateRange($request);
 
-        $from = $validated['from'] ?? null;
-        $to = $validated['to'] ?? null;
+        $residents = Resident::query()
+            ->where('status', 'Active')
+            ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
+            ->get();
 
-        if ($from !== null && $to !== null && $to < $from) {
-            throw ValidationException::withMessages([
-                'to' => 'The "to" date must be on or after the "from" date.',
+        // Calculate ages once instead of once per bracket and per resident.
+        $residentAges = $residents->mapWithKeys(
+            fn (Resident $resident) => [$resident->id => $this->ageOn($resident->birth_date, $asOf)],
+        );
+
+        // Purok rows with sex totals and per-bracket counts.
+        $puroks = Purok::orderBy('name')->get();
+        $brackets = $this->ageBrackets();
+
+        $rows = $puroks->map(function (Purok $purok) use ($residents, $residentAges, $brackets) {
+            $inPurok = $residents->where('purok_id', $purok->id);
+
+            return (object) [
+                'label' => $purok->name,
+                'male' => $inPurok->where('sex', 'Male')->count(),
+                'female' => $inPurok->where('sex', 'Female')->count(),
+                'other' => $inPurok->where('sex', 'Other')->count(),
+                'total' => $inPurok->count(),
+                'brackets' => collect($brackets)->mapWithKeys(
+                    fn ($bracket) => [$bracket['label'] => $inPurok->filter(
+                        fn ($r) => $this->ageInBracket($residentAges->get($r->id), $bracket),
+                    )->count()],
+                ),
+            ];
+        });
+
+        // Residents without a purok get their own row — nobody silently dropped.
+        $unassigned = $residents->whereNull('purok_id');
+        if ($unassigned->isNotEmpty()) {
+            $rows->push((object) [
+                'label' => 'No Purok Assigned',
+                'male' => $unassigned->where('sex', 'Male')->count(),
+                'female' => $unassigned->where('sex', 'Female')->count(),
+                'other' => $unassigned->where('sex', 'Other')->count(),
+                'total' => $unassigned->count(),
+                'brackets' => collect($brackets)->mapWithKeys(
+                    fn ($bracket) => [$bracket['label'] => $unassigned->filter(
+                        fn ($r) => $this->ageInBracket($residentAges->get($r->id), $bracket),
+                    )->count()],
+                ),
             ]);
         }
 
-        if ($defaultRange && $from === null && $to === null) {
-            $from = now()->startOfMonth()->subMonth()->toDateString();
-            $to = now()->toDateString();
+        $totals = (object) [
+            'male' => $rows->sum('male'),
+            'female' => $rows->sum('female'),
+            'other' => $rows->sum('other'),
+            'total' => $rows->sum('total'),
+            'brackets' => collect($brackets)->mapWithKeys(
+                fn ($bracket) => [$bracket['label'] => $rows->sum(fn ($row) => $row->brackets[$bracket['label']])],
+            ),
+        ];
+
+        // Voters are a standing question for barangay planning.
+        $voters = $residents->where('voter_status', true)->count();
+
+        if ($request->boolean('print')) {
+            AuditLog::record(
+                'report.printed',
+                auth()->id(),
+                auth()->user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['report' => 'population', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $totals->total],
+            );
+
+            return view('reports.population-print', [
+                'rows' => $rows,
+                'totals' => $totals,
+                'brackets' => $brackets,
+                'voters' => $voters,
+                'from' => $from,
+                'to' => $to,
+                'asOf' => $asOf,
+            ]);
         }
 
-        return [$from, $to];
-    }
-
-    /** One population table line: male / female / other / total. */
-    /**
-     * @param  array<int, \App\Models\Resident>  $residents
-     * @return array{label: string, male: int, female: int, other: int, total: int}
-     */
-    private function populationLine(string $label, array $residents): array
-    {
-        $line = ['label' => $label, 'male' => 0, 'female' => 0, 'other' => 0, 'total' => 0];
-
-        foreach ($residents as $resident) {
-            $line['total']++;
-
-            if ($resident->sex === 'Male') {
-                $line['male']++;
-            } elseif ($resident->sex === 'Female') {
-                $line['female']++;
-            } else {
-                $line['other']++;
-            }
-        }
-
-        return $line;
-    }
-
-    private function bracketLabel(int $age): string
-    {
-        foreach (self::AGE_BRACKETS as $bracket) {
-            if ($age >= $bracket['min'] && ($bracket['max'] === null || $age <= $bracket['max'])) {
-                return $bracket['label'];
-            }
-        }
-
-        return self::AGE_BRACKETS[0]['label'];
-    }
-
-    /** Granted amount falls back to the requested amount when unset. */
-    private function granted(Welfare $record): float
-    {
-        return (float) ($record->amount ?? $record->requested_amount ?? 0);
+        return view('reports.population', compact('rows', 'totals', 'brackets', 'voters', 'from', 'to', 'asOf'));
     }
 
     /**
-     * Reports opened with ?print=1 leave an audit trail entry. The on-screen
-     * [data-print] button is handled client-side, so the query parameter is
-     * what marks an intentional printable view.
+     * Blotter summary: case volume by type and status for a period,
+     * plus monthly trend. Printable.
      */
-    private function logPrinted(Request $request, string $report, array $context = []): void
+    public function blotter(Request $request)
     {
-        if (! $request->boolean('print')) {
-            return;
+        [$from, $to, $asOf] = $this->dateRange($request, defaultMonths: 1);
+
+        $cases = Blotter::query()
+            ->when($to, fn ($q) => $q->where('complaint_date', '<=', $to->toDateTimeString()))
+            ->when($from, fn ($q) => $q->where('complaint_date', '>=', $from->toDateString()))
+            ->get();
+
+        $byType = $cases->groupBy('complaint_type')
+            ->map(fn ($group) => (object) [
+                'count' => $group->count(),
+                'open' => $group->where('status', 'Open')->count(),
+                'pending' => $group->where('status', 'Pending')->count(),
+                'resolved' => $group->where('status', 'Resolved')->count(),
+                'dismissed' => $group->where('status', 'Dismissed')->count(),
+            ])
+            ->sortByDesc(fn ($row) => $row->count); // keep complaint-type keys
+
+        $statusTotals = (object) [
+            'total' => $cases->count(),
+            'open' => $cases->where('status', 'Open')->count(),
+            'pending' => $cases->where('status', 'Pending')->count(),
+            'resolved' => $cases->where('status', 'Resolved')->count(),
+            'dismissed' => $cases->where('status', 'Dismissed')->count(),
+            'arrests' => $cases->where('arrest_made', 'Yes')->count(),
+        ];
+
+        // Monthly trend across the selected period.
+        $months = [];
+        $cursor = $from?->copy()->startOfMonth() ?? $cases->min('complaint_date')?->copy()->startOfMonth() ?? now()->startOfMonth();
+        $end = $to?->copy()->endOfMonth() ?? now()->endOfMonth();
+        while ($cursor <= $end && count($months) < 24) {
+            $months[$cursor->format('M Y')] = 0;
+            $cursor->addMonth();
+        }
+        foreach ($cases as $case) {
+            $key = $case->complaint_date->format('M Y');
+            if (array_key_exists($key, $months)) {
+                $months[$key]++;
+            }
         }
 
-        AuditLog::record('printed', 'report', null, null, array_merge([
-            'report' => $report,
-            'url' => $request->fullUrl(),
-        ], $context));
+        // Recent cases appendix for context (latest 10 in period).
+        $recent = $cases->sortByDesc('complaint_date')->take(10);
+
+        if ($request->boolean('print')) {
+            AuditLog::record(
+                'report.printed',
+                auth()->id(),
+                auth()->user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['report' => 'blotter', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
+            );
+
+            return view('reports.blotter-print', [
+                'byType' => $byType,
+                'statusTotals' => $statusTotals,
+                'months' => $months,
+                'recent' => $recent,
+                'from' => $from,
+                'to' => $to,
+                'asOf' => $asOf,
+            ]);
+        }
+
+        return view('reports.blotter', compact('byType', 'statusTotals', 'months', 'recent', 'from', 'to', 'asOf'));
+    }
+
+    /**
+     * Welfare beneficiary list: assistance released/approved in the
+     * period, with totals per program and assistance type. Printable.
+     */
+    public function welfare(Request $request)
+    {
+        [$from, $to, $asOf] = $this->dateRange($request, defaultMonths: 1);
+
+        $query = Welfare::query()->with('beneficiary.purok');
+
+        if ($to) {
+            $query->where('request_date', '<=', $to->toDateTimeString());
+        }
+        if ($from) {
+            $query->where('request_date', '>=', $from->toDateString());
+        }
+
+        $records = $query->orderBy('request_date')->get();
+
+        $statusTotals = (object) [
+            'total' => $records->count(),
+            'requested' => $records->where('status', 'Requested')->count(),
+            'review' => $records->where('status', 'Under Review')->count(),
+            'approved' => $records->where('status', 'Approved')->count(),
+            'released' => $records->where('status', 'Released')->count(),
+            'denied' => $records->where('status', 'Denied')->count(),
+        ];
+
+        // Only approved and released rows represent money the office committed
+        // to. Summing `approved_amount` across every status would book
+        // Requested and Denied rows as disbursed on the printed report, and
+        // would disagree with the analytics page, which already filters.
+        $committed = $records->whereIn('status', ['Approved', 'Released']);
+
+        $amounts = (object) [
+            'requested' => (float) $records->sum('requested_amount'),
+            'approved' => (float) $committed->sum('approved_amount'),
+            'released' => (float) $records->where('status', 'Released')->sum('approved_amount'),
+        ];
+
+        $byType = $records->groupBy('assistance_type')
+            ->map(fn ($group) => (object) [
+                'count' => $group->count(),
+                'amount' => (float) $group->whereIn('status', ['Approved', 'Released'])->sum('approved_amount'),
+            ])
+            ->sortKeys();
+
+        $byProgram = $records->groupBy('program_name')
+            ->map(fn ($group) => (object) [
+                'count' => $group->count(),
+                'amount' => (float) $group->whereIn('status', ['Approved', 'Released'])->sum('approved_amount'),
+            ])
+            ->sortKeys();
+
+        if ($request->boolean('print')) {
+            AuditLog::record(
+                'report.printed',
+                auth()->id(),
+                auth()->user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['report' => 'welfare', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
+            );
+
+            return view('reports.welfare-print', [
+                'records' => $records,
+                'statusTotals' => $statusTotals,
+                'amounts' => $amounts,
+                'byType' => $byType,
+                'byProgram' => $byProgram,
+                'from' => $from,
+                'to' => $to,
+                'asOf' => $asOf,
+            ]);
+        }
+
+        return view('reports.welfare', compact('records', 'statusTotals', 'amounts', 'byType', 'byProgram', 'from', 'to', 'asOf'));
+    }
+
+    /**
+     * Parse the shared from/to date-range inputs. Defaults:
+     * population = all time; blotter/welfare = last N months.
+     */
+    private function dateRange(Request $request, int $defaultMonths = 0): array
+    {
+        $validated = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+        ]);
+
+        if (! empty($validated['from']) && ! empty($validated['to']) && $validated['to'] < $validated['from']) {
+            throw ValidationException::withMessages([
+                'to' => 'The end date must be on or after the start date.',
+            ]);
+        }
+
+        $from = $request->filled('from') ? Carbon::parse($validated['from'])->startOfDay() : ($defaultMonths ? now()->subMonths($defaultMonths)->startOfDay() : null);
+        $to = $request->filled('to') ? Carbon::parse($validated['to'])->endOfDay() : ($defaultMonths ? now()->endOfDay() : null);
+        $asOf = now();
+
+        return [$from, $to, $asOf];
+    }
+
+    /**
+     * Standard PSA-style age brackets for barangay reporting.
+     */
+    private function ageBrackets(): array
+    {
+        return [
+            ['label' => '0–6 (Child)', 'min' => 0, 'max' => 6],
+            ['label' => '7–17 (Minor)', 'min' => 7, 'max' => 17],
+            ['label' => '18–30 (Youth)', 'min' => 18, 'max' => 30],
+            ['label' => '31–45 (Adult)', 'min' => 31, 'max' => 45],
+            ['label' => '46–59 (Middle-aged)', 'min' => 46, 'max' => 59],
+            ['label' => '60+ (Senior)', 'min' => 60, 'max' => 200],
+        ];
+    }
+
+    private function ageOn(?Carbon $birthDate, Carbon $asOf): ?int
+    {
+        if ($birthDate === null) {
+            return null;
+        }
+
+        $age = $asOf->year - $birthDate->year;
+        if ($birthDate->month > $asOf->month
+            || ($birthDate->month === $asOf->month && $birthDate->day > $asOf->day)) {
+            $age--;
+        }
+
+        return max(0, $age);
+    }
+
+    private function ageInBracket(?int $age, array $bracket): bool
+    {
+        return $age !== null && $age >= $bracket['min'] && $age <= $bracket['max'];
     }
 }

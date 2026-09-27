@@ -1,152 +1,107 @@
-@extends('layouts.app')
-
-@section('title', 'Archive')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Archive" subtitle="Deleted records are kept here for recovery. Restoring puts a record back exactly where it was; purging erases it permanently." />
+@endsection
 
 @section('content')
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Archive &mdash; archived resident records</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Records taken out of the active directory. Restore them to bring them back, or delete them permanently.
-            </p>
-        </div>
-    </div>
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow overflow-hidden">
 
-    <form method="GET" action="{{ route('archive.index') }}" class="mb-6 flex flex-wrap items-center gap-3">
-        <label for="archive_search" class="sr-only">Search archived residents</label>
-        <input id="archive_search"
-               type="search"
-               name="search"
-               value="{{ $search }}"
-               maxlength="100"
-               placeholder="Search name, address or phone…"
-               autocomplete="off"
-               class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:w-80">
-
-        <button type="submit"
-                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-            Search
-        </button>
-
-        @if ($search !== '')
-            <a href="{{ route('archive.index') }}" class="text-sm text-slate-500 transition hover:text-slate-800">Clear</a>
-        @endif
-    </form>
-
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-100 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                    <th class="px-5 py-3">Name</th>
-                    <th class="px-5 py-3">Sex / Age</th>
-                    <th class="px-5 py-3">Purok</th>
-                    <th class="px-5 py-3">Address</th>
-                    <th class="px-5 py-3">Archived</th>
-                    <th class="px-5 py-3 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse ($residents as $resident)
-                    <tr>
-                        <td class="px-5 py-3.5 font-medium text-slate-900">{{ $resident->full_name }}</td>
-                        <td class="px-5 py-3.5 whitespace-nowrap text-slate-600">{{ $resident->sex }} / {{ $resident->age }}</td>
-                        <td class="px-5 py-3.5 text-slate-600">{{ $resident->purok?->name ?? '—' }}</td>
-                        <td class="px-5 py-3.5 text-slate-600">{{ $resident->resolvedAddress() !== '' ? $resident->resolvedAddress() : '—' }}</td>
-                        <td class="px-5 py-3.5 whitespace-nowrap text-slate-500">
-                            {{ $resident->updated_at->format('M j, Y g:i A') }}
-                        </td>
-                        <td class="px-5 py-3.5">
-                            <div class="flex flex-wrap items-center justify-end gap-2">
-                                <form method="POST" action="{{ route('archive.residents.restore', $resident) }}"
-                                      data-submit-loading data-loading-label="Restoring…">
-                                    @csrf
-                                    <button type="submit"
-                                            class="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70">
-                                        Restore
-                                    </button>
-                                </form>
-
-                                <button type="button"
-                                        data-open-modal="archive-delete-modal-{{ $resident->id }}"
-                                        class="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
-                                    Delete permanently
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">
-                            @if ($search !== '')
-                                No archived records match &ldquo;{{ $search }}&rdquo;.
-                            @else
-                                The archive is empty &mdash; no resident records are archived.
-                            @endif
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-6">
-        {{ $residents->links() }}
-    </div>
-
-    {{-- ── Permanent deletion confirmation, one dialog per row ── --}}
-    @foreach ($residents as $resident)
-        <div id="archive-delete-modal-{{ $resident->id }}"
-             data-modal
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="archive-delete-title-{{ $resident->id }}"
-             aria-hidden="true"
-             class="fixed inset-0 z-40 hidden">
-            <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" data-close-modal></div>
-
-            <div class="absolute inset-0 overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
-                    <div class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-7">
-
-                        <button type="button"
-                                data-close-modal
-                                aria-label="Close dialog"
-                                class="absolute right-4 top-4 rounded-md p-1.5 text-slate-400 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" width="18" height="18">
-                                <path d="M18 6 6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-400">Confirmation</p>
-                        <h2 id="archive-delete-title-{{ $resident->id }}" class="mt-2 text-xl font-semibold text-slate-900">
-                            Delete this record permanently?
-                        </h2>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-500">
-                            <span class="font-medium text-slate-700">{{ $resident->full_name }}</span>
-                            will be erased from the system for good. This cannot be undone — archived records can normally be
-                            restored, but a permanent delete removes all trace of this resident.
-                        </p>
-
-                        <form method="POST" action="{{ route('archive.residents.destroy', $resident) }}"
-                              data-submit-loading data-loading-label="Deleting…"
-                              class="mt-6">
-                            @csrf
-                            @method('DELETE')
-
-                            <button type="submit"
-                                    class="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-wait disabled:opacity-70">
-                                Delete permanently
-                            </button>
-                        </form>
-
-                        <div class="mt-5 border-t border-slate-100 pt-4 text-center">
-                            <button type="button" data-close-modal class="text-sm text-slate-500 transition hover:text-slate-800">
-                                Keep it archived
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div class="p-6">
+            <!-- Tabs -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                @foreach ($types as $key => $meta)
+                    <a href="{{ route('archive.type', $key) }}" @if($type === $key) aria-current="page" @endif
+                        class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                        {{ $meta['label'] }}
+                        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold {{ $type === $key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600' }}">{{ $counts[$key] }}</span>
+                    </a>
+                @endforeach
             </div>
+
+            <!-- Search -->
+            <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-col gap-2 sm:flex-row">
+                <label for="archive-search" class="sr-only">Search archived {{ strtolower($types[$type]['label']) }}</label>
+                <input id="archive-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search archived {{ strtolower($types[$type]['label']) }}…"
+                    class="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <x-icon name="funnel" class="mr-2 h-4 w-4 text-gray-500" />
+                    Search
+                </button>
+                @if (request('search'))
+                    <a href="{{ route('archive.type', $type) }}" class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-gray-500 hover:text-gray-800">Clear</a>
+                @endif
+            </form>
+
+            @if($records->isEmpty())
+                <div class="text-center py-8 text-gray-500">
+                    <x-icon name="inbox" class="mx-auto mb-4 h-12 w-12 text-gray-200" />
+                    <p class="mt-2">Nothing in the {{ strtolower($types[$type]['label']) }} archive{{ request('search') ? ' matching your search' : '' }}.</p>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record</th>
+                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deleted</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($records as $record)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 sm:px-6 py-4">
+                                        @if ($type === 'residents')
+                                            <span class="font-medium text-gray-900">{{ e($record->full_name) }}</span>
+                                            <span class="block text-xs text-gray-500">{{ e($record->sex) }}@if($record->birth_date) · {{ $record->birth_date->format('M j, Y') }}@endif</span>
+                                        @elseif ($type === 'households')
+                                            <span class="font-medium text-gray-900">{{ e($record->household_code) }}</span>
+                                        @else
+                                            <span class="font-medium text-gray-900">{{ e($record->case_number) }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
+                                        @if ($type === 'residents')
+                                            {{ e($record->purok?->name ?? 'No purok') }}@if($record->address) · {{ e(Str::limit($record->address, 40)) }}@endif
+                                        @elseif ($type === 'households')
+                                            {{ e($record->purok?->name ?? 'No purok') }} · {{ $record->num_members }} member{{ $record->num_members === 1 ? '' : 's' }}
+                                        @else
+                                            {{ e(Str::limit($record->complaint_type, 50)) }}
+                                        @endif
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $record->deleted_at->format('M j, Y') }}
+                                        <span class="block text-xs text-gray-400">{{ $record->deleted_at->diffForHumans() }}</span>
+                                    </td>
+                                    <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="inline-flex items-center gap-1">
+                                            <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-green-200 bg-white px-3 text-sm font-medium text-green-700 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500" title="Restore this record">
+                                                    Restore
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('archive.destroy', ['type' => $type, 'id' => $record->id]) }}"
+                                                onsubmit="return confirm('Permanently delete this {{ strtolower($types[$type]['singular']) }}? This cannot be undone.');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50" title="Delete permanently">
+                                                    Delete forever
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    {{ $records->links() }}
+                </div>
+            @endif
         </div>
-    @endforeach
+    </div>
+</div>
 @endsection
+</x-app-layout>

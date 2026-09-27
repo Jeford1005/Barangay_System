@@ -4,27 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Purok extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'code', 'description'];
+    protected $fillable = [
+        'name',
+        'code',
+        'created_by',
+    ];
 
-    public function residents(): HasMany
+    protected $casts = [
+        'created_by' => 'integer',
+    ];
+
+    public function residents()
     {
         return $this->hasMany(Resident::class);
     }
 
-    public function households(): HasMany
+    public function households()
     {
         return $this->hasMany(Household::class);
     }
 
-    /** "Purok 1 (P1)" for dropdowns. */
-    public function label(): string
+    public function creator()
     {
-        return "{$this->name} ({$this->code})";
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

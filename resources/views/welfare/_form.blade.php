@@ -1,159 +1,100 @@
-@php($isEdit = $welfare !== null)
+{{-- Shared fields for welfare create/edit. Expects $welfare (null on create). --}}
+@php
+$residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->last_name.', '.$r->first_name.($r->status === 'Active' && ! $r->deleted_at ? '' : ' [Archived]')]);
+$residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
+    'name' => $r->full_name,
+    'address' => $r->address,
+    'phone' => $r->phone_number,
+]]);
+@endphp
 
-<form method="POST"
-      action="{{ $isEdit ? route('welfare.update', $welfare) : route('welfare.store') }}"
-      data-submit-loading
-      data-loading-label="{{ $isEdit ? 'Saving…' : 'Recording…' }}"
-      class="space-y-5">
-    @csrf
-    @if ($isEdit)
-        @method('PUT')
-    @endif
-
-    {{-- ── resident ── --}}
-    <div>
-        <label for="resident_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Resident</label>
-        <select id="resident_id"
-                name="resident_id"
-                required
-                class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('resident_id') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            <option value="">Select a resident</option>
-            @foreach ($residents as $resident)
-                <option value="{{ $resident->id }}" @selected((string) old('resident_id', $welfare?->resident_id) === (string) $resident->id)>
-                    {{ $resident->full_name }}{{ $resident->purok ? ' — '.$resident->purok->name : '' }}
-                </option>
-            @endforeach
-        </select>
-        @error('resident_id')
-            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-        @enderror
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Beneficiary</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="beneficiary_name" label="Full Name" required :value="$welfare->beneficiary_name ?? null" maxlength="255" />
+        <x-form.field name="beneficiary_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$welfare->beneficiary_id ?? null" data-resident-autofill="beneficiary" data-linked-fields="beneficiary_name,beneficiary_address,beneficiary_phone" />
+        <x-form.field name="beneficiary_address" label="Address" :value="$welfare->beneficiary_address ?? null" maxlength="255" />
+        <x-form.field name="beneficiary_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$welfare->beneficiary_phone ?? null" maxlength="15" placeholder="09171234567" />
     </div>
+</fieldset>
 
-    <div class="grid gap-5 sm:grid-cols-3">
-        {{-- ── assistance type ── --}}
-        <div>
-            <label for="assistance_type" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Assistance type</label>
-            <select id="assistance_type"
-                    name="assistance_type"
-                    required
-                    class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('assistance_type') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                @if (! $isEdit)
-                    <option value="">Select a type</option>
-                @endif
-                @foreach ($assistanceTypes as $type)
-                    <option value="{{ $type }}" @selected((string) old('assistance_type', $welfare?->assistance_type) === $type)>{{ $type }}</option>
-                @endforeach
-            </select>
-            @error('assistance_type')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Assistance</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="assistance_type" label="Assistance Type" type="select" required :options="['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other']" :value="$welfare->assistance_type ?? 'Financial'" />
+        <x-form.field name="program_name" label="Program Name" required :value="$welfare->program_name ?? null" maxlength="255" placeholder="e.g. Medical Assistance Program" />
+        <div class="sm:col-span-2">
+            <x-form.field name="program_description" label="Program Description" type="textarea" :rows="3" maxlength="2000" :value="$welfare->program_description ?? null" />
         </div>
-
-        {{-- ── requested amount ── --}}
-        <div>
-            <label for="requested_amount" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Requested amount (&#8369;)</label>
-            <input id="requested_amount"
-                   type="number"
-                   name="requested_amount"
-                   value="{{ old('requested_amount', $welfare?->requested_amount) }}"
-                   required
-                   min="0"
-                   max="99999999.99"
-                   step="0.01"
-                   placeholder="0.00"
-                   inputmode="decimal"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('requested_amount') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('requested_amount')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        {{-- ── request date ── --}}
-        <div>
-            <label for="request_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Request date</label>
-            <input id="request_date"
-                   type="date"
-                   name="request_date"
-                   value="{{ old('request_date', $welfare?->request_date?->format('Y-m-d') ?? now()->toDateString()) }}"
-                   required
-                   max="{{ now()->toDateString() }}"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('request_date') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('request_date')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
+        <x-form.field name="requested_amount" label="Requested Amount (₱)" type="number" required :value="$welfare->requested_amount ?? null" step="0.01" min="0" max="99999999.99" placeholder="1000.00" />
+        @if (auth()->user()?->isAdmin())
+         <x-form.field name="approved_amount" label="Approved Amount (₱)" type="number" :value="$welfare->approved_amount ?? null" step="0.01" min="0" max="99999999.99" placeholder="1000.00" optional-hint />
+         @endif
+        <x-form.field name="request_date" label="Request Date" type="date" required :value="$welfare?->request_date?->toDateString() ?? now()->toDateString()" :max="now()->toDateString()" />
+        @if (auth()->user()?->isAdmin())
+         <x-form.field name="status" label="Status" type="select" required :options="['Requested', 'Under Review', 'Approved', 'Denied', 'Released']" :value="$welfare->status ?? 'Requested'" />
+        <x-form.field name="approval_date" label="Approval Date" type="date" :value="$welfare?->approval_date?->toDateString() ?? null" :max="now()->toDateString()" optional-hint />
+        <x-form.field name="release_date" label="Release Date" type="date" :value="$welfare?->release_date?->toDateString() ?? null" :max="now()->toDateString()" optional-hint />
+        <p id="welfare-workflow-help" class="hidden text-xs text-amber-700 sm:col-span-2">Approved or Released requests require an approval date and a positive approved amount. Released requests also require a release date.</p>
+         @else
+             <input type="hidden" name="status" value="Requested">
+             <input type="hidden" name="approved_amount" value="0">
+             <p class="text-xs text-neutral-500 sm:col-span-2">Approval, release, and denial decisions are reserved for administrators.</p>
+         @endif
+        <div class="sm:col-span-2">
+            <x-form.field name="remarks" label="Remarks" type="textarea" :rows="2" maxlength="2000" :value="$welfare->remarks ?? null" />
         </div>
     </div>
+</fieldset>
 
-    @if ($isEdit)
-        <div class="grid gap-5 border-t border-slate-100 pt-5 sm:grid-cols-2">
-            {{-- ── status (review workflow) ── --}}
-            <div>
-                <label for="status" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
-                <select id="status"
-                        name="status"
-                        required
-                        class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('status') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                    @foreach ($statuses as $option)
-                        <option value="{{ $option }}" @selected((string) old('status', $welfare->status) === $option)>{{ $option }}</option>
-                    @endforeach
-                </select>
-                @error('status')
-                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+<script>
+    (function () {
+        const residentDetails = @json($residentAutofill);
+        const select = document.getElementById('beneficiary_id');
+        if (!select) return;
 
-            {{-- ── granted amount ── --}}
-            <div>
-                <label for="amount" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Granted amount (&#8369;)</label>
-                <input id="amount"
-                       type="number"
-                       name="amount"
-                       value="{{ old('amount', $welfare?->amount) }}"
-                       min="0"
-                       max="99999999.99"
-                       step="0.01"
-                       placeholder="Leave empty if none granted"
-                       inputmode="decimal"
-                       class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('amount') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                @error('amount')
-                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
+        const fields = ['beneficiary_name', 'beneficiary_address', 'beneficiary_phone']
+            .map((id) => document.getElementById(id))
+            .filter(Boolean);
 
-            <div class="sm:col-span-2">
-                <p class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
-                    <span class="font-semibold text-slate-700">Workflow:</span>
-                    approving or releasing needs a granted amount of at least &#8369;1.00 (never above the
-                    requested amount); denial needs a reason in the notes; nothing may be granted while the
-                    request is still <em>Requested</em> or <em>Under Review</em>.
-                </p>
-            </div>
-        </div>
-    @endif
+        const apply = () => {
+            const detail = residentDetails[select.value];
+            const linked = Boolean(detail);
+            if (detail) {
+                document.getElementById('beneficiary_name').value = detail.name || '';
+                document.getElementById('beneficiary_address').value = detail.address || '';
+                document.getElementById('beneficiary_phone').value = detail.phone || '';
+            }
+            fields.forEach((field) => {
+                field.readOnly = linked;
+                field.classList.toggle('bg-neutral-100', linked);
+            });
+        };
 
-    {{-- ── notes ── --}}
-    <div>
-        <label for="notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Notes</label>
-        <textarea id="notes"
-                  name="notes"
-                  rows="3"
-                  maxlength="2000"
-                  placeholder="Purpose, circumstances, reason for denial…"
-                  class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('notes') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">{{ old('notes', $welfare?->notes) }}</textarea>
-        @error('notes')
-            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-        @enderror
-    </div>
+        select.addEventListener('change', apply);
+        apply();
+    })();
+</script>
 
-    <div class="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
-        <button type="submit"
-                class="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-wait disabled:opacity-70">
-            {{ $isEdit ? 'Save changes' : 'Record request' }}
-        </button>
+<script>
+    (function () {
+        const status = document.getElementById('status');
+        const approvalDate = document.getElementById('approval_date');
+        const approvedAmount = document.getElementById('approved_amount');
+        const releaseDate = document.getElementById('release_date');
+        const help = document.getElementById('welfare-workflow-help');
+        if (!status || !approvalDate || !approvedAmount || !releaseDate || !help) return;
 
-        <a href="{{ route('welfare.index') }}"
-           class="text-sm font-medium text-slate-500 transition hover:text-slate-800">
-            Cancel
-        </a>
-    </div>
-</form>
+        const sync = () => {
+            const approved = status.value === 'Approved';
+            const released = status.value === 'Released';
+            approvalDate.required = approved || released;
+            approvedAmount.required = approved || released;
+            releaseDate.required = released;
+            help.classList.toggle('hidden', !approved && !released);
+        };
+
+        status.addEventListener('change', sync);
+        sync();
+    })();
+</script>

@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureUserHasPermission;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsResident;
 use Illuminate\Foundation\Application;
@@ -15,16 +16,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'admin' => EnsureUserIsAdmin::class,
-            'permission' => EnsureUserHasPermission::class,
-            'resident' => EnsureUserIsResident::class,
+        $middleware->web(append: [
+            EnsureUserIsActive::class,
         ]);
 
-        // Runs after the session is started: blocks pending/rejected/suspended
-        // accounts from every web screen (sign-out stays available).
-        $middleware->web(append: [
-            EnsureAccountIsActive::class,
+        $middleware->append(AddSecurityHeaders::class);
+
+        $middleware->alias([
+            // Role and permission gates based on users.user_type.
+            'admin' => EnsureUserIsAdmin::class,
+            'staff' => EnsureUserHasPermission::class,
+            'permission' => EnsureUserHasPermission::class,
+            'resident' => EnsureUserIsResident::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

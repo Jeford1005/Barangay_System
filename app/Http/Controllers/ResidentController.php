@@ -2,425 +2,339 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ResidentFormRequest;
-use App\Http\Requests\StoreResidentRequest;
-use App\Http\Requests\UpdateResidentRequest;
 use App\Models\AuditLog;
 use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
-use App\Models\User;
-use Illuminate\Http\RedirectResponse;
+use App\Services\HouseholdResidentSync;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
-/**
- * Resident registry: browsing and search for every office user, record
- * management for holders of `residents.manage`, archive/restore for admins.
- *
- * `full_name` and `age` are recomputed by a saving hook on the model — this
- * controller never writes them.
- */
 class ResidentController extends Controller
 {
-    /** Reason written to the linked account whenever a resident is archived. */
-    public const ARCHIVE_SUSPENSION_REASON = 'Resident record archived by the barangay office.';
-
-    /* ------------------------------------------------------------------ */
-    /* Browsing                                                            */
-    /* ------------------------------------------------------------------ */
-
-    /** Filterable, paginated resident list. */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-            'purok_id' => ['nullable', 'integer', 'exists:puroks,id'],
-            'status' => ['nullable', 'string', 'in:Active,Archived,All'],
-        ]);
+        $query = Resident::with(['purok', 'household']);
 
-        $search = $filters['search'] ?? null;
-        $purokId = isset($filters['purok_id']) && $filters['purok_id'] !== null ? (int) $filters['purok_id'] : null;
-        $status = $filters['status'] ?? Resident::STATUS_ACTIVE;
+        // Search - using parameterized queries via Eloquent
+        if ($request->filled('search')) {
+            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $fullNameSql = $query->getConnection()->getDriverName() === 'sqlite'
+                ? "first_name || ' ' || last_name"
+                : 'CONCAT(first_name, " ", last_name)';
+            $query->where(function ($q) use ($search, $fullNameSql) {
+                $q->where('first_name', 'like', '%'.$search.'%')
+                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                    ->orWhereRaw($fullNameSql.' LIKE ?', ['%'.$search.'%']);
+            });
+        }
 
-        $residents = Resident::query()
-            ->with(['purok', 'household'])
-            ->search($search)
-            ->when($purokId !== null, fn ($query) => $query->where('purok_id', $purokId))
-            ->when($status !== 'All', fn ($query) => $query->where('status', $status))
+        // Filter by purok
+        if ($request->filled('purok_id')) {
+            $query->where('purok_id', $request->integer('purok_id'));
+        }
+
+        // Filter by household
+        if ($request->filled('household_id')) {
+            $query->where('household_id', $request->integer('household_id'));
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+
+        $residents = $query->orderBy('last_name')->paginate(20);
+
+        $puroks = Purok::pluck('name', 'id');
+        $households = Household::pluck('household_code', 'id');
+
+        return view('resident.index', compact('residents', 'puroks', 'households'))
+            ->with('i', ($request->input('page', 1) - 1) * $residents->perPage());
+    }
+
+    /**
+     * Printable resident directory grouped by purok with per-purok counts.
+     * Standalone document layout (no app chrome), active residents only,
+     * purok-less residents listed under their own heading so nobody is
+     * silently dropped from the record.
+     */
+    public function directory()
+    {
+        $residents = Resident::active()
+            ->with('purok')
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->paginate(20)
-            ->withQueryString();
+            ->get();
 
-        return view('residents.index', [
-            'residents' => $residents,
-            'puroks' => Purok::orderBy('name')->get(),
-            'filters' => [
-                'search' => $search,
-                'purok_id' => $purokId,
-                'status' => $status,
-            ],
-            'activeCount' => Resident::active()->count(),
-            'archivedCount' => Resident::archived()->count(),
-        ]);
-    }
+        $grouped = $residents
+            ->groupBy(fn ($r) => $r->purok?->name ?? 'No Purok Assigned')
+            ->sortBy(fn ($rows, $key) => $key === 'No Purok Assigned' ? PHP_INT_MAX : $key);
 
-    /** Printable directory of active residents, grouped by purok. */
-    public function directory(Request $request): View
-    {
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-        ]);
-
-        $term = $filters['search'] ?? null;
-
-        $residents = Resident::query()->search($term)->forDirectory()->with('household')->get();
-
-        $byPurok = [];
-        $unassigned = [];
-
-        foreach ($residents as $resident) {
-            if ($resident->purok_id === null) {
-                $unassigned[] = $resident;
-            } else {
-                $byPurok[$resident->purok_id][] = $resident;
-            }
-        }
-
-        $groups = [];
-
-        foreach (Purok::orderBy('name')->get() as $purok) {
-            $rows = $byPurok[$purok->id] ?? [];
-
-            // While searching, only purok sections with matches are worth printing.
-            if ($rows === [] && filled($term)) {
-                continue;
-            }
-
-            $groups[] = ['purok' => $purok, 'residents' => $rows];
-        }
-
-        if ($unassigned !== []) {
-            $groups[] = ['purok' => null, 'residents' => $unassigned];
-        }
+        $purokCounts = $grouped->map(fn ($rows) => $rows->count());
 
         return view('residents.directory', [
-            'groups' => $groups,
-            'total' => count($residents),
-            'search' => $term,
+            'grouped' => $grouped,
+            'purokCounts' => $purokCounts,
+            'total' => $residents->count(),
         ]);
     }
 
-    /** Resident profile. */
-    public function show(Resident $resident): View
+    public function create()
     {
-        return view('residents.show', [
-            'resident' => $resident->load(['purok', 'household']),
-            'account' => User::where('resident_id', $resident->id)->first(),
-        ]);
+        $puroks = Purok::pluck('name', 'id');
+        $households = Household::pluck('household_code', 'id');
+
+        return view('resident.create', compact('puroks', 'households'));
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Create / update                                                     */
-    /* ------------------------------------------------------------------ */
-
-    public function create(): View
+    public function store(Request $request, HouseholdResidentSync $householdResidentSync)
     {
-        $resident = new Resident();
+        $validated = $this->validateResident($request);
 
-        return view('residents.create', [
-            'resident' => $resident,
-            'puroks' => Purok::orderBy('name')->get(),
-            'households' => $this->householdChoices($resident),
-        ]);
-    }
+        // The database stores nationality as NOT NULL with a Filipino default;
+        // normalize a cleared optional field before Eloquent persists it.
+        $validated['nationality'] = ($validated['nationality'] ?? null) ?: 'Filipino';
+        if (Auth::user()?->isStaff()) {
+            $validated['status'] = 'Active';
+        }
+        $validated = $this->preparePhoto($validated, $request);
+        $validated['created_by'] = Auth::id();
 
-    public function store(StoreResidentRequest $request): RedirectResponse
-    {
-        $data = $request->validated();
-        $isAdmin = $request->user()->isAdmin();
+        DB::beginTransaction();
+        try {
+            $resident = Resident::create($validated);
+            $householdResidentSync->syncResidentAfterSave($resident);
 
-        // Staff and agents can never file a resident as Archived.
-        $status = $isAdmin && isset($data['status'])
-            ? $data['status']
-            : Resident::STATUS_ACTIVE;
-
-        unset($data['status'], $data['photo'], $data['remove_photo']);
-
-        $resident = DB::transaction(function () use ($request, $data, $status): Resident {
-            $resident = new Resident();
-            $resident->fill($data);
-            $resident->status = $status;
-            $resident->photo_path = $this->storePhoto($request, null);
-            $resident->save();
-            $resident->refresh(); // audit against the stored (DB) representation
-
-            $this->syncHouseholdCounts(null, $resident->household_id);
-
-            AuditLog::record(
-                'created',
+            AuditLog::recordWithSubject(
+                'resident.created',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
                 'resident',
                 $resident->id,
-                null,
-                Arr::only($resident->getRawOriginal(), array_merge(array_keys($data), ['status', 'photo_path']))
+                $resident->full_name,
             );
 
-            return $resident;
-        });
+            DB::commit();
 
-        return redirect()
-            ->route('residents.show', $resident)
-            ->with('status', "{$resident->full_name} was added to the resident registry.");
+            return redirect()->route('residents.index')
+                ->with('success', 'Resident registered successfully.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to register resident.'])->withInput();
+        }
     }
 
-    public function edit(Resident $resident): View
+    public function edit(Resident $resident)
     {
-        $resident->load(['purok', 'household']);
+        $puroks = Purok::pluck('name', 'id');
+        $households = Household::pluck('household_code', 'id');
 
-        return view('residents.edit', [
-            'resident' => $resident,
-            'puroks' => Purok::orderBy('name')->get(),
-            'households' => $this->householdChoices($resident),
+        return view('resident.edit', compact('resident', 'puroks', 'households'));
+    }
+
+    public function update(Request $request, Resident $resident, HouseholdResidentSync $householdResidentSync)
+    {
+        $previousHouseholdId = $resident->household_id;
+        $before = Arr::only($resident->getAttributes(), array_keys($this->validateResidentFields()));
+        $validated = $this->validateResident($request, $resident->id);
+        $validated['nationality'] = ($validated['nationality'] ?? null) ?: 'Filipino';
+        $validated = $this->preparePhoto($validated, $request);
+
+        // Status changes are an administrator-only lifecycle action. Staff
+        // may correct ordinary profile fields without archiving or restoring.
+        if (Auth::user()?->isStaff()) {
+            $validated['status'] = $resident->status;
+        }
+
+        $validated['updated_by'] = Auth::id();
+
+        DB::beginTransaction();
+        try {
+            $resident->update($validated);
+            $householdResidentSync->syncResidentAfterSave($resident, $previousHouseholdId);
+
+            // Record which fields actually moved, so the audit trail can answer
+            // "who changed this resident's address" rather than only that a
+            // save happened.
+            $changed = collect(array_keys($before))
+                ->reject(fn (string $field) => (string) $before[$field] === (string) $resident->getAttribute($field))
+                ->values()
+                ->all();
+
+            if ($changed !== []) {
+                AuditLog::recordWithSubject(
+                    'resident.updated',
+                    Auth::id(),
+                    Auth::user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    'resident',
+                    $resident->id,
+                    $resident->full_name,
+                    ['fields' => $changed],
+                );
+            }
+
+            DB::commit();
+
+            return redirect()->route('residents.index')
+                ->with('success', 'Resident information updated successfully.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to update resident.'])->withInput();
+        }
+    }
+
+    public function archive(Resident $resident, HouseholdResidentSync $householdResidentSync)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        DB::beginTransaction();
+        try {
+            $previousHouseholdId = $resident->household_id;
+            $resident->is_household_head = false;
+            $resident->status = 'Archived';
+            $resident->updated_by = Auth::id();
+            $resident->save();
+            $householdResidentSync->syncResidentAfterSave($resident, $previousHouseholdId);
+
+            if ($resident->user) {
+                $resident->user->update([
+                    'suspended_at' => now(),
+                    'suspended_by' => Auth::id(),
+                    'suspension_reason' => 'Resident record archived by the barangay office.',
+                ]);
+                DB::table('password_reset_tokens')->where('email', $resident->user->email)->delete();
+                DB::table('sessions')->where('user_id', $resident->user->id)->delete();
+            }
+
+            AuditLog::record(
+                'resident.archived',
+                Auth::id(),
+                Auth::user()?->email,
+                request()->ip(),
+                request()->userAgent(),
+                ['resident_id' => $resident->id],
+            );
+
+            DB::commit();
+
+            return redirect()->route('residents.index')
+                ->with('success', 'Resident archived successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to archive resident.']);
+        }
+    }
+
+    public function restore(Resident $resident)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        DB::beginTransaction();
+        try {
+            $resident->status = 'Active';
+            $resident->updated_by = Auth::id();
+            $resident->save();
+
+            AuditLog::record(
+                'resident.restored',
+                Auth::id(),
+                Auth::user()?->email,
+                request()->ip(),
+                request()->userAgent(),
+                ['resident_id' => $resident->id],
+            );
+
+            DB::commit();
+
+            return redirect()->route('residents.index')
+                ->with('success', 'Resident restored successfully.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Failed to restore resident.']);
+        }
+    }
+
+    private function preparePhoto(array $validated, Request $request): array
+    {
+        if ($request->hasFile('photo')) {
+            // Private disk, not `public`: photos are personal data and are
+            // streamed through ResidentPhotoController, which checks the
+            // viewer's role or ownership.
+            $validated['photo'] = $request->file('photo')->store('residents', 'local');
+        } else {
+            unset($validated['photo']);
+        }
+
+        return $validated;
+    }
+
+    private function validateResident(Request $request, $residentId = null)
+    {
+        return $request->validate($this->validateResidentFields(), [
+            'phone_number.regex' => 'The phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'blood_type.regex' => 'Enter a valid blood type such as O+, A-, or AB+.',
+            'purok_id.integer' => 'Please select a purok from the list.',
+            'purok_id.exists' => 'The selected purok is no longer available. Please choose another.',
+            'household_id.integer' => 'Please select a household from the list.',
+            'household_id.exists' => 'The selected household is no longer available. Please choose another.',
         ]);
     }
 
-    public function update(UpdateResidentRequest $request, Resident $resident): RedirectResponse
-    {
-        $data = $request->validated();
-        $isAdmin = $request->user()->isAdmin();
-
-        // Only administrators may change the lifecycle status; anyone else keeps
-        // whatever the record already has, whatever was posted.
-        $status = $isAdmin && isset($data['status'])
-            ? $data['status']
-            : $resident->status;
-
-        unset($data['status'], $data['photo'], $data['remove_photo']);
-
-        $beforeRaw = $resident->getRawOriginal();
-        $oldHouseholdId = $resident->household_id;
-
-        DB::transaction(function () use ($request, $resident, $data, $status, $beforeRaw, $oldHouseholdId): void {
-            $resident->fill($data);
-            $resident->status = $status;
-            $resident->photo_path = $this->storePhoto($request, $resident->photo_path);
-            $resident->save();
-            $resident->refresh(); // audit against the stored (DB) representation
-
-            $this->syncHouseholdCounts($oldHouseholdId, $resident->household_id);
-
-            $afterRaw = $resident->getRawOriginal();
-            $before = [];
-            $after = [];
-
-            foreach (array_keys($data) as $key) {
-                $old = $beforeRaw[$key] ?? null;
-                $new = $afterRaw[$key] ?? null;
-
-                if ((string) $old !== (string) $new) {
-                    $before[$key] = $old;
-                    $after[$key] = $new;
-                }
-            }
-
-            foreach (['status', 'photo_path'] as $key) {
-                $old = $beforeRaw[$key] ?? null;
-                $new = $afterRaw[$key] ?? null;
-
-                if ((string) $old !== (string) $new) {
-                    $before[$key] = $old;
-                    $after[$key] = $new;
-                }
-            }
-
-            AuditLog::record('updated', 'resident', $resident->id, $before ?: null, $after ?: null);
-        });
-
-        return redirect()
-            ->route('residents.show', $resident)
-            ->with('status', "{$resident->full_name} was updated.");
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Archive / restore (administrator only)                              */
-    /* ------------------------------------------------------------------ */
-
-    public function archive(Request $request, Resident $resident): RedirectResponse
-    {
-        abort_unless($request->user()?->isAdmin(), 403);
-
-        if ($resident->isArchived()) {
-            return redirect()->back()->with('error', "{$resident->full_name} is already archived.");
-        }
-
-        $suspended = [];
-
-        DB::transaction(function () use ($resident, &$suspended): void {
-            $resident->forceFill(['status' => Resident::STATUS_ARCHIVED])->save();
-
-            foreach (User::where('resident_id', $resident->id)->get() as $user) {
-                $user->forceFill([
-                    'status' => User::STATUS_SUSPENDED,
-                    'suspended_at' => now(),
-                    'suspension_reason' => self::ARCHIVE_SUSPENSION_REASON,
-                ])->save();
-
-                $suspended[] = $user->email;
-            }
-        });
-
-        $after = ['status' => Resident::STATUS_ARCHIVED];
-
-        if ($suspended !== []) {
-            $after['suspended_accounts'] = $suspended;
-        }
-
-        AuditLog::record('archived', 'resident', $resident->id, ['status' => Resident::STATUS_ACTIVE], $after);
-
-        $message = "{$resident->full_name} archived.";
-
-        if ($suspended !== []) {
-            $message .= ' The linked portal account was suspended.';
-        }
-
-        return redirect()->back()->with('status', $message);
-    }
-
-    public function restore(Request $request, Resident $resident): RedirectResponse
-    {
-        abort_unless($request->user()?->isAdmin(), 403);
-
-        if (! $resident->isArchived()) {
-            return redirect()->back()->with('error', "{$resident->full_name} is already active.");
-        }
-
-        $reinstated = [];
-
-        DB::transaction(function () use ($resident, &$reinstated): void {
-            $resident->forceFill(['status' => Resident::STATUS_ACTIVE])->save();
-
-            foreach (User::where('resident_id', $resident->id)->get() as $user) {
-                if ($user->status !== User::STATUS_SUSPENDED || $user->suspension_reason !== self::ARCHIVE_SUSPENSION_REASON) {
-                    continue;
-                }
-
-                // Accounts suspended for some other reason are left untouched;
-                // an account that was never approved goes back to pending.
-                $user->forceFill([
-                    'status' => $user->approved_at !== null ? User::STATUS_ACTIVE : User::STATUS_PENDING,
-                    'suspended_at' => null,
-                    'suspension_reason' => null,
-                ])->save();
-
-                $reinstated[] = $user->email;
-            }
-        });
-
-        $after = ['status' => Resident::STATUS_ACTIVE];
-
-        if ($reinstated !== []) {
-            $after['reinstated_accounts'] = $reinstated;
-        }
-
-        AuditLog::record('restored', 'resident', $resident->id, ['status' => Resident::STATUS_ARCHIVED], $after);
-
-        $message = "{$resident->full_name} restored to the active registry.";
-
-        if ($reinstated !== []) {
-            $message .= ' The linked portal account is active again.';
-        }
-
-        return redirect()->back()->with('status', $message);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Helpers                                                             */
-    /* ------------------------------------------------------------------ */
-
     /**
-     * Households a resident may be assigned to, always including the record's
-     * current household so an existing assignment can be kept on edit.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Household>
+     * @return array<string, mixed>
      */
-    private function householdChoices(Resident $resident)
+    private function validateResidentFields(): array
     {
-        return Household::query()
-            ->where(function ($query) use ($resident): void {
-                $query->whereIn('status', ResidentFormRequest::ASSIGNABLE_HOUSEHOLD_STATUSES);
-
-                if ($resident->household_id !== null) {
-                    $query->orWhere('id', $resident->household_id);
-                }
-            })
-            ->orderBy('household_number')
-            ->get();
-    }
-
-    /**
-     * Store (or clear) the photo on the private `local` disk and return the
-     * value that should end up in photo_path.
-     */
-    private function storePhoto(Request $request, ?string $currentPath): ?string
-    {
-        if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
-            $extension = strtolower($file->getClientOriginalExtension() ?: ($file->extension() ?: 'jpg'));
-            $filename = now()->format('YmdHis').'-'.Str::random(12).'.'.$extension;
-
-            $path = Storage::disk('local')->putFileAs('residents', $file, $filename);
-
-            if ($path === false) {
-                return $currentPath;
-            }
-
-            if ($path !== $currentPath) {
-                $this->forgetPhoto($currentPath);
-            }
-
-            return $path;
-        }
-
-        if ($request->boolean('remove_photo')) {
-            $this->forgetPhoto($currentPath);
-
-            return null;
-        }
-
-        return $currentPath;
-    }
-
-    /** Delete a stored photo from whichever disk holds it. */
-    private function forgetPhoto(?string $path): void
-    {
-        if ($path === null || $path === '') {
-            return;
-        }
-
-        foreach (['local', 'public'] as $disk) {
-            if (Storage::disk($disk)->exists($path)) {
-                Storage::disk($disk)->delete($path);
-
-                return;
-            }
-        }
-    }
-
-    /** Keep household member counts in step when a resident moves in or out. */
-    private function syncHouseholdCounts(mixed $oldId, mixed $newId): void
-    {
-        $ids = array_unique(array_filter([
-            $oldId !== null ? (int) $oldId : null,
-            $newId !== null ? (int) $newId : null,
-        ]));
-
-        foreach ($ids as $id) {
-            Household::query()->whereKey($id)->first()?->syncMemberCount();
-        }
+        return [
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'suffix' => 'nullable|string|max:10',
+            'birth_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'birthplace' => 'nullable|string|max:150',
+            'sex' => 'required|in:Male,Female,Other',
+            'civil_status' => 'required|in:Single,Married,Divorced,Widowed,Separated',
+            'nationality' => 'nullable|string|max:50',
+            'religion' => 'nullable|string|max:100',
+            'education_level' => 'nullable|string|max:100',
+            'occupation' => 'nullable|string|max:100',
+            'spouse_name' => 'nullable|string|max:100',
+            'blood_type' => ['nullable', 'string', 'max:5', 'regex:/^(?:A|B|AB|O)[+-]?$/i'],
+            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'email' => 'nullable|string|email|max:150',
+            'address' => 'nullable|string|max:255',
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'residency_status' => 'nullable|string|max:50',
+            'voter_status' => 'nullable|boolean',
+            'is_household_head' => 'nullable|boolean',
+            'purok_id' => 'nullable|integer|exists:puroks,id',
+            'household_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('households', 'id')
+                    ->whereNull('deleted_at')
+                    ->whereIn('status', ['Occupied', 'Under Construction']),
+            ],
+            'status' => 'required|in:Active,Archived',
+        ];
     }
 }

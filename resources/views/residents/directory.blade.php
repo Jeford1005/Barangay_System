@@ -1,127 +1,288 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Resident Directory — Barangay Management System</title>
+    <style>
+        /* Self-contained print stylesheet: independent of app styling. */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-@section('title', 'Resident directory')
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 10.5pt;
+            line-height: 1.4;
+            color: #000;
+            background: #f0f0f0;
+            padding: 16px;
+        }
 
-@section('content')
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-4 print:mb-3 print:block">
-        <div>
-            <a href="{{ route('residents.index') }}"
-               class="text-sm font-medium text-sky-700 transition hover:text-sky-800 print:hidden">
-                &larr; Back to residents
-            </a>
-            <h1 class="mt-2 text-2xl font-semibold text-slate-900">Resident directory</h1>
-            <p class="mt-1 text-sm text-slate-500 print:hidden">
-                Active residents grouped by purok &middot; {{ number_format($total) }} in total
-                @if (filled($search))
-                    &middot; matching "{{ $search }}"
-                @endif
-            </p>
-        </div>
+        .sheet {
+            max-width: 186mm;
+            margin: 0 auto;
+            background: #fff;
+            padding: 16mm 14mm;
+            box-shadow: 0 1px 4px rgba(0,0,0,.25);
+        }
 
-        <div class="flex flex-wrap gap-2 print:hidden">
-            <button type="button"
-                    data-print
-                    class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                Print directory
-            </button>
-        </div>
+        /* ---------- Letterhead (shared official-form pattern) ---------- */
+        .letterhead {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 2.5pt double #000;
+            padding-bottom: 10pt;
+        }
+        .letterhead img { width: 64px; height: 64px; object-fit: contain; }
+        .letterhead .lines { flex: 1; text-align: center; line-height: 1.3; }
+        .letterhead .rep  { font-size: 9.5pt; letter-spacing: .08em; }
+        .letterhead .brgy { font-size: 15pt; font-weight: bold; letter-spacing: .14em; text-transform: uppercase; }
+        .letterhead .office { font-size: 10pt; font-style: italic; }
+
+        .doc-title {
+            text-align: center;
+            margin: 13pt 0 3pt;
+            font-size: 14pt;
+            font-weight: bold;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+        }
+        .doc-sub {
+            text-align: center;
+            font-size: 9.5pt;
+            color: #333;
+            margin-bottom: 10pt;
+        }
+
+        /* ---------- Summary strip ---------- */
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6pt 18pt;
+            border: 1pt solid #000;
+            border-left: 4pt solid #000;
+            padding: 7pt 10pt;
+            font-size: 10pt;
+            margin-bottom: 14pt;
+        }
+        .summary b { font-size: 11pt; }
+
+        /* ---------- Per-purok sections ---------- */
+        section { margin-bottom: 13pt; }
+        .purok-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 0.75pt solid #000;
+            padding-bottom: 2pt;
+            margin-bottom: 6pt;
+        }
+        .purok-head h2 {
+            font-size: 11pt;
+            text-transform: uppercase;
+            letter-spacing: .09em;
+        }
+        .purok-head .count {
+            font-size: 9pt;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 0.5pt solid #444;
+            padding: 3.5pt 6pt;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            background: #eee;
+        }
+        td.num { width: 26pt; text-align: right; color: #444; }
+        .empty { color: #777; font-style: italic; }
+
+        /* ---------- Certification + signatures ---------- */
+        .cert {
+            margin-top: 20pt;
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #222;
+        }
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 26pt 40pt;
+            margin-top: 26pt;
+            break-inside: avoid;
+        }
+        .sig { text-align: center; font-size: 10pt; }
+        .sig .line { border-top: 0.75pt solid #000; margin-bottom: 3pt; }
+        .sig .name { font-weight: bold; min-height: 14pt; }
+        .sig .role { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .06em; color: #333; }
+
+        .printed-note {
+            margin-top: 14pt;
+            font-size: 8pt;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+            border-top: 0.5pt solid #999;
+            padding-top: 4pt;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* ---------- Toolbar (screen only) ---------- */
+        .toolbar {
+            max-width: 186mm;
+            margin: 0 auto 12px;
+            display: flex;
+            gap: 8px;
+        }
+        .toolbar button, .toolbar a {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            padding: 9px 16px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #1d4ed8;
+            text-decoration: none;
+            cursor: pointer;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .toolbar .primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+
+        /* ---------- Print ---------- */
+        @page { size: A4 portrait; margin: 12mm; }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .sheet { box-shadow: none; padding: 0; max-width: none; }
+            .toolbar { display: none !important; }
+            .printed-note .pagenum::after { content: 'Page ' counter(page); }
+            section, .signatures { break-inside: auto; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
+            thead { display: table-header-group; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar no-print">
+        <button type="button" class="primary" onclick="window.print()">Print directory</button>
+        <a href="{{ route('residents.index') }}">Back to residents</a>
     </div>
 
-    {{-- ── search ── --}}
-    <form method="GET" action="{{ route('residents.directory') }}"
-          class="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
-        <div class="min-w-56 flex-1">
-            <label for="search" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>
-            <input id="search"
-                   type="search"
-                   name="search"
-                   value="{{ $search ?? '' }}"
-                   placeholder="Name, address or phone"
-                   maxlength="100"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500">
-        </div>
-
-        <div class="flex gap-2">
-            <button type="submit"
-                    class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                Apply
-            </button>
-            <a href="{{ route('residents.directory') }}"
-               class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                Reset
-            </a>
-        </div>
-    </form>
-
-    {{-- ── printed letterhead ── --}}
-    <div class="mb-6 hidden rounded-xl border border-sky-200 bg-sky-50 px-5 py-4 text-center print:block">
-        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-sky-900">Barangay Bidduang &middot; Pamplona, Cagayan</p>
-        <p class="mt-1 text-base font-semibold text-slate-900">Resident Directory (Active Residents)</p>
-        <p class="mt-1 text-xs text-slate-600">Printed {{ now()->format('M j, Y') }} &middot; {{ number_format($total) }} resident(s)</p>
-    </div>
-
-    @forelse ($groups as $group)
-        <section class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:mb-4 print:break-inside-avoid print:rounded-none print:shadow-none">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3 print:bg-white">
-                <h2 class="text-sm font-semibold text-slate-900">
-                    @if ($group['purok'] !== null)
-                        {{ $group['purok']->name }}
-                        <span class="ml-1.5 rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ $group['purok']->code }}</span>
-                    @else
-                        No Purok Assigned
-                    @endif
-                </h2>
-                <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {{ count($group['residents']) }} resident(s)
-                </span>
+    <div class="sheet">
+        <header class="letterhead">
+            <img src="{{ asset('images/bidduang-seal.png') }}" alt="Barangay Bidduang official seal">
+            <div class="lines">
+                <div class="rep">Republic of the Philippines</div>
+                <div class="rep">Province of&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;· Municipality/City of&nbsp;&nbsp;&nbsp;—</div>
+                <div class="brgy">Barangay Bidduang</div>
+                <div class="office">Office of the Barangay — Records Section</div>
             </div>
+        </header>
 
-            @if ($group['residents'] === [])
-                <p class="px-5 py-4 text-sm text-slate-500">No residents assigned to this purok.</p>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-100 text-sm">
-                        <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 print:bg-white">
-                            <tr>
-                                <th class="px-5 py-2.5">Name</th>
-                                <th class="px-5 py-2.5 text-right">Age</th>
-                                <th class="px-5 py-2.5">Sex</th>
-                                <th class="px-5 py-2.5">Civil status</th>
-                                <th class="px-5 py-2.5">Address</th>
-                                <th class="px-5 py-2.5">Phone</th>
-                                <th class="px-5 py-2.5">Household</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @foreach ($group['residents'] as $resident)
-                                <tr>
-                                    <td class="px-5 py-2.5 font-medium text-slate-900">
-                                        <a href="{{ route('residents.show', $resident) }}" class="transition hover:text-sky-700 print:text-black print:no-underline">
-                                            {{ $resident->full_name }}
-                                        </a>
-                                    </td>
-                                    <td class="px-5 py-2.5 text-right text-slate-600">{{ $resident->age }}</td>
-                                    <td class="px-5 py-2.5 text-slate-600">{{ $resident->sex }}</td>
-                                    <td class="px-5 py-2.5 text-slate-600">{{ $resident->civil_status }}</td>
-                                    <td class="px-5 py-2.5 text-slate-600">{{ $resident->resolvedAddress() ?: '—' }}</td>
-                                    <td class="px-5 py-2.5 text-slate-600">{{ $resident->phone ?: '—' }}</td>
-                                    <td class="px-5 py-2.5 text-slate-600">{{ $resident->household?->household_number ?? '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+        <h1 class="doc-title">Resident Directory</h1>
+        <p class="doc-sub">Master list of active residents organized by purok</p>
+
+        <div class="summary">
+            <span>Total active residents: <b>{{ $total }}</b></span>
+            <span>Puroks listed: <b>{{ $purokCounts->count() }}</b></span>
+            <span>Generated: <b>{{ now()->format('M j, Y') }}</b></span>
+        </div>
+
+        {{-- Per-purok summary table first, then the rosters. --}}
+        <section>
+            <div class="purok-head">
+                <h2>Summary by Purok</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Purok</th><th style="width: 60pt;">Residents</th></tr>
+                </thead>
+                <tbody>
+                    @foreach ($purokCounts as $purokName => $count)
+                        <tr>
+                            <td>{{ $purokName }}</td>
+                            <td style="text-align: right;">{{ $count }}</td>
+                        </tr>
+                    @endforeach
+                    <tr>
+                        <td style="font-weight: bold;">Total</td>
+                        <td style="text-align: right; font-weight: bold;">{{ $total }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
-    @empty
-        <p class="rounded-xl border border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500 shadow-sm">
-            No active residents matched your search.
-        </p>
-    @endforelse
 
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm shadow-sm print:rounded-none print:shadow-none">
-        <p class="font-semibold text-slate-900">Grand total: {{ number_format($total) }} active resident(s)</p>
-        <p class="text-slate-500 print:hidden">Use the print button above for a paper copy of this directory.</p>
+        @foreach ($grouped as $purokName => $rows)
+            <section>
+                <div class="purok-head">
+                    <h2>{{ $purokName }}</h2>
+                    <span class="count">{{ $rows->count() }} resident{{ $rows->count() === 1 ? '' : 's' }}</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 26pt;">#</th>
+                            <th>Name</th>
+                            <th style="width: 52pt;">Sex</th>
+                            <th style="width: 70pt;">Birth Date</th>
+                            <th style="width: 78pt;">Contact No.</th>
+                            <th style="width: 70pt;">Voter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($rows as $resident)
+                            <tr>
+                                <td class="num">{{ $loop->iteration }}</td>
+                                <td>{{ $resident->last_name }}, {{ $resident->first_name }}@if ($resident->suffix) {{ $resident->suffix }}@endif</td>
+                                <td>{{ $resident->sex }}</td>
+                                <td>@if ($resident->birth_date){{ $resident->birth_date->format('M j, Y') }}@else<span class="empty">—</span>@endif</td>
+                                <td>@if (filled($resident->phone_number)){{ $resident->phone_number }}@else<span class="empty">—</span>@endif</td>
+                                <td>{{ $resident->voter_status ? 'Yes' : 'No' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+        @endforeach
+
+        <p class="cert">
+            I certify that this directory is a true and correct list of the active residents
+            of Barangay Bidduang as recorded in the Barangay Management System as of
+            {{ now()->format('F j, Y') }}, totaling {{ $total }} resident{{ $total === 1 ? '' : 's' }}.
+        </p>
+
+        <div class="signatures">
+            <div class="sig">
+                <div class="line"></div>
+                <div class="name">&nbsp;</div>
+                <div class="role">Prepared by (name &amp; signature)</div>
+            </div>
+            <div class="sig">
+                <div class="line"></div>
+                <div class="name">&nbsp;</div>
+                <div class="role">Punong Barangay</div>
+            </div>
+        </div>
+
+        <footer class="printed-note">
+            <span>Printed {{ now()->format('M j, Y g:i A') }} · Barangay Management System</span>
+            <span class="pagenum"></span>
+        </footer>
     </div>
-@endsection
+</body>
+</html>

@@ -1,23 +1,17 @@
-@extends('layouts.app')
-
-@section('title', 'New blotter entry')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Record Blotter Case" subtitle="A case number (BLTR-{{ date('Y') }}-####) is assigned automatically on save." />
+@endsection
 
 @section('content')
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <nav class="mb-2 text-xs font-medium text-slate-400" aria-label="Breadcrumb">
-                <a href="{{ route('blotter.index') }}" class="transition hover:text-slate-700">Blotter</a>
-                <span class="mx-1">&rsaquo;</span>
-                <span class="text-slate-500">New entry</span>
-            </nav>
-            <h1 class="text-2xl font-semibold text-slate-900">New blotter entry</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                The case number (BLTR-YYYY-NNNN) is assigned automatically when the entry is recorded.
-            </p>
-        </div>
-    </div>
+{{-- Form card: also the dialog fragment (fetched with ?fragment=1). --}}
+<div class="bg-white {{ request()->boolean('fragment') ? '' : 'rounded-xl shadow overflow-hidden' }} {{ request()->boolean('fragment') ? 'max-w-none' : 'max-w-4xl mx-auto' }}">
+    <form action="{{ route('blotter.store') }}" method="POST" class="{{ request()->boolean('fragment') ? 'p-0' : 'p-6' }} space-y-8">
+        @csrf
+        @include('blotter._form', ['blotter' => null])
 
-    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        @include('blotter._form')
-    </div>
+        <x-form.actions cancel-href="{{ route('blotter.index') }}" submit-label="Record Case" />
+    </form>
+</div>
 @endsection
+</x-app-layout>

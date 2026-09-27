@@ -1,160 +1,50 @@
-@extends('layouts.app')
-
-@section('title', 'Certificate types')
+<x-app-layout>
+@section('page_header')
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <x-page-header title="Certificate catalog" subtitle="Govern which document types residents and clerks may request or issue." />
+        <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">New document type</a>
+    </div>
+@endsection
 
 @section('content')
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Certificate types</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                The catalog behind the counter and the request queue: codes, titles and fees for every certificate the barangay issues.
-            </p>
-        </div>
+<div class="space-y-5">
+    @if (session('success'))<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('success') }}</div>@endif
+    @if ($errors->any())<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ $errors->first() }}</div>@endif
 
-        <div class="flex flex-wrap items-center gap-2">
-            <button type="button"
-                    data-open-modal="type-new"
-                    class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                + New type
-            </button>
-        </div>
+    <div class="module-toolbar-sticky rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+        <form method="GET" class="flex flex-col gap-2 sm:flex-row">
+            <div class="min-w-0 flex-1"><label for="document-search" class="sr-only">Search document catalog</label><input id="document-search" name="search" value="{{ $search }}" maxlength="100" placeholder="Search code, title, or category" class="min-h-10 w-full rounded-lg border border-neutral-300 px-3 text-sm focus:border-blue-500 focus:ring-blue-500"></div>
+            <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" class="min-h-10 rounded-lg border border-neutral-300 bg-white px-3 text-sm"><option value="">All statuses</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
+            <button class="min-h-10 rounded-lg border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-50" type="submit">Filter</button>
+        </form>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-100 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                    <th class="px-5 py-3">Code</th>
-                    <th class="px-5 py-3">Title</th>
-                    <th class="px-5 py-3">Type</th>
-                    <th class="px-5 py-3 text-right">Fee ₱</th>
-                    <th class="px-5 py-3">Status</th>
-                    <th class="px-5 py-3 text-right">Issued</th>
-                    <th class="px-5 py-3 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse ($documents as $document)
+    <div class="grid gap-5 lg:grid-cols-[1fr_20rem]">
+        <div class="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <table class="min-w-[800px] divide-y divide-neutral-200 text-sm">
+                <thead class="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500"><tr><th class="px-4 py-3">Code</th><th class="px-4 py-3">Title</th><th class="px-4 py-3">Type</th><th class="px-4 py-3">Fee</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Issued</th><th class="no-print px-4 py-3 text-right">Actions</th></tr></thead>
+                <tbody class="divide-y divide-neutral-100">
+                @forelse($documents as $document)
                     <tr>
-                        <td class="px-5 py-3.5">
-                            <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                                {{ $document->code }}
-                            </span>
-                        </td>
-
-                        <td class="px-5 py-3.5">
-                            <p class="font-medium text-slate-900">{{ $document->title }}</p>
-                            @if ($document->description)
-                                <p class="mt-0.5 max-w-md text-xs text-slate-500">{{ $document->description }}</p>
-                            @endif
-                        </td>
-
-                        <td class="px-5 py-3.5 text-slate-600">{{ $document->document_type }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">{{ number_format((float) $document->fee, 2) }}</td>
-
-                        <td class="px-5 py-3.5">
-                            @switch($document->status)
-                                @case('Active')
-                                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Active</span>
-                                    @break
-                                @case('Draft')
-                                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Draft</span>
-                                    @break
-                                @default
-                                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Inactive</span>
-                            @endswitch
-                        </td>
-
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">{{ $document->issuances_count }}</td>
-
-                        <td class="px-5 py-3.5">
-                            <div class="flex flex-wrap justify-end gap-2">
-                                <button type="button"
-                                        data-open-modal="type-edit-{{ $document->id }}"
-                                        class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50">
-                                    Edit
-                                </button>
-                                <button type="button"
-                                        data-open-modal="type-delete-{{ $document->id }}"
-                                        class="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50">
-                                    Delete
-                                </button>
-                            </div>
-                        </td>
+                        <td class="px-4 py-3 font-semibold text-neutral-900">{{ $document->code }}</td>
+                        <td class="px-4 py-3"><p class="font-medium text-neutral-900">{{ $document->title }}</p><p class="text-xs text-neutral-500">{{ $document->category }}</p></td>
+                        <td class="px-4 py-3 text-neutral-700">{{ $document->document_type }}</td>
+                        <td class="px-4 py-3 text-neutral-700">{{ (float) $document->fee > 0 ? '₱'.number_format((float) $document->fee, 2) : 'Free' }}</td>
+                        <td class="px-4 py-3"><span class="rounded-full px-2 py-1 text-xs font-medium {{ $document->status === 'Active' ? 'bg-green-100 text-green-800' : ($document->status === 'Draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-neutral-100 text-neutral-700') }}">{{ $document->status }}</span></td>
+                        <td class="px-4 py-3 text-neutral-600">{{ $document->issuances_count }}</td>
+                        <td class="no-print px-4 py-3 text-right"><a href="{{ route('admin.certificate-types.edit', $document) }}" class="font-semibold text-green-700 underline hover:text-green-900">Edit</a></td>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="px-5 py-8 text-center text-sm text-slate-500">
-                            No certificate types yet — add the first one with “+ New type”.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="mt-6">
-        {{ $documents->links() }}
-    </div>
-
-    {{-- ── dialogs: new, then edit / delete per row ── --}}
-    @include('admin.certificate-types.dialog', ['document' => null])
-
-    @foreach ($documents as $document)
-        @include('admin.certificate-types.dialog', ['document' => $document])
-
-        <div id="type-delete-{{ $document->id }}"
-             data-modal
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="type-delete-{{ $document->id }}-title"
-             aria-hidden="true"
-             class="fixed inset-0 z-40 hidden">
-            <div class="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" data-close-modal></div>
-
-            <div class="absolute inset-0 overflow-y-auto">
-                <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
-                    <div class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-7">
-
-                        <button type="button"
-                                data-close-modal
-                                aria-label="Close dialog"
-                                class="absolute right-4 top-4 rounded-md p-1.5 text-slate-400 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" width="18" height="18">
-                                <path d="M18 6 6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-400">Delete certificate type</p>
-                        <h2 id="type-delete-{{ $document->id }}-title" class="mt-2 text-xl font-semibold text-slate-900">
-                            {{ $document->code }} — {{ $document->title }}
-                        </h2>
-                        <p class="mt-2 text-sm leading-relaxed text-slate-500">
-                            Remove this type from the catalog? It can only be deleted while no
-                            certificate has been issued under it and no resident has requested it online.
-                            Otherwise, set the status to Inactive instead.
-                        </p>
-
-                        <form method="POST" action="{{ route('admin.certificate-types.destroy', $document) }}"
-                              data-submit-loading data-loading-label="Deleting…"
-                              class="mt-6">
-                            @csrf
-                            @method('DELETE')
-
-                            <button type="submit"
-                                    class="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-wait disabled:opacity-70">
-                                Delete certificate type
-                            </button>
-                        </form>
-
-                        <div class="mt-5 border-t border-slate-100 pt-4 text-center">
-                            <button type="button" data-close-modal class="text-sm text-slate-500 transition hover:text-slate-800">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                @empty<tr><td colspan="7" class="px-4 py-10 text-center text-neutral-500">No document types match these filters.</td></tr>@endforelse
+                </tbody>
+            </table>
+            <div class="border-t border-neutral-100 px-4 py-3">{{ $documents->links() }}</div>
         </div>
-    @endforeach
+
+        <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold text-neutral-900">Catalog rules</h2>
+            <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-neutral-600"><li>Only Active Certificate/Clearance types are selectable for issuance.</li><li>Codes are limited to 2–8 letters or numbers.</li><li>Codes referenced by historical issuances cannot be renamed.</li><li>Referenced document types are never deleted; unused types are archived.</li></ul>
+        </div>
+    </div>
+</div>
 @endsection
+</x-app-layout>

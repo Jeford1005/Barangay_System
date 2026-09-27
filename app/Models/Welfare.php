@@ -3,39 +3,66 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Welfare extends Model
 {
-    use HasFactory;
-
-    public const ASSISTANCE_TYPES = ['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other'];
-    public const STATUSES = ['Requested', 'Under Review', 'Approved', 'Denied', 'Released'];
+    use HasFactory, SoftDeletes;
 
     protected $table = 'welfare';
 
     protected $fillable = [
-        'resident_id', 'assistance_type', 'requested_amount', 'amount',
-        'status', 'request_date', 'notes', 'reviewed_by',
+        'beneficiary_id',
+        'beneficiary_name',
+        'beneficiary_address',
+        'beneficiary_phone',
+        'assistance_type',
+        'program_name',
+        'program_description',
+        'requested_amount',
+        'approved_amount',
+        'status',
+        'request_date',
+        'approval_date',
+        'release_date',
+        'remarks',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'beneficiary_id' => 'integer',
+        'request_date' => 'date',
+        'approval_date' => 'date',
+        'release_date' => 'date',
+        'requested_amount' => 'decimal:2',
+        'approved_amount' => 'decimal:2',
+    ];
+
+    public function beneficiary()
     {
-        return [
-            'request_date' => 'date',
-            'requested_amount' => 'decimal:2',
-            'amount' => 'decimal:2',
-        ];
+        return $this->belongsTo(Resident::class, 'beneficiary_id')->withTrashed();
     }
 
-    public function resident(): BelongsTo
+    public function scopeRequested($query)
     {
-        return $this->belongsTo(Resident::class);
+        return $query->where('status', 'Requested');
     }
 
-    public function reviewer(): BelongsTo
+    public function scopeUnderReview($query)
     {
-        return $this->belongsTo(User::class, 'reviewed_by');
+        return $query->where('status', 'Under Review');
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'Approved');
+    }
+
+    /**
+     * Total approved-but-not-yet-released assistance.
+     */
+    public function scopePendingRelease($query)
+    {
+        return $query->where('status', 'Approved');
     }
 }

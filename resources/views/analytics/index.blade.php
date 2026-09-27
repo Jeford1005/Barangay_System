@@ -1,213 +1,235 @@
-@extends('layouts.app')
-
-@section('title', 'Analytics')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Analytics" subtitle="Live at-a-glance statistics across all barangay modules." />
+@endsection
 
 @section('content')
-    @php
-        $toneMap = [
-            'sky' => ['border' => 'border-sky-200', 'bg' => 'bg-sky-50', 'text' => 'text-sky-700', 'value' => 'text-sky-900'],
-            'emerald' => ['border' => 'border-emerald-200', 'bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'value' => 'text-emerald-900'],
-            'amber' => ['border' => 'border-amber-200', 'bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'value' => 'text-amber-900'],
-        ];
+<div class="max-w-7xl mx-auto">
 
-        $sexColors = ['Male' => 'bg-sky-500', 'Female' => 'bg-emerald-500', 'Other' => 'bg-amber-400'];
-
-        $statusColors = [
-            'Open' => 'bg-amber-400',
-            'Pending' => 'bg-sky-500',
-            'Resolved' => 'bg-emerald-500',
-            'Dismissed' => 'bg-slate-400',
-            'Requested' => 'bg-sky-500',
-            'Under Review' => 'bg-amber-400',
-            'Approved' => 'bg-emerald-500',
-            'Denied' => 'bg-red-400',
-            'Released' => 'bg-teal-500',
-        ];
-    @endphp
-
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4 print:hidden">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Analytics</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                A live snapshot of the barangay record — roster, cases, welfare and certificate releases.
-            </p>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('reports.index') }}"
-               class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                Reports
-            </a>
-            <button type="button"
-                    data-print
-                    class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-                Print dashboard
-            </button>
-        </div>
+    <div class="no-print mb-4 flex flex-wrap items-center justify-end rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
+        <a href="{{ route('reports.index') }}" class="inline-flex min-h-10 items-center px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Printable reports →</a>
     </div>
 
-    {{-- ── KPI cards ── --}}
-    <div class="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        @foreach ($kpis as $kpi)
-            @php($tone = $toneMap[$kpi['tone']] ?? $toneMap['sky'])
-            <div class="rounded-xl border {{ $tone['border'] }} {{ $tone['bg'] }} p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide {{ $tone['text'] }}">{{ $kpi['label'] }}</p>
-                <p class="mt-1 text-3xl font-semibold {{ $tone['value'] }}">{{ $kpi['value'] }}</p>
-                <p class="mt-1 text-xs {{ $tone['text'] }}">{{ $kpi['hint'] }}</p>
+    {{-- KPI cards ------------------------------------------------------ --}}
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        @foreach ([
+            ['label' => 'Active Residents', 'value' => number_format($kpis->residents), 'sub' => number_format($kpis->voters).' registered voters', 'icon' => 'residents', 'tone' => 'blue'],
+            ['label' => 'Households', 'value' => number_format($kpis->households), 'sub' => $kpis->puroks.' puroks', 'icon' => 'households', 'tone' => 'green'],
+            ['label' => 'Certificates Issued', 'value' => number_format($kpis->certificates), 'sub' => $kpis->pendingRequests.' requests pending', 'icon' => 'printer', 'tone' => 'violet'],
+            ['label' => 'Open Blotter Cases', 'value' => number_format($kpis->openCases), 'sub' => $kpis->pendingApprovals.' account approvals waiting', 'icon' => 'clipboard-document-list', 'tone' => 'amber'],
+        ] as $card)
+            <div class="bg-white rounded-xl shadow p-5">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $card['label'] }}</p>
+                    <x-icon name="{{ $card['icon'] }}" class="h-5 w-5
+                        @if ($card['tone'] === 'blue') text-blue-500
+                        @elseif ($card['tone'] === 'green') text-green-500
+                        @elseif ($card['tone'] === 'violet') text-violet-500
+                        @else text-amber-500 @endif" />
+                </div>
+                <p class="mt-2 text-3xl font-bold text-gray-900">{{ $card['value'] }}</p>
+                <p class="mt-1 text-xs text-gray-500">{{ $card['sub'] }}</p>
             </div>
         @endforeach
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-2">
-        {{-- ── residents by purok ── --}}
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-            <div class="mb-4">
-                <h2 class="text-base font-semibold text-slate-900">Residents by purok</h2>
-                <p class="text-sm text-slate-500">Active residents, largest purok first by bar length.</p>
+    {{-- Population charts ---------------------------------------------- --}}
+    <h3 class="mt-10 mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Population</h3>
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {{-- Sex distribution: donut --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Sex Distribution</h4>
+            @php
+                $sexTotal = max(1, collect($sexDistribution)->sum('count'));
+                $donutR = 54; $donutC = 2 * M_PI * $donutR; $offset = 0;
+            @endphp
+            <div class="mt-4 flex items-center gap-5">
+                <svg viewBox="0 0 140 140" class="h-32 w-32 shrink-0 -rotate-90">
+                    <circle cx="70" cy="70" r="{{ $donutR }}" fill="none" stroke="#f1f5f9" stroke-width="20" />
+                    @foreach ($sexDistribution as $seg)
+                        @if ($seg['count'] > 0)
+                            @php $len = $donutC * $seg['count'] / $sexTotal; @endphp
+                            <circle cx="70" cy="70" r="{{ $donutR }}" fill="none"
+                                stroke="{{ $seg['color'] }}" stroke-width="20"
+                                stroke-dasharray="{{ $len }} {{ $donutC - $len }}"
+                                stroke-dashoffset="{{ -$offset }}" />
+                            @php $offset += $len; @endphp
+                        @endif
+                    @endforeach
+                </svg>
+                <ul class="space-y-2 text-sm">
+                    @foreach ($sexDistribution as $seg)
+                        <li class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-sm" style="background: {{ $seg['color'] }}"></span>
+                            <span class="text-gray-700">{{ $seg['label'] }}</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($seg['count']) }}</span>
+                            <span class="text-gray-400">({{ round($seg['count'] * 100 / $sexTotal) }}%)</span>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
+        </div>
 
-            <ul class="space-y-3">
-                @forelse ($purokBars as $bar)
+        {{-- Age brackets: vertical bars --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Age Brackets</h4>
+            @php
+                $ageTotal = max(1, collect($ageDistribution)->sum('count'));
+                $ageKnown = collect($ageDistribution)->sum('count');
+            @endphp
+            <div class="mt-4 flex items-end gap-2 h-32">
+                @foreach ($ageDistribution as $bar)
+                    <div class="flex flex-1 flex-col items-center justify-end gap-1 h-full">
+                        <span class="text-[11px] font-semibold text-gray-700">{{ $bar['count'] ?: '' }}</span>
+                        <div class="w-full rounded-t-md transition-all"
+                            style="height: {{ max(2, $bar['count'] * 100 / $ageTotal) }}%; background: {{ $bar['color'] }}"></div>
+                        <span class="text-[11px] text-gray-500">{{ $bar['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+            <p class="mt-2 text-xs text-gray-400">{{ number_format($ageKnown) }} residents with known birth dates</p>
+        </div>
+
+        {{-- By purok: horizontal bars --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Residents by Purok</h4>
+            <ul class="mt-4 space-y-3">
+                @foreach ($byPurok as $row)
                     <li>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-medium text-slate-700">{{ $bar['label'] }}</span>
-                            <span class="tabular-nums text-slate-500">{{ number_format($bar['count']) }}</span>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-700">{{ $row['label'] }}</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($row['count']) }}</span>
                         </div>
-                        <div class="mt-1.5 h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full bg-sky-500" style="width: {{ $bar['pct'] }}%"></div>
-                        </div>
-                    </li>
-                @empty
-                    <li class="text-sm text-slate-500">No active residents on the roster.</li>
-                @endforelse
-            </ul>
-        </section>
-
-        {{-- ── sex split ── --}}
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-            <div class="mb-4">
-                <h2 class="text-base font-semibold text-slate-900">Sex split</h2>
-                <p class="text-sm text-slate-500">{{ number_format($sexTotal) }} active residents in total.</p>
-            </div>
-
-            <div class="flex h-6 w-full overflow-hidden rounded-full bg-slate-100">
-                @foreach ($sexBars as $segment)
-                    <div class="{{ $sexColors[$segment['label']] ?? 'bg-slate-400' }}"
-                         style="width: {{ $segment['pct'] }}%"
-                         title="{{ $segment['label'] }}: {{ $segment['count'] }}"></div>
-                @endforeach
-            </div>
-
-            <ul class="mt-4 grid gap-2 sm:grid-cols-3">
-                @foreach ($sexBars as $segment)
-                    <li class="flex items-center gap-2 text-sm">
-                        <span class="h-3 w-3 shrink-0 rounded-full {{ $sexColors[$segment['label']] ?? 'bg-slate-400' }}"></span>
-                        <span class="text-slate-600">{{ $segment['label'] }}</span>
-                        <span class="ml-auto font-medium tabular-nums text-slate-900">
-                            {{ number_format($segment['count']) }}
-                            <span class="text-xs font-normal text-slate-400">({{ number_format($segment['pct'], 1) }}%)</span>
-                        </span>
-                    </li>
-                @endforeach
-            </ul>
-        </section>
-
-        {{-- ── blotter status split ── --}}
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-            <div class="mb-4">
-                <h2 class="text-base font-semibold text-slate-900">Blotter status split</h2>
-                <p class="text-sm text-slate-500">{{ number_format($blotterTotal) }} cases on file.</p>
-            </div>
-
-            <ul class="space-y-3">
-                @foreach ($blotterBars as $bar)
-                    <li>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-medium text-slate-700">{{ $bar['label'] }}</span>
-                            <span class="tabular-nums text-slate-500">
-                                {{ number_format($bar['count']) }}
-                                <span class="text-xs text-slate-400">({{ number_format($bar['share'], 1) }}%)</span>
-                            </span>
-                        </div>
-                        <div class="mt-1.5 h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full {{ $statusColors[$bar['label']] ?? 'bg-slate-400' }}" style="width: {{ $bar['pct'] }}%"></div>
+                        <div class="mt-1 h-2 w-full rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-blue-500" style="width: {{ $row['count'] * 100 / $maxPurok }}%"></div>
                         </div>
                     </li>
                 @endforeach
+                @if (empty($byPurok))
+                    <li class="text-sm text-gray-400">No puroks yet.</li>
+                @endif
             </ul>
-        </section>
-
-        {{-- ── welfare status split ── --}}
-        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-            <div class="mb-4">
-                <h2 class="text-base font-semibold text-slate-900">Welfare status split</h2>
-                <p class="text-sm text-slate-500">{{ number_format($welfareTotal) }} assistance requests on file.</p>
-            </div>
-
-            <ul class="space-y-3">
-                @foreach ($welfareBars as $bar)
-                    <li>
-                        <div class="flex items-center justify-between gap-3 text-sm">
-                            <span class="font-medium text-slate-700">{{ $bar['label'] }}</span>
-                            <span class="tabular-nums text-slate-500">
-                                {{ number_format($bar['count']) }}
-                                <span class="text-xs text-slate-400">({{ number_format($bar['share'], 1) }}%)</span>
-                            </span>
-                        </div>
-                        <div class="mt-1.5 h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-full rounded-full {{ $statusColors[$bar['label']] ?? 'bg-slate-400' }}" style="width: {{ $bar['pct'] }}%"></div>
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-        </section>
+        </div>
     </div>
 
-    {{-- ── certificate issuance trend ── --}}
-    <section class="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm print:shadow-none">
-        <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <h2 class="text-base font-semibold text-slate-900">Certificate issuances</h2>
-                <p class="text-sm text-slate-500">
-                    Released per month over the last 12 months
-                    @if ($certTrend->isNotEmpty())
-                        &middot; {{ $certTrend->first()['label'] }} &rarr; {{ $certTrend->last()['label'] }}
-                    @endif
-                </p>
+    {{-- Trends + blotter ------------------------------------------------ --}}
+    <h3 class="mt-10 mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Trends &amp; Peace &amp; Order</h3>
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {{-- Registrations trend --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">New Resident Registrations — last 12 months</h4>
+            <div class="mt-4 flex items-end gap-1 h-36">
+                @foreach ($registrationTrend as $bar)
+                    <div class="group flex flex-1 flex-col items-center justify-end gap-1 h-full" title="{{ $bar['label'] }}: {{ $bar['count'] }}">
+                        <span class="text-[10px] font-semibold text-gray-500 opacity-0 group-hover:opacity-100">{{ $bar['count'] ?: '' }}</span>
+                        <div class="w-full rounded-t bg-emerald-500/80 group-hover:bg-emerald-600"
+                            style="height: {{ $bar['count'] * 100 / max(1, collect($registrationTrend)->max('count')) }}%; min-height: {{ $bar['count'] ? '2px' : '0' }}"></div>
+                        <span class="text-[10px] text-gray-400">{{ explode(' ', $bar['label'])[0] }}</span>
+                    </div>
+                @endforeach
             </div>
-            <p class="text-sm text-slate-500">
-                Peak month: <span class="font-semibold text-slate-900">{{ number_format($certPeakCount) }}</span>
-            </p>
         </div>
 
-        <div class="flex h-44 items-end gap-1.5">
-            @foreach ($certTrend as $bucket)
-                <div class="flex h-full flex-1 flex-col justify-end">
-                    <div class="w-full rounded-t bg-emerald-500"
-                         style="height: {{ $bucket['count'] > 0 ? max($bucket['pct'], 3) : 0 }}%"
-                         title="{{ $bucket['label'] }}: {{ $bucket['count'] }}"></div>
+        {{-- Certificate issuance trend --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Certificates Issued — last 12 months</h4>
+            <div class="mt-4 flex items-end gap-1 h-36">
+                @foreach ($certTrend as $bar)
+                    <div class="group flex flex-1 flex-col items-center justify-end gap-1 h-full" title="{{ $bar['label'] }}: {{ $bar['count'] }}">
+                        <span class="text-[10px] font-semibold text-gray-500 opacity-0 group-hover:opacity-100">{{ $bar['count'] ?: '' }}</span>
+                        <div class="w-full rounded-t bg-violet-500/80 group-hover:bg-violet-600"
+                            style="height: {{ $bar['count'] * 100 / max(1, collect($certTrend)->max('count')) }}%; min-height: {{ $bar['count'] ? '2px' : '0' }}"></div>
+                        <span class="text-[10px] text-gray-400">{{ explode(' ', $bar['label'])[0] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {{-- Blotter status donut --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Blotter Case Status</h4>
+            @php
+                $blotterTotal = max(1, collect($blotterStatus)->sum('count'));
+                $bR = 54; $bC = 2 * M_PI * $bR; $bOffset = 0;
+            @endphp
+            <div class="mt-4 flex items-center gap-5">
+                <svg viewBox="0 0 140 140" class="h-28 w-28 shrink-0 -rotate-90">
+                    <circle cx="70" cy="70" r="{{ $bR }}" fill="none" stroke="#f1f5f9" stroke-width="20" />
+                    @foreach ($blotterStatus as $seg)
+                        @if ($seg['count'] > 0)
+                            @php $len = $bC * $seg['count'] / $blotterTotal; @endphp
+                            <circle cx="70" cy="70" r="{{ $bR }}" fill="none"
+                                stroke="{{ $seg['color'] }}" stroke-width="20"
+                                stroke-dasharray="{{ $len }} {{ $bC - $len }}"
+                                stroke-dashoffset="{{ -$bOffset }}" />
+                            @php $bOffset += $len; @endphp
+                        @endif
+                    @endforeach
+                </svg>
+                <ul class="space-y-2 text-sm">
+                    @foreach ($blotterStatus as $seg)
+                        <li class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-sm" style="background: {{ $seg['color'] }}"></span>
+                            <span class="text-gray-700">{{ $seg['label'] }}</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($seg['count']) }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+
+        {{-- Top complaint types --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Top Complaint Types</h4>
+            <ul class="mt-4 space-y-3">
+                @foreach ($topComplaints as $row)
+                    <li>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-700">{{ $row['label'] }}</span>
+                            <span class="font-semibold text-gray-900">{{ $row['count'] }}</span>
+                        </div>
+                        <div class="mt-1 h-2 w-full rounded-full bg-gray-100">
+                            <div class="h-2 rounded-full bg-amber-500" style="width: {{ $row['count'] * 100 / $maxComplaint }}%"></div>
+                        </div>
+                    </li>
+                @endforeach
+                @if (empty($topComplaints))
+                    <li class="text-sm text-gray-400">No blotter cases yet.</li>
+                @endif
+            </ul>
+        </div>
+
+        {{-- Welfare summary --}}
+        <div class="bg-white rounded-xl shadow p-6">
+            <h4 class="text-sm font-semibold text-gray-900">Welfare Assistance</h4>
+            <dl class="mt-4 space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Approved amount</dt>
+                    <dd class="font-semibold text-gray-900">₱{{ number_format($welfareAmounts->approved, 2) }}</dd>
                 </div>
-            @endforeach
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Released amount</dt>
+                    <dd class="font-semibold text-green-600">₱{{ number_format($welfareAmounts->released, 2) }}</dd>
+                </div>
+            </dl>
+            <ul class="mt-4 space-y-1.5 border-t border-gray-100 pt-3 text-xs">
+                @foreach ($welfareStatus as $seg)
+                    <li class="flex justify-between">
+                        <span class="text-gray-600">{{ $seg['label'] }}</span>
+                        <span class="font-semibold text-gray-900">{{ $seg['count'] }}</span>
+                    </li>
+                @endforeach
+            </ul>
         </div>
+    </div>
 
-        <div class="mt-2 flex gap-1.5 border-t border-slate-200 pt-2">
-            @foreach ($certTrend as $bucket)
-                <span class="flex-1 text-center text-[10px] uppercase tracking-wide text-slate-400">
-                    {{ \Illuminate\Support\Carbon::parse($bucket['label'])->format('M') }}
-                </span>
-            @endforeach
-        </div>
-
-        <div class="mt-1 flex gap-1.5">
-            @foreach ($certTrend as $bucket)
-                <span class="flex-1 text-center text-[11px] font-medium tabular-nums text-slate-600">
-                    {{ $bucket['count'] }}
-                </span>
-            @endforeach
-        </div>
-    </section>
-
-    <p class="mt-6 text-xs text-slate-400 print:hidden">
-        Generated {{ now()->format('F j, Y \a\t H:i') }} &middot; All figures computed live from current records.
+    {{-- Footer note ----------------------------------------------------- --}}
+    <p class="mt-8 text-xs text-gray-400">
+        Figures are live counts from the database. {{ $seniors }} senior residents (60+) currently registered —
+        see <a href="{{ route('reports.population') }}" class="text-blue-600 hover:underline">Reports</a> for printable official versions.
     </p>
+</div>
 @endsection
+</x-app-layout>

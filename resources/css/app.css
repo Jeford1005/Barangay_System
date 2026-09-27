@@ -6,73 +6,810 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    /* Inter is what every page actually loads (fonts.bunny.net) and what the
+       interface has been rendering with. The token previously named Instrument
+       Sans, which was never loaded, so `font-sans` silently fell back to the
+       system stack. Declared to match reality rather than add a second
+       webfont. */
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
 
-/* Fine noise so large flat surfaces do not read as pure vector. */
-.grain-overlay {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
+:root {
+    --sidebar-bg: #15181b;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-text: #e8edf0;
+    --sidebar-muted: #8b969f;
+    --sidebar-faint: #5c6872;
+    --sidebar-accent: #8bb9dc;
+    --sidebar-accent-soft: rgba(139, 185, 220, 0.12);
 }
 
-/* Chrome autofill repaints fields near-white; keep them in the dark theme. */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #ffffff;
-    -webkit-box-shadow: 0 0 0 1000px #14345f inset;
-    caret-color: #ffffff;
-    transition: background-color 9999s ease-out;
+#sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+}
+
+#sidebar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent 48%);
+}
+
+#sidebar > * {
+    position: relative;
+    z-index: 1;
+}
+
+.sidebar-brand {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+#sidebar > div:first-child {
+    position: relative;
+    justify-content: center;
+}
+
+#sidebar > div:first-child .sidebar-brand {
+    flex: 0 0 auto;
+}
+
+#sidebar > div:first-child #sidebar-minimize,
+#sidebar > div:first-child #sidebar-close {
+    position: absolute;
+    right: 1rem;
+    margin-left: 0;
+}
+
+.sidebar-brand-mark {
+    display: flex;
+    height: 4.5rem;
+    width: 4.5rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9999px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sidebar-brand-mark img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    padding: 0;
+}
+
+.sidebar-brand-name {
+    display: block;
+    overflow: hidden;
+    color: var(--sidebar-text);
+    font-size: 0.8125rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-brand-meta {
+    display: block;
+    margin-top: 0.25rem;
+    overflow: hidden;
+    color: var(--sidebar-faint);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.sidebar-toggle {
+    display: inline-flex;
+    height: 2rem;
+    width: 2rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    color: var(--sidebar-faint);
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--sidebar-text);
+    outline: none;
+}
+
+.nav-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem 0.75rem 0.5rem;
+    color: var(--sidebar-faint);
+    font-size: 0.625rem;
+    font-weight: 750;
+    letter-spacing: 0.18em;
+    line-height: 1;
+    text-transform: uppercase;
+    user-select: none;
+}
+
+.nav-section::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.nav-section-index {
+    color: #53606a;
+    font-size: 0.5625rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+}
+
+.nav-row {
+    position: relative;
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--sidebar-muted);
+    font-size: 0.8125rem;
+    font-weight: 550;
+    line-height: 1.25;
+    transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.nav-row::before {
+    content: '';
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    left: 0;
+    width: 2px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background-color 160ms ease;
+}
+
+.nav-row:hover {
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--sidebar-text);
+}
+
+.nav-row:active {
+    transform: translateY(1px);
+}
+
+.nav-row-active {
+    background: var(--sidebar-accent-soft);
+    color: var(--sidebar-text);
+}
+
+.nav-row-active::before {
+    background: var(--sidebar-accent);
+}
+
+.nav-icon {
+    display: flex;
+    height: 1.25rem;
+    width: 1.25rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: #7d8992;
+    transition: color 160ms ease, transform 160ms ease;
+}
+
+.nav-row:hover .nav-icon,
+.nav-row-active .nav-icon {
+    color: var(--sidebar-accent);
+}
+
+.nav-row-active .nav-icon {
+    transform: translateX(1px);
+}
+
+.nav-subrow {
+    position: relative;
+    display: flex;
+    min-height: 2.25rem;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    color: #7f8b94;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.25;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.nav-subrow:hover,
+.nav-subrow-active {
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--sidebar-text);
+}
+
+.nav-subrow-active {
+    box-shadow: inset 2px 0 0 var(--sidebar-accent);
+}
+
+.nav-subicon {
+    display: flex;
+    height: 1rem;
+    width: 1rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: #6f7c85;
+}
+
+.nav-subrow:hover .nav-subicon,
+.nav-subrow-active .nav-subicon {
+    color: var(--sidebar-accent);
+}
+
+.nav-count {
+    display: inline-flex;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    border: 1px solid rgba(139, 185, 220, 0.24);
+    border-radius: 0.25rem;
+    background: rgba(139, 185, 220, 0.1);
+    color: #b8d6e9;
+    font-size: 0.625rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+    line-height: 1;
 }
 
 /* ------------------------------------------------------------------
-   Authenticated shell: fixed navy sidebar on large screens, an
-   off-canvas drawer with backdrop below lg. Chrome never prints.
+   Sidebar icon-rail (minimized) mode. When #sidebar[data-minimized="true"]
+   the rail shows icons only; labels are hidden by JS, sub-items collapse,
+   and hover tooltips reveal the module names.
    ------------------------------------------------------------------ */
-.app-sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.2s ease;
-}
-
-.app-sidebar[data-open='true'] {
-    transform: translateX(0);
-}
-
-.app-backdrop {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-}
-
-.app-backdrop[data-open='true'] {
-    opacity: 1;
-    pointer-events: auto;
-}
-
 @media (min-width: 1024px) {
-    .app-shell {
-        padding-left: 16rem;
-    }
-
-    .app-sidebar {
-        transform: translateX(0);
-    }
-
-    .app-backdrop {
-        display: none;
-    }
-}
-
-@media print {
-    .app-sidebar,
-    .app-backdrop,
-    .app-topbar {
+    /* All labels hide in minimized mode (nav items, app name, logout text,
+       badge, chevron) — CSS-driven so page reloads keep the state via the
+       data attribute + inline width only. */
+    #sidebar[data-minimized="true"] .sidebar-label {
         display: none !important;
     }
 
-    .app-shell {
-        padding-left: 0 !important;
+    #sidebar[data-minimized="true"] {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Center icons in the narrow rail */
+    #sidebar[data-minimized="true"] nav a,
+    #sidebar[data-minimized="true"] nav summary,
+    #sidebar[data-minimized="true"] nav details > div {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Hide the Settings sub-menu entirely when minimized */
+    #sidebar[data-minimized="true"] nav details > div,
+    #sidebar[data-minimized="true"] nav .sidebar-submenu {
+        display: none !important;
+    }
+
+    /* Tooltips for collapsed icons */
+    #sidebar[data-minimized="true"] nav a,
+    #sidebar[data-minimized="true"] nav summary {
+        position: relative;
+    }
+
+    #sidebar[data-minimized="true"] nav a::after,
+    #sidebar[data-minimized="true"] nav summary::after {
+        content: attr(title);
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%) scale(0.96);
+        background: #0a0a0a;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        padding: 7px 10px;
+        border-radius: 6px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.12s ease;
+        z-index: 60;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    #sidebar[data-minimized="true"] nav a:hover::after,
+    #sidebar[data-minimized="true"] nav summary:hover::after,
+    #sidebar[data-minimized="true"] nav a:focus-visible::after,
+    #sidebar[data-minimized="true"] nav summary:focus-visible::after {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+
+    /* The rail header: hide the seal link wrapper (its label span is hidden
+       anyway) and center the seal image + toggle stack. The seal img is
+       re-shown below, centered, as the rail's identity mark. */
+    #sidebar[data-minimized="true"] > div:first-child {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+        gap: 0;
+    }
+
+    #sidebar[data-minimized="true"] > div:first-child > a {
+        display: none;
+    }
+
+    /* Minimized header shows a small seal roundel instead of the seal+name link */
+    #sidebar[data-minimized="true"] > div:first-child::before {
+        content: '';
+        display: block;
+        width: 48px;
+        height: 48px;
+        border-radius: 9999px;
+        background: transparent url('/images/bidduang-seal-circle.png') center/100% 100% no-repeat;
+        flex: none;
+    }
+
+    #sidebar[data-minimized="true"] #sidebar-minimize {
+        margin-left: 4px;
+    }
+
+    /* Section headings and stray text never show in the rail */
+    #sidebar[data-minimized="true"] nav p {
+        display: none;
+    }
+
+    /* Rows become compact icon tiles */
+    #sidebar[data-minimized="true"] nav a,
+    #sidebar[data-minimized="true"] nav summary {
+        gap: 0;
+        width: 44px;
+        margin: 0 auto;
+        padding: 0;
+        justify-content: center;
+    }
+
+    /* The label span inside rows must not reserve space (chips already hide text) */
+    #sidebar[data-minimized="true"] nav a .sidebar-label,
+    #sidebar[data-minimized="true"] nav summary .sidebar-label {
+        display: none !important;
+    }
+
+    /* Pagination and other print-only bits never appear in the rail */
+    #sidebar[data-minimized="true"] nav::-webkit-scrollbar {
+        width: 0;
+    }
+}
+
+.settings-tabs {
+    scrollbar-width: none;
+}
+
+.settings-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.settings-tab {
+    display: flex;
+    min-width: 190px;
+    align-items: center;
+    gap: 0.625rem;
+    border-left: 2px solid transparent;
+    border-radius: 0.375rem;
+    padding: 0.625rem 0.625rem;
+    color: #64748b;
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.settings-tab:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.settings-tab-active {
+    border-left-color: #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.settings-tab-icon {
+    display: flex;
+    height: 1.75rem;
+    width: 1.75rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    background: #fff;
+    color: #64748b;
+}
+
+.settings-tab-active .settings-tab-icon {
+    border-color: #bfdbfe;
+    color: #2563eb;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    color: #334155;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.settings-row:hover {
+    color: #1d4ed8;
+}
+
+.settings-row-icon {
+    display: flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #f8fafc;
+    color: #475569;
+}
+
+.settings-row:hover .settings-row-icon,
+.settings-row:focus-visible .settings-row-icon {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.settings-count {
+    display: inline-flex;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fde68a;
+    border-radius: 0.25rem;
+    background: #fffbeb;
+    color: #b45309;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+    .settings-tab {
+        min-width: 0;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Module list toolbars
+   ------------------------------------------------------------------ */
+.module-toolbar-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .module-toolbar-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .module-toolbar-filters--resident {
+        grid-template-columns: 220px 140px 160px 130px auto;
+    }
+
+    .module-toolbar-filters--one {
+        grid-template-columns: 220px auto;
+    }
+
+    .module-toolbar-filters--two {
+        grid-template-columns: 220px 180px;
+    }
+
+    .module-toolbar-filters--three {
+        grid-template-columns: 220px 150px 130px;
+    }
+
+    .module-toolbar-filters--four {
+        grid-template-columns: 220px 200px 130px;
+    }
+
+    .module-toolbar-filters--admin {
+        grid-template-columns: 220px 120px 130px auto;
+    }
+}
+
+.module-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+}
+
+.module-toolbar-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: #fff;
+}
+
+@media (min-width: 640px) {
+    .module-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 640px) and (max-width: 1279px) {
+    .module-toolbar > :last-child {
+        grid-column: 2;
+        justify-self: end;
+    }
+
+    .module-toolbar--one {
+        grid-template-columns: 220px minmax(0, 1fr) auto;
+    }
+
+    .module-toolbar--one > :last-child {
+        grid-column: auto;
+    }
+
+    .module-toolbar--two {
+        grid-template-columns: 220px minmax(0, 1fr) auto;
+    }
+
+    .module-toolbar--two > :last-child {
+        grid-column: auto;
+    }
+}
+
+@media (min-width: 1280px) {
+    .module-toolbar--resident {
+        grid-template-columns: 220px 140px 160px 130px auto auto;
+    }
+
+    .module-toolbar--one {
+        grid-template-columns: 220px minmax(0, 1fr) auto;
+    }
+
+    .module-toolbar--two {
+        grid-template-columns: 220px 180px auto;
+    }
+
+    .module-toolbar--three {
+        grid-template-columns: 220px 200px 130px auto;
+    }
+
+    .module-toolbar--admin {
+        grid-template-columns: 220px 120px 130px auto auto;
+    }
+}
+
+/* Keep every main module toolbar on one row at standard desktop widths. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .module-toolbar > :last-child {
+        grid-column: auto;
+        justify-self: end;
+    }
+
+    .module-toolbar--resident {
+        grid-template-columns: 220px 140px 160px 130px auto auto;
+    }
+
+    .module-toolbar--one {
+        grid-template-columns: 220px auto;
+    }
+
+    .module-toolbar--two {
+        grid-template-columns: 220px 180px auto;
+    }
+
+    .module-toolbar--three {
+        grid-template-columns: 220px 200px 130px auto;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Print styles — index lists print cleanly for barangay record-keeping.
+   Strategy: hide app chrome, expand tables to full width with visible
+   borders, force white backgrounds so ink isn't wasted, and let long
+   tables break across pages with repeated headers.
+   ------------------------------------------------------------------ */
+@media print {
+    /* Unlock the fixed-viewport app shell: on paper the page must flow
+       naturally or long tables get clipped to one screen height. */
+    html,
+    body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #main-content,
+    #content-scroll {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+
+    /* Hide app chrome: nav, footer, filters, flash banners, actions.
+       Action columns are removed by the `.no-print` class that the tables
+       already carry. A blanket `:last-child` rule would also drop real data:
+       the last column is a timestamp or review outcome on the approvals,
+       corrections, and audit tables. */
+    body > header,
+    body > footer,
+    form[method="GET"],
+    nav,
+    .no-print,
+    td[class*="text-right"] form {
+        display: none !important;
+    }
+
+    /* Neutralize the screen shell so the table owns the page. */
+    body {
+        background: #fff !important;
+    }
+
+    main > div,
+    .max-w-7xl,
+    .max-w-4xl,
+    .max-w-3xl {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .rounded-xl {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    /* Force ink-friendly colors: black text, white surfaces, thin borders. */
+    * {
+        color: #000 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    table {
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 10.5pt;
+        border-collapse: collapse !important;
+    }
+
+    thead th,
+    tbody td {
+        border: 0.5pt solid #444 !important;
+        padding: 4pt 6pt !important;
+        white-space: normal !important; /* let long text wrap instead of clipping */
+    }
+
+    thead {
+        display: table-header-group; /* repeat header row on every printed page */
+    }
+
+    tr,
+    img,
+    .rounded-full {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Pagination links render as bare text; drop them from print. */
+    nav[aria-label] {
+        display: none !important;
+    }
+
+    /* .print-only utility: screen-hidden elements that appear on paper. */
+    .print-only {
+        display: block !important;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Audit log print overrides — a certification-grade extract of the
+   accountability trail: every column visible (IP + device), compact
+   type so five columns fit one width, no mobile column hiding, and
+   no action UI. On-screen rendering is untouched.
+   ------------------------------------------------------------------ */
+@media print {
+    /* Show IP + Device columns even though the screen hides them on phones. */
+    .audit-table .md\:table-cell {
+        display: table-cell !important;
+    }
+
+    /* Compact type and tighter cells so 5 columns fit the page width. */
+    .audit-table th,
+    .audit-table td {
+        font-size: 9pt;
+        padding: 3pt 5pt !important;
+        white-space: normal !important;
+    }
+
+    /* Long user agents may be truncated on screen; print the full text. */
+    .audit-table td {
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    /* Badges print as plain labels — no colored pills on paper. */
+    .audit-table .rounded-full {
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    /* Page never scrolls on paper. */
+    .audit-table {
+        min-width: 0 !important;
+    }
+    .audit-page .overflow-x-auto {
+        overflow: visible !important;
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * Dialog transitions. Shared by the login page's reset and registration
+ * dialogs and the CRUD dialog fetcher.
+ * ------------------------------------------------------------------ */
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(10px) scale(.98); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes backdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal-panel { animation: modalIn .18s ease-out; }
+.modal-backdrop { animation: backdropIn .18s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-panel,
+    .modal-backdrop {
+        animation: none;
     }
 }

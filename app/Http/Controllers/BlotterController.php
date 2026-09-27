@@ -2,206 +2,265 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreBlotterRequest;
-use App\Http\Requests\UpdateBlotterRequest;
 use App\Models\AuditLog;
 use App\Models\Blotter;
 use App\Models\Official;
-use App\Models\Purok;
-use App\Models\SequenceCounter;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Resident;
+use App\Services\SequenceCounter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
+use Illuminate\Validation\ValidationException;
 
-/**
- * Blotter / case sheet module.
- *
- * Every entry gets a control number (BLTR-2026-0001) reserved atomically on
- * create, and every write is mirrored into the audit trail.
- */
 class BlotterController extends Controller
 {
-    /** Attributes captured in audit before/after snapshots. */
-    private const AUDIT_FIELDS = [
-        'case_number', 'incident_date', 'incident_time', 'incident_type', 'location',
-        'purok_id', 'complainant_name', 'complainant_contact', 'respondent_name',
-        'respondent_contact', 'narrative', 'handling_officer', 'arrest_made',
-        'status', 'resolution_notes', 'recorded_by',
-    ];
-
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $filters = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', 'string', Rule::in(Blotter::STATUSES)],
-        ]);
+        $query = Blotter::query()->latest('complaint_date')->latest('id');
 
-        $search = trim((string) ($filters['q'] ?? ''));
-        $status = $filters['status'] ?? null;
+        if ($request->filled('search')) {
+            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $query->where(function ($q) use ($search) {
+                $q->where('case_number', 'like', '%'.$search.'%')
+                    ->orWhere('complainant_name', 'like', '%'.$search.'%')
+                    ->orWhere('accused_name', 'like', '%'.$search.'%')
+                    ->orWhere('complaint_type', 'like', '%'.$search.'%');
+            });
+        }
 
-        $rows = Blotter::query()
-            ->with(['purok', 'recorder'])
-            ->search($search)
-            ->when($status !== null && $status !== '', fn ($query) => $query->where('status', $status))
-            ->orderByDesc('incident_date')
-            ->orderByDesc('id')
-            ->paginate(20)
-            ->withQueryString();
+        if ($request->filled('status') && in_array($request->status, ['Open', 'Pending', 'Resolved', 'Dismissed'], true)) {
+            $query->where('status', $request->status);
+        }
 
-        return view('blotter.index', [
-            'rows' => $rows,
-            'q' => $search,
-            'status' => $status ?? '',
-            'openCount' => Blotter::whereIn('status', ['Open', 'Pending'])->count(),
-        ]);
+        $blotters = $query->paginate(20);
+        $openCount = Blotter::open()->count();
+
+        return view('blotter.index', compact('blotters', 'openCount'))
+            ->with('i', ($request->input('page', 1) - 1) * $blotters->perPage());
     }
 
-    public function create(): View
+    public function create()
     {
-        return view('blotter.create', [
-            'blotter' => null,
-            'puroks' => Purok::orderBy('code')->get(),
-            'officers' => $this->officerOptions(null),
-        ]);
+        return view('blotter.create', $this->formOptions());
     }
 
-    public function store(StoreBlotterRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        $blotter = DB::transaction(function () use ($request): Blotter {
-            $data = $request->validated();
+        $validated = $this->synchronizeLinkedResidentFields($this->validateBlotter($request));
+        $validated['created_by'] = Auth::id();
 
-            $data['case_number'] = SequenceCounter::nextControlNumber('BLTR');
-            $data['recorded_by'] = auth()->id();
+        $blotter = DB::transaction(function () use ($request, $validated) {
+            $validated['case_number'] = static::getNextCaseNumber();
 
-            return Blotter::create($data);
+            $blotter = Blotter::create($validated);
+
+            AuditLog::record(
+                'blotter.created',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['case_number' => $blotter->case_number],
+            );
+
+            return $blotter;
         });
 
-        AuditLog::record('created', 'blotter', $blotter->id, null, $this->snapshot($blotter));
-
-        return redirect()
-            ->route('blotter.index')
-            ->with('status', "Case {$blotter->case_number} was recorded.");
+        return redirect()->route('blotter.index')
+            ->with('success', "Case {$blotter->case_number} recorded successfully.");
     }
 
-    public function edit(Blotter $blotter): View
+    /**
+     * Printable official case sheet for a single blotter record.
+     * Standalone layout (no app chrome) so Ctrl+P yields a clean form.
+     */
+    public function printSheet(Blotter $blotter)
     {
-        return view('blotter.edit', [
-            'blotter' => $blotter->load('recorder'),
-            'puroks' => Purok::orderBy('code')->get(),
-            'officers' => $this->officerOptions($blotter->handling_officer),
+        return view('blotter.print', [
+            'blotter' => $blotter->load(['complainant', 'accused', 'officer', 'creator']),
         ]);
     }
 
-    public function update(UpdateBlotterRequest $request, Blotter $blotter): RedirectResponse
+    public function edit(Blotter $blotter)
     {
-        abort_unless($request->user()?->hasPermission('blotter.manage') ?? false, 403);
+        return view('blotter.edit', array_merge(
+            ['blotter' => $blotter],
+            $this->formOptions($blotter),
+        ));
+    }
 
-        $validated = $request->validated();
+    public function update(Request $request, Blotter $blotter)
+    {
+        $validated = $this->synchronizeLinkedResidentFields($this->validateBlotter($request, $blotter));
+        $validated['updated_by'] = Auth::id();
 
-        $before = [];
-        $after = [];
+        DB::transaction(function () use ($request, $blotter, $validated) {
+            $blotter->update($validated);
 
-        foreach ($validated as $field => $value) {
-            $original = $blotter->getRawOriginal($field);
+            AuditLog::record(
+                'blotter.updated',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['case_number' => $blotter->case_number],
+            );
+        });
 
-            if ($this->normalize($field, $original) !== $this->normalize($field, $value)) {
-                $before[$field] = $this->normalize($field, $original);
-                $after[$field] = $this->normalize($field, $value);
+        return redirect()->route('blotter.index')
+            ->with('success', "Case {$blotter->case_number} updated successfully.");
+    }
+
+    public function destroy(Request $request, Blotter $blotter)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        DB::transaction(function () use ($request, $blotter) {
+            $caseNumber = $blotter->case_number;
+            $blotter->delete();
+
+            AuditLog::record(
+                'blotter.deleted',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['case_number' => $caseNumber],
+            );
+        });
+
+        return redirect()->route('blotter.index')
+            ->with('success', "Case {$blotter->case_number} deleted successfully.");
+    }
+
+    /**
+     * The next case number in the barangay's BLTR-YYYY-#### sequence.
+     * Takes a shared lock on the matching rows — call it inside a
+     * transaction so concurrent clerks can't collide.
+     */
+    public static function getNextCaseNumber(): string
+    {
+        $year = now()->format('Y');
+        $prefix = "BLTR-{$year}-";
+
+        $max = DB::table('blotter')
+            ->where('case_number', 'like', $prefix.'%')
+            ->max('case_number');
+        $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
+        $next = app(SequenceCounter::class)->reserve('blotter', (int) $year, $currentMaximum);
+
+        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * A linked resident is the source of truth for party identity/contact data.
+     * Blank IDs intentionally remain walk-in records and keep their free text.
+     */
+    private function synchronizeLinkedResidentFields(array $validated): array
+    {
+        foreach ([
+            'complainant_id' => ['complainant_name', 'complainant_address', 'complainant_phone'],
+            'accused_id' => ['accused_name', 'accused_address', 'accused_phone'],
+        ] as $idField => [$nameField, $addressField, $phoneField]) {
+            if (blank($validated[$idField] ?? null)) {
+                continue;
+            }
+
+            $resident = Resident::withTrashed()->findOrFail($validated[$idField]);
+            $validated[$nameField] = $resident->full_name;
+            $validated[$addressField] = $resident->address;
+            $validated[$phoneField] = $resident->phone_number;
+        }
+
+        return $validated;
+    }
+
+    private function validateBlotter(Request $request, ?Blotter $blotter = null): array
+    {
+        $rules = [
+            'complainant_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
+            'complainant_name' => 'required_without:complainant_id|nullable|string|max:255',
+            'complainant_address' => 'nullable|string|max:255',
+            'complainant_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'accused_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
+            'accused_name' => 'required_without:accused_id|nullable|string|max:255',
+            'accused_address' => 'nullable|string|max:255',
+            'accused_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'complaint_type' => 'required|string|max:100',
+            'complaint_subtype' => 'nullable|string|max:100',
+            'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'complaint_time' => 'nullable|date_format:H:i',
+            'alleged_offense' => 'required|string|max:2000',
+            'status' => 'required|in:Open,Pending,Resolved,Dismissed',
+            'disposition' => 'nullable|string|max:2000',
+            'disposition_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'arrest_made' => 'required|in:Yes,No',
+            'investigator' => 'nullable|string|max:255',
+            'officer_id' => ['nullable', 'integer', Rule::exists('officials', 'id')->where('status', 'Active')],
+            'remarks' => 'nullable|string|max:2000',
+        ];
+
+        $validated = $request->validate($rules, [
+            'complainant_phone.regex' => 'The complainant phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'accused_phone.regex' => 'The respondent phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'complainant_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',
+            'complainant_id.exists' => 'The selected resident is no longer available. Please choose another.',
+            'accused_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',
+            'accused_id.exists' => 'The selected resident is no longer available. Please choose another.',
+            'officer_id.integer' => 'Please select a handling officer from the list, or leave it blank.',
+            'officer_id.exists' => 'The selected officer is no longer available. Please choose another.',
+        ]);
+
+        $currentResidentIds = $blotter
+            ? collect([$blotter->complainant_id, $blotter->accused_id])->filter()->map(fn ($id) => (int) $id)->all()
+            : [];
+        foreach (['complainant_id', 'accused_id'] as $field) {
+            $residentId = $validated[$field] ?? null;
+            if (blank($residentId)) {
+                continue;
+            }
+
+            $resident = Resident::withTrashed()->find($residentId);
+            $isCurrent = in_array((int) $residentId, $currentResidentIds, true);
+            if (! $resident || ($resident->status !== 'Active' && ! $isCurrent)) {
+                throw ValidationException::withMessages([
+                    $field => 'The selected resident is archived or inactive. Please choose an active resident.',
+                ]);
             }
         }
 
-        $blotter->fill($validated)->save();
-
-        AuditLog::record('updated', 'blotter', $blotter->id, $before ?: null, $after ?: null);
-
-        return redirect()
-            ->route('blotter.index')
-            ->with('status', "Case {$blotter->case_number} was updated.");
-    }
-
-    /** Administrator-only removal — the control number is never reused. */
-    public function destroy(Blotter $blotter): RedirectResponse
-    {
-        $snapshot = $this->snapshot($blotter);
-
-        AuditLog::record('deleted', 'blotter', $blotter->id, $snapshot, null);
-
-        $blotter->delete();
-
-        return redirect()
-            ->route('blotter.index')
-            ->with('status', "Case {$snapshot['case_number']} was deleted.");
-    }
-
-    /** Standalone A4 case sheet — prints on its own, outside the app layout. */
-    public function print(Blotter $blotter): View
-    {
-        return view('blotter.print', [
-            'blotter' => $blotter->load(['purok', 'recorder']),
-            'punong' => Official::punongBarangay(),
-            'printedAt' => now(),
-        ]);
-    }
-
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Active officials for the handling-officer dropdown, keeping whatever
-     * name is already stored on the case even if that official resigned.
-     *
-     * @return array<string, string>
-     */
-    private function officerOptions(?string $current): array
-    {
-        $options = Official::where('status', Official::STATUS_ACTIVE)
-            ->orderBy('full_name')
-            ->pluck('full_name', 'full_name')
-            ->all();
-
-        $current = $current !== null ? trim($current) : '';
-
-        if ($current !== '' && ! array_key_exists($current, $options)) {
-            $options[$current] = $current;
-            ksort($options);
+        // A case may not be closed without recording how it ended.
+        if (in_array($validated['status'], ['Resolved', 'Dismissed'], true)) {
+            $request->validate([
+                'disposition' => 'required|string|max:2000',
+                'disposition_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            ]);
         }
 
-        return $options;
+        return $validated;
     }
 
-    /** Plain-array snapshot used for audit before/after payloads. */
-    private function snapshot(Blotter $blotter): array
+    private function formOptions(?Blotter $blotter = null): array
     {
-        $data = [];
+        $currentResidentIds = $blotter
+            ? collect([$blotter->complainant_id, $blotter->accused_id])->filter()->map(fn ($id) => (int) $id)->all()
+            : [];
 
-        foreach (self::AUDIT_FIELDS as $field) {
-            $value = $blotter->getAttribute($field);
-
-            $data[$field] = match ($field) {
-                'incident_date' => $value?->format('Y-m-d'),
-                'incident_time' => $value?->format('H:i'),
-                default => $value,
-            };
-        }
-
-        return $data;
-    }
-
-    /** Normalise raw / submitted values so a change can be detected. */
-    private function normalize(string $field, mixed $value): ?string
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        $value = (string) $value;
-
-        return match ($field) {
-            'incident_date' => substr($value, 0, 10),
-            'incident_time' => substr($value, 0, 5),
-            'purok_id', 'recorded_by' => (string) (int) $value,
-            default => $value,
-        };
+        return [
+            'residents' => Resident::withTrashed()
+                ->where(function ($query) use ($currentResidentIds) {
+                    $query->where('status', 'Active')->whereNull('deleted_at');
+                    if ($currentResidentIds !== []) {
+                        $query->orWhereIn('id', $currentResidentIds);
+                    }
+                })
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'address', 'phone_number', 'status', 'deleted_at']),
+            'officials' => Official::active()
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'position']),
+        ];
     }
 }

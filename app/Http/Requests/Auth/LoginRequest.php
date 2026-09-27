@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,62 +23,98 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, Rule|array|string>
      */
     public function rules(): array
     {
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
-            'remember' => ['sometimes', 'boolean'],
+            // The form offers one tab for both office roles, so the value that
+            // arrives is a group, not a stored role.
+            'user_type' => ['required', 'in:office,resident'],
         ];
+    }
+
+    /**
+     * The stored roles the submitted tab is allowed to reach.
+     *
+     * @return array<int, string>
+     */
+    private function candidateRoles(): array
+    {
+        return $this->input('user_type') === 'resident'
+            ? ['resident']
+            : ['admin', 'staff'];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+        $credentials = $this->only('email', 'password');
+
+        $authenticated = false;
+
+        foreach ($this->candidateRoles() as $role) {
+            // `user_type` is a credential, so a mismatch simply matches no row.
+            // Only the role that is actually stored reaches the password check,
+            // which keeps this as cheap as the single attempt it replaces.
+            if (Auth::attempt($credentials + ['user_type' => $role], $this->boolean('remember'))) {
+                $authenticated = true;
+
+                break;
+            }
+        }
+
+        if (! $authenticated) {
+            // Five minutes, not the default 60 seconds: a one-minute window is
+            // refreshed by every further attempt, so a patient attacker is
+            // never actually locked out.
+            //
+            // Hit once per request, never once per candidate role: two hits for
+            // one mistyped password would halve the budget.
+            RateLimiter::hit($this->throttleKey(), 300);
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'password' => 'Invalid email or password.',
             ]);
         }
 
-        // Credentials are right, but the account may still be waiting for
-        // approval, rejected or suspended — sign them straight back out and
-        // say why. (Shown only to someone who knows the password, so it does
-        // not leak account state to strangers.)
+        // Accounts must be approved and not suspended before they can use
+        // the authenticated application.
         $user = Auth::user();
 
-        if (! $user->isActive()) {
+        if ($user->isSuspended()) {
             Auth::guard('web')->logout();
 
             throw ValidationException::withMessages([
-                'email' => match ($user->status) {
-                    \App\Models\User::STATUS_PENDING => 'Your account is awaiting approval by the barangay administrator.',
-                    \App\Models\User::STATUS_REJECTED => 'Your account was not approved. Please visit the barangay office.',
-                    \App\Models\User::STATUS_SUSPENDED => 'Your account has been suspended'.($user->suspension_reason ? ': '.$user->suspension_reason : '.'),
-                    default => 'Your account cannot sign in right now.',
-                },
+                'email' => 'This account has been suspended. Please contact the barangay office.',
             ]);
         }
 
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            RateLimiter::clear($this->throttleKey());
+        if (! $user->isApproved()) {
+            Auth::guard('web')->logout();
+
+            $message = $user->isPending()
+                ? 'Your account is still awaiting approval from the barangay office. We will email you once it is approved.'
+                : 'This account was not approved. Please contact the barangay office for assistance.';
+
+            throw ValidationException::withMessages(['email' => $message]);
         }
+
+        RateLimiter::clear($this->throttleKey());
     }
 
     /**
      * Ensure the login request is not rate limited.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -90,7 +127,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'password' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),

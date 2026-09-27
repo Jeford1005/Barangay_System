@@ -6,21 +6,23 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/** Route middleware: ->middleware('resident') — self-service portal only. */
 class EnsureUserIsResident
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        $user = auth()->user();
 
-        if ($user === null) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        if (! $user->isResident()) {
-            return redirect()
-                ->route('dashboard')
-                ->with('error', 'That page is for resident accounts only.');
+        if ($user->user_type !== 'resident') {
+            return redirect()->route('dashboard');
         }
 
         return $next($request);

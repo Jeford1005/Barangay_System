@@ -1,127 +1,129 @@
-@extends('layouts.app')
-
-@section('title', 'Welfare report')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Welfare Beneficiaries" subtitle="{{ $statusTotals->total }} request{{ $statusTotals->total === 1 ? '' : 's' }} · ₱{{ number_format($amounts->approved, 2) }} approved · ₱{{ number_format($amounts->released, 2) }} released" />
+@endsection
 
 @section('content')
-    @php
-        $statusTones = [
-            'Requested' => ['border' => 'border-sky-200', 'bg' => 'bg-sky-50', 'text' => 'text-sky-700', 'value' => 'text-sky-900', 'chip' => 'bg-sky-100 text-sky-800'],
-            'Under Review' => ['border' => 'border-amber-200', 'bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'value' => 'text-amber-900', 'chip' => 'bg-amber-100 text-amber-800'],
-            'Approved' => ['border' => 'border-emerald-200', 'bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'value' => 'text-emerald-900', 'chip' => 'bg-emerald-100 text-emerald-800'],
-            'Denied' => ['border' => 'border-red-200', 'bg' => 'bg-red-50', 'text' => 'text-red-600', 'value' => 'text-red-700', 'chip' => 'bg-red-100 text-red-700'],
-            'Released' => ['border' => 'border-teal-200', 'bg' => 'bg-teal-50', 'text' => 'text-teal-700', 'value' => 'text-teal-900', 'chip' => 'bg-teal-100 text-teal-800'],
-        ];
-    @endphp
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow overflow-hidden">
 
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4 print:hidden">
-        <div>
-            <nav class="mb-2 text-xs font-medium text-slate-400" aria-label="Breadcrumb">
-                <a href="{{ route('reports.index') }}" class="transition hover:text-slate-700">Reports</a>
-                <span class="mx-1">&rsaquo;</span>
-                <span class="text-slate-500">Welfare</span>
-            </nav>
-            <h1 class="text-2xl font-semibold text-slate-900">Welfare report</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Assistance requests, approvals and released amounts for the selected period.
-            </p>
-        </div>
-
-        <button type="button"
-                data-print
-                class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-            Print report
-        </button>
-    </div>
-
-    {{-- ── chips ── --}}
-    <div class="mb-6 grid gap-4 sm:grid-cols-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Requests in range</p>
-            <p class="mt-1 text-2xl font-semibold text-slate-900">{{ number_format($totalRecords) }}</p>
-        </div>
-        <div class="rounded-xl border border-sky-200 bg-sky-50 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">Requested</p>
-            <p class="mt-1 text-2xl font-semibold text-sky-900">&#8369;{{ number_format($requestedTotal, 2) }}</p>
-        </div>
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Approved</p>
-            <p class="mt-1 text-2xl font-semibold text-emerald-900">&#8369;{{ number_format($approvedTotal, 2) }}</p>
-        </div>
-        <div class="rounded-xl border border-teal-200 bg-teal-50 p-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-teal-700">Released</p>
-            <p class="mt-1 text-2xl font-semibold text-teal-900">&#8369;{{ number_format($releasedTotal, 2) }}</p>
-        </div>
-    </div>
-
-    @include('reports._range', [
-        'action' => route('reports.welfare'),
-        'hint' => 'Defaults to the first day of the previous month through today. Approved totals use the granted amount when one was set.',
-    ])
-
-    {{-- ── status totals ── --}}
-    <section class="mb-8">
-        <h2 class="mb-3 text-base font-semibold text-slate-900">Requests by status</h2>
-        <div class="grid gap-4 sm:grid-cols-5">
-            @foreach ($statusTotals as $status => $count)
-                @php($tone = $statusTones[$status] ?? $statusTones['Requested'])
-                <div class="rounded-xl border {{ $tone['border'] }} {{ $tone['bg'] }} p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide {{ $tone['text'] }}">{{ $status }}</p>
-                    <p class="mt-1 text-2xl font-semibold {{ $tone['value'] }}">{{ number_format($count) }}</p>
-                    <p class="mt-1 text-xs {{ $tone['text'] }}">
-                        {{ $totalRecords > 0 ? number_format($count / $totalRecords * 100, 1) : '0.0' }}% of requests
-                    </p>
+        <div class="p-6">
+            <form method="GET" action="{{ route('reports.welfare') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div class="flex-1">
+                    <label for="welfare-report-from" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Requested from</label>
+                    <input id="welfare-report-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}"
+                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-            @endforeach
+                <div class="flex-1">
+                    <label for="welfare-report-to" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Requested to</label>
+                    <input id="welfare-report-to" type="date" name="to" value="{{ $to?->toDateString() }}" max="{{ now()->toDateString() }}"
+                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Filter</button>
+                <a href="{{ route('reports.welfare') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-gray-500 hover:text-gray-800">Reset</a>
+                <a href="{{ route('reports.welfare', array_merge(request()->only(['from', 'to']), ['print' => 1])) }}"
+                     class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     Print / PDF
+                 </a>
+            </form>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                @foreach ([['Requested', $statusTotals->requested], ['Under Review', $statusTotals->review], ['Approved', $statusTotals->approved], ['Released', $statusTotals->released], ['Denied', $statusTotals->denied]] as [$label, $value])
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <p class="text-xs font-medium text-gray-500 uppercase">{{ $label }}</p>
+                        <p class="mt-1 text-2xl font-bold text-gray-900">{{ $value }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="overflow-x-auto">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-2">By Assistance Type</h3>
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Count</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Approved (₱)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @forelse ($byType as $type => $row)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 py-3 font-medium text-gray-900">{{ $type }}</td>
+                                    <td class="px-3 py-3 text-right">{{ $row->count }}</td>
+                                    <td class="px-3 py-3 text-right">{{ number_format($row->amount, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="px-3 py-6 text-center text-gray-500">No records in this period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-2">By Program</h3>
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Count</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Approved (₱)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @forelse ($byProgram as $program => $row)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 py-3 font-medium text-gray-900">{{ $program }}</td>
+                                    <td class="px-3 py-3 text-right">{{ $row->count }}</td>
+                                    <td class="px-3 py-3 text-right">{{ number_format($row->amount, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="px-3 py-6 text-center text-gray-500">No records in this period.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <h3 class="text-sm font-semibold text-gray-900 mb-2">Beneficiary List</h3>
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Beneficiary</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assistance</th>
+                            <th class="hidden md:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Program</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Approved (₱)</th>
+                            <th class="hidden md:table-cell px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse ($records as $record)
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-3">
+                                    <span class="font-medium text-gray-900">{{ $record->beneficiary?->full_name ?? $record->beneficiary_name }}</span>
+                                    @if ($record->beneficiary?->purok)
+                                        <span class="block text-xs text-gray-500">{{ $record->beneficiary->purok->name }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-3 text-gray-600">{{ $record->assistance_type }}</td>
+                                <td class="hidden md:table-cell px-3 py-3 text-gray-600">{{ $record->program_name }}</td>
+                                <td class="px-3 py-3 text-right font-medium">{{ number_format((float) $record->approved_amount, 2) }}</td>
+                                <td class="hidden md:table-cell px-3 py-3">
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ ['Released' => 'bg-green-100 text-green-800', 'Approved' => 'bg-blue-100 text-blue-800', 'Denied' => 'bg-red-100 text-red-800'][$record->status] ?? 'bg-gray-100 text-gray-600' }}">{{ $record->status }}</span>
+                                </td>
+                                <td class="px-3 py-3 text-gray-600">{{ $record->request_date->format('M j, Y') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">No welfare requests in this period.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </section>
-
-    {{-- ── by assistance type ── --}}
-    <section class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm print:shadow-none">
-        <div class="border-b border-slate-100 px-5 py-4">
-            <h2 class="text-base font-semibold text-slate-900">Assistance by type</h2>
-            <p class="text-sm text-slate-500">Requested, approved and released amounts per assistance type.</p>
-        </div>
-
-        <table class="min-w-full divide-y divide-slate-100 text-sm">
-            <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                    <th class="px-5 py-3">Assistance type</th>
-                    <th class="px-5 py-3 text-right">Requests</th>
-                    <th class="px-5 py-3 text-right">Requested</th>
-                    <th class="px-5 py-3 text-right">Approved</th>
-                    <th class="px-5 py-3 text-right">Released</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse ($byType as $line)
-                    <tr>
-                        <td class="px-5 py-3.5 font-medium text-slate-900">{{ $line['type'] }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">{{ number_format($line['count']) }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">&#8369;{{ number_format($line['requested'], 2) }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">&#8369;{{ number_format($line['approved'], 2) }}</td>
-                        <td class="px-5 py-3.5 text-right tabular-nums text-slate-700">&#8369;{{ number_format($line['released'], 2) }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-8 text-center text-sm text-slate-500">
-                            No welfare requests were recorded in this period.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-            <tfoot class="border-t border-slate-200 bg-slate-50 text-sm">
-                <tr>
-                    <td class="px-5 py-3 font-semibold text-slate-900">Grand total</td>
-                    <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-900">{{ number_format($totalRecords) }}</td>
-                    <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-900">&#8369;{{ number_format($requestedTotal, 2) }}</td>
-                    <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-900">&#8369;{{ number_format($approvedTotal, 2) }}</td>
-                    <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-900">&#8369;{{ number_format($releasedTotal, 2) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </section>
-
-    <p class="mt-6 text-xs text-slate-400 print:hidden">
-        Generated {{ now()->format('F j, Y \a\t H:i') }} &middot; Barangay Bidduang Barangay Management System
-    </p>
+    </div>
+</div>
 @endsection
+</x-app-layout>

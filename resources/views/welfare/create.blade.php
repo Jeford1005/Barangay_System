@@ -1,19 +1,17 @@
-@extends('layouts.app')
-
-@section('title', 'New assistance request')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Record Assistance Request" />
+@endsection
 
 @section('content')
-    <div class="mb-8">
-        <a href="{{ route('welfare.index') }}" class="text-sm font-medium text-sky-700 transition hover:text-sky-800">
-            &larr; Back to welfare assistance
-        </a>
-        <h1 class="mt-2 text-2xl font-semibold text-slate-900">New assistance request</h1>
-        <p class="mt-1 text-sm text-slate-500">
-            Take in a resident&rsquo;s request. Approval and release are decided later by an administrator.
-        </p>
-    </div>
+{{-- Form card: also the dialog fragment (fetched with ?fragment=1). --}}
+<div class="bg-white {{ request()->boolean('fragment') ? '' : 'rounded-xl shadow overflow-hidden' }} {{ request()->boolean('fragment') ? 'max-w-none' : 'max-w-4xl mx-auto' }}">
+    <form action="{{ route('welfare.store') }}" method="POST" class="{{ request()->boolean('fragment') ? 'p-0' : 'p-6' }} space-y-8">
+        @csrf
+        @include('welfare._form', ['welfare' => null])
 
-    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        @include('welfare._form')
-    </div>
+        <x-form.actions cancel-href="{{ route('welfare.index') }}" submit-label="Record Request" />
+    </form>
+</div>
 @endsection
+</x-app-layout>

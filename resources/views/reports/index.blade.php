@@ -1,59 +1,48 @@
-@extends('layouts.app')
-
-@section('title', 'Reports')
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Reports" subtitle="Printable summaries for the barangay hall, city hall submissions, and planning." />
+@endsection
 
 @section('content')
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4 print:hidden">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">Reports</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Three official summaries of the barangay record — every figure is computed live from current data.
-            </p>
-        </div>
+<div class="max-w-7xl mx-auto">
 
-        <a href="{{ route('analytics') }}"
-           class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-            Open analytics
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <a href="{{ route('reports.population') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow flex flex-col">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">Population Report</h3>
+                <x-icon name="residents" class="h-6 w-6 text-blue-500" />
+            </div>
+            <p class="mt-2 text-sm text-gray-500 flex-1">Active residents by purok with sex and age-bracket breakdown (children, youth, adults, seniors), plus registered voters.</p>
+            <span class="mt-4 text-sm font-medium text-blue-600">Open report →</span>
+        </a>
+
+        <a href="{{ route('reports.blotter') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow flex flex-col">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">Blotter Summary</h3>
+                <x-icon name="clipboard-document-list" class="h-6 w-6 text-amber-500" />
+            </div>
+            <p class="mt-2 text-sm text-gray-500 flex-1">Case volume by complaint type and status for a period, with a monthly trend and recent cases appendix.</p>
+            <span class="mt-4 text-sm font-medium text-blue-600">Open report →</span>
+        </a>
+
+        <a href="{{ route('reports.welfare') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow flex flex-col">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">Welfare Beneficiaries</h3>
+                <x-icon name="shield-check" class="h-6 w-6 text-rose-500" />
+            </div>
+            <p class="mt-2 text-sm text-gray-500 flex-1">Assistance requests in a period with status counts, peso totals, and breakdowns by assistance type and program.</p>
+            <span class="mt-4 text-sm font-medium text-blue-600">Open report →</span>
         </a>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <a href="{{ route('reports.population') }}"
-           class="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-sky-300 hover:shadow">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Demographics</p>
-            <h2 class="mt-2 text-lg font-semibold text-slate-900">Population report</h2>
-            <p class="mt-2 flex-1 text-sm leading-relaxed text-slate-500">
-                Active residents per purok by sex, plus the age-bracket breakdown from child to senior.
-            </p>
-            <span class="mt-5 text-sm font-medium text-sky-700 transition group-hover:text-sky-900">Open report &rarr;</span>
-        </a>
-
-        <a href="{{ route('reports.blotter') }}"
-           class="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-sky-300 hover:shadow">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Peace and order</p>
-            <h2 class="mt-2 text-lg font-semibold text-slate-900">Blotter report</h2>
-            <p class="mt-2 flex-1 text-sm leading-relaxed text-slate-500">
-                Cases within a date range: incident types, status totals, arrests and a 12-month trend.
-            </p>
-            <span class="mt-5 text-sm font-medium text-sky-700 transition group-hover:text-sky-900">Open report &rarr;</span>
-        </a>
-
-        <a href="{{ route('reports.welfare') }}"
-           class="group flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-sky-300 hover:shadow">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Social services</p>
-            <h2 class="mt-2 text-lg font-semibold text-slate-900">Welfare report</h2>
-            <p class="mt-2 flex-1 text-sm leading-relaxed text-slate-500">
-                Assistance requests with requested, approved and released amounts per assistance type.
-            </p>
-            <span class="mt-5 text-sm font-medium text-sky-700 transition group-hover:text-sky-900">Open report &rarr;</span>
-        </a>
-    </div>
-
-    <div class="mt-8 rounded-xl border border-sky-200 bg-sky-50 px-5 py-4">
-        <p class="text-sm text-sky-900">
-            <span class="font-semibold">Live reports.</span>
-            Nothing here is cached — each report is recomputed the moment it is opened, so it always reflects the
-            latest entries. Use the date pickers on each report to narrow the period, then print it for the record.
+    <div class="mt-8 bg-white rounded-xl shadow p-6">
+        <h3 class="text-sm font-semibold text-gray-900">About these reports</h3>
+        <p class="mt-2 text-sm text-gray-500">
+            Every report opens on screen with its filters; use <span class="font-medium text-gray-700">Print this report</span> to
+            produce the official A4 document (or "Save as PDF" in the browser's print dialog for a PDF copy).
+            Each printing is recorded in the audit log.
         </p>
     </div>
+</div>
 @endsection
+</x-app-layout>

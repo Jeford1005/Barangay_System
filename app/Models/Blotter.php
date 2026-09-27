@@ -2,58 +2,85 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Blotter extends Model
 {
-    use HasFactory;
-
-    public const STATUSES = ['Open', 'Pending', 'Resolved', 'Dismissed'];
-    public const ARREST_OPTIONS = ['No', 'Yes'];
+    use HasFactory, SoftDeletes;
 
     protected $table = 'blotter';
 
     protected $fillable = [
-        'case_number', 'incident_date', 'incident_time', 'incident_type', 'location',
-        'purok_id', 'complainant_name', 'complainant_contact',
-        'respondent_name', 'respondent_contact', 'narrative',
-        'handling_officer', 'arrest_made', 'status', 'resolution_notes', 'recorded_by',
+        'case_number',
+        'complainant_id',
+        'complainant_name',
+        'complainant_address',
+        'complainant_phone',
+        'accused_id',
+        'accused_name',
+        'accused_address',
+        'accused_phone',
+        'complaint_type',
+        'complaint_subtype',
+        'complaint_date',
+        'complaint_time',
+        'alleged_offense',
+        'status',
+        'disposition',
+        'disposition_date',
+        'arrest_made',
+        'investigator',
+        'officer_id',
+        'remarks',
+        'created_by',
+        'updated_by',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'complainant_id' => 'integer',
+        'accused_id' => 'integer',
+        'officer_id' => 'integer',
+        'created_by' => 'integer',
+        'updated_by' => 'integer',
+        'complaint_date' => 'date',
+        'disposition_date' => 'date',
+        'complaint_time' => 'datetime:H:i',
+    ];
+
+    public function complainant()
     {
-        return [
-            'incident_date' => 'date',
-            'incident_time' => 'date:H:i:s',
-        ];
+        return $this->belongsTo(Resident::class, 'complainant_id')->withTrashed();
     }
 
-    public function purok(): BelongsTo
+    public function accused()
     {
-        return $this->belongsTo(Purok::class);
+        return $this->belongsTo(Resident::class, 'accused_id')->withTrashed();
     }
 
-    public function recorder(): BelongsTo
+    public function officer()
     {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(Official::class, 'officer_id');
     }
 
-    public function scopeSearch(Builder $query, ?string $term): Builder
+    public function creator()
     {
-        if (trim((string) $term) === '') {
-            return $query;
-        }
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
-        $like = '%'.trim($term).'%';
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 
-        return $query->where(function (Builder $q) use ($like): void {
-            $q->where('case_number', 'like', $like)
-                ->orWhere('incident_type', 'like', $like)
-                ->orWhere('complainant_name', 'like', $like)
-                ->orWhere('respondent_name', 'like', $like);
-        });
+    public function scopeOpen($query)
+    {
+        return $query->where('status', 'Open');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'Pending');
     }
 }

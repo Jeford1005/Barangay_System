@@ -1,13 +1,25 @@
-# Security only. Routing is handled by the Apache Alias
-# (/Barangay_Management_System -> public/) plus public/.htaccess.
+# Blocks dotfiles, directory listings, and direct access to application
+# internals if Apache is ever pointed at the project root instead of public/.
+# DocumentRoot should be this project's public/ directory.
+
+Options -Indexes
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Deny hidden files and folders (.env, .git, editor configs, ...)
-    RewriteRule (^|/)\. - [F]
+    # Never serve dotfiles: .env holds APP_KEY and mail credentials, and
+    # .git would expose the whole history.
+    RewriteRule "(^|/)\.(?!well-known/)" - [F,L]
+
+    # Refuse to serve application internals directly.
+    RewriteRule ^(app|bootstrap|config|database|docs|node_modules|routes|storage|tests|vendor|scripts)/ - [F,L]
+
+    # Front controller.
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
 </IfModule>
 
-# Never serve dotfiles even if mod_rewrite is unavailable
-<FilesMatch "^\.">
+<FilesMatch "\.(env|sqlite|sqlite-journal|log|md|lock|json|ya?ml|neon)$">
     Require all denied
 </FilesMatch>

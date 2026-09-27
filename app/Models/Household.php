@@ -4,60 +4,66 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Household extends Model
 {
-    use HasFactory;
-
-    public const HOUSE_TYPES = ['Single', 'Duplex', 'Apartment', 'Townhouse', 'Other'];
-    public const OWNERSHIPS = ['Owned', 'Rented', 'Leased', 'Occupied'];
-    public const STATUSES = ['Occupied', 'Vacant', 'Under Construction'];
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'household_number', 'address', 'purok_id', 'head_resident_id',
-        'house_type', 'ownership', 'status', 'member_count',
+        'household_code',
+        'sitio',
+        'street',
+        'purok_id',
+        'barangay',
+        'municipality',
+        'province',
+        'region',
+        'zip_code',
+        'house_type',
+        'lot_area',
+        'floor_area',
+        'year_built',
+        'ownership',
+        'num_members',
+        'head_of_household_id',
+        'status',
+        'remarks',
+        'created_by',
+        'updated_by',
     ];
 
-    public function purok(): BelongsTo
+    protected $casts = [
+        'purok_id' => 'integer',
+        'year_built' => 'integer',
+        'num_members' => 'integer',
+        'head_of_household_id' => 'integer',
+        'created_by' => 'integer',
+        'updated_by' => 'integer',
+    ];
+
+    public function purok()
     {
         return $this->belongsTo(Purok::class);
     }
 
-    public function head(): BelongsTo
+    public function head()
     {
-        return $this->belongsTo(Resident::class, 'head_resident_id');
+        return $this->belongsTo(Resident::class, 'head_of_household_id');
     }
 
-    public function members(): HasMany
+    public function residents()
     {
         return $this->hasMany(Resident::class, 'household_id');
     }
 
-    /** Next household number in HH-### format. */
-    public static function nextNumber(): string
+    public function creator()
     {
-        $last = static::orderByDesc('id')->value('household_number');
-
-        $n = 1;
-        if ($last && preg_match('/(\d+)$/', $last, $m)) {
-            $n = (int) $m[1] + 1;
-        }
-
-        return sprintf('HH-%03d', $n);
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Re-derive member_count from the members table (source of truth).
-     * Called by the controller after any membership/head change.
-     */
-    public function syncMemberCount(): void
+    public function updater()
     {
-        $count = $this->members()->count();
-
-        if ($count !== $this->member_count) {
-            $this->forceFill(['member_count' => $count])->save();
-        }
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

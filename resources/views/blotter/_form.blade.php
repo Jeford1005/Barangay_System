@@ -1,271 +1,122 @@
-{{--
-    Shared blotter form — used by create and edit.
+{{-- Shared fields for blotter create/edit. Expects $blotter (null on create). --}}
+@php
+$residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->last_name.', '.$r->first_name.($r->status === 'Active' && ! $r->deleted_at ? '' : ' [Archived]')]);
+$officerOptions = $officials->mapWithKeys(fn ($o) => [$o->id => $o->last_name.', '.$o->first_name.' — '.$o->position]);
+$residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
+    'name' => $r->full_name,
+    'address' => $r->address,
+    'phone' => $r->phone_number,
+]]);
+@endphp
 
-    Expects: $blotter (null on create), $puroks (Purok collection),
-             $officers (name => name options for the handling officer).
---}}
-<form method="POST"
-      action="{{ $blotter?->exists ? route('blotter.update', $blotter) : route('blotter.store') }}"
-      data-submit-loading
-      data-loading-label="Saving…"
-      class="space-y-8">
-    @csrf
-    @if ($blotter?->exists)
-        @method('PUT')
-    @endif
-
-    {{-- ── incident details ── --}}
-    <section class="grid gap-5 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-            <h2 class="text-sm font-semibold text-slate-900">Incident details</h2>
-            <p class="mt-0.5 text-xs text-slate-500">What happened, when and where.</p>
-        </div>
-
-        <div>
-            <label for="incident_date" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Incident date *</label>
-            <input id="incident_date"
-                   type="date"
-                   name="incident_date"
-                   value="{{ old('incident_date', $blotter?->incident_date?->format('Y-m-d')) }}"
-                   max="{{ now()->toDateString() }}"
-                   required
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('incident_date') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('incident_date')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="incident_time" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Incident time</label>
-            <input id="incident_time"
-                   type="time"
-                   name="incident_time"
-                   value="{{ old('incident_time', $blotter?->incident_time?->format('H:i')) }}"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('incident_time') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            <p class="mt-1 text-xs text-slate-400">Leave blank if the exact time is unknown.</p>
-            @error('incident_time')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="incident_type" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Incident type *</label>
-            <input id="incident_type"
-                   type="text"
-                   name="incident_type"
-                   value="{{ old('incident_type', $blotter?->incident_type) }}"
-                   maxlength="100"
-                   required
-                   placeholder="e.g. Theft, Physical injury, Noise complaint"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('incident_type') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('incident_type')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="purok_id" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Purok</label>
-            <select id="purok_id"
-                    name="purok_id"
-                    class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('purok_id') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                <option value="">— Not applicable / unknown —</option>
-                @foreach ($puroks as $purok)
-                    <option value="{{ $purok->id }}" @selected((string) old('purok_id', $blotter?->purok_id) === (string) $purok->id)>
-                        {{ $purok->label() }}
-                    </option>
-                @endforeach
-            </select>
-            @error('purok_id')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="sm:col-span-2">
-            <label for="location" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Location *</label>
-            <input id="location"
-                   type="text"
-                   name="location"
-                   value="{{ old('location', $blotter?->location) }}"
-                   maxlength="255"
-                   required
-                   placeholder="Street, landmark or sitio"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('location') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('location')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-    </section>
-
-    {{-- ── parties ── --}}
-    <section class="grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-            <h2 class="text-sm font-semibold text-slate-900">Parties involved</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Contacts must contain at least one digit, e.g. 0917 123 4567.</p>
-        </div>
-
-        <div>
-            <label for="complainant_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Complainant name *</label>
-            <input id="complainant_name"
-                   type="text"
-                   name="complainant_name"
-                   value="{{ old('complainant_name', $blotter?->complainant_name) }}"
-                   maxlength="150"
-                   required
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('complainant_name') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('complainant_name')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="complainant_contact" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Complainant contact</label>
-            <input id="complainant_contact"
-                   type="text"
-                   name="complainant_contact"
-                   value="{{ old('complainant_contact', $blotter?->complainant_contact) }}"
-                   maxlength="30"
-                   placeholder="0917 123 4567"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('complainant_contact') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('complainant_contact')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="respondent_name" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Respondent name</label>
-            <input id="respondent_name"
-                   type="text"
-                   name="respondent_name"
-                   value="{{ old('respondent_name', $blotter?->respondent_name) }}"
-                   maxlength="150"
-                   placeholder="Leave blank if unknown"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('respondent_name') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('respondent_name')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="respondent_contact" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Respondent contact</label>
-            <input id="respondent_contact"
-                   type="text"
-                   name="respondent_contact"
-                   value="{{ old('respondent_contact', $blotter?->respondent_contact) }}"
-                   maxlength="30"
-                   placeholder="0917 123 4567"
-                   autocomplete="off"
-                   class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('respondent_contact') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-            @error('respondent_contact')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-    </section>
-
-    {{-- ── narrative ── --}}
-    <section class="grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-            <h2 class="text-sm font-semibold text-slate-900">Narrative</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Plain account of what was reported, up to 5,000 characters.</p>
-        </div>
-
-        <div class="sm:col-span-2">
-            <label for="narrative" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">What happened? *</label>
-            <textarea id="narrative"
-                      name="narrative"
-                      rows="8"
-                      maxlength="5000"
-                      required
-                      placeholder="Describe the incident in chronological order…"
-                      class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('narrative') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">{{ old('narrative', $blotter?->narrative) }}</textarea>
-            @error('narrative')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-    </section>
-
-    {{-- ── case handling ── --}}
-    <section class="grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-            <h2 class="text-sm font-semibold text-slate-900">Case handling</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Officer, arrest, current status and resolution.</p>
-        </div>
-
-        <div>
-            <label for="handling_officer" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Handling officer</label>
-            <select id="handling_officer"
-                    name="handling_officer"
-                    class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('handling_officer') border-red-400 focus:border-red-400/20 @enderror">
-                <option value="">— Not yet assigned —</option>
-                @foreach ($officers as $officerName)
-                    <option value="{{ $officerName }}" @selected(old('handling_officer', $blotter?->handling_officer) === $officerName)>
-                        {{ $officerName }}
-                    </option>
-                @endforeach
-            </select>
-            <p class="mt-1 text-xs text-slate-400">Active barangay officials; the name is stored on the case sheet.</p>
-            @error('handling_officer')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="arrest_made" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Arrest made? *</label>
-            <select id="arrest_made"
-                    name="arrest_made"
-                    required
-                    class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('arrest_made') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                @foreach (\App\Models\Blotter::ARREST_OPTIONS as $option)
-                    <option value="{{ $option }}" @selected(old('arrest_made', $blotter?->arrest_made ?? 'No') === $option)>{{ $option }}</option>
-                @endforeach
-            </select>
-            @error('arrest_made')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div>
-            <label for="status" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Status *</label>
-            <select id="status"
-                    name="status"
-                    required
-                    class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('status') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">
-                @foreach (\App\Models\Blotter::STATUSES as $option)
-                    <option value="{{ $option }}" @selected(old('status', $blotter?->status ?? 'Open') === $option)>{{ $option }}</option>
-                @endforeach
-            </select>
-            @error('status')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <div class="sm:col-span-2">
-            <label for="resolution_notes" class="block text-xs font-semibold uppercase tracking-wide text-slate-500">Resolution notes</label>
-            <textarea id="resolution_notes"
-                      name="resolution_notes"
-                      rows="4"
-                      maxlength="5000"
-                      placeholder="How the case was settled or dismissed…"
-                      class="mt-1.5 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500 @error('resolution_notes') border-red-400 focus:border-red-400 focus:ring-red-400/20 @enderror">{{ old('resolution_notes', $blotter?->resolution_notes) }}</textarea>
-            <p class="mt-1 text-xs text-slate-400">Required once the status is <strong>Resolved</strong> or <strong>Dismissed</strong>.</p>
-            @error('resolution_notes')
-                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-    </section>
-
-    <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-6">
-        <button type="submit"
-                class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-wait disabled:opacity-70">
-            {{ $blotter?->exists ? 'Save changes' : 'Record entry' }}
-        </button>
-        <a href="{{ route('blotter.index') }}"
-           class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-            Cancel
-        </a>
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Complainant</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="complainant_name" label="Full Name" required :value="$blotter->complainant_name ?? null" maxlength="255" />
+        <x-form.field name="complainant_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->complainant_id ?? null" data-resident-autofill="complainant" data-linked-fields="complainant_name,complainant_address,complainant_phone" />
+        <x-form.field name="complainant_address" label="Address" :value="$blotter->complainant_address ?? null" maxlength="255" />
+        <x-form.field name="complainant_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->complainant_phone ?? null" maxlength="15" placeholder="09171234567" />
     </div>
-</form>
+</fieldset>
+
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Respondent (Accused)</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="accused_name" label="Full Name" required :value="$blotter->accused_name ?? null" maxlength="255" />
+        <x-form.field name="accused_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->accused_id ?? null" data-resident-autofill="accused" data-linked-fields="accused_name,accused_address,accused_phone" />
+        <x-form.field name="accused_address" label="Address" :value="$blotter->accused_address ?? null" maxlength="255" />
+        <x-form.field name="accused_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->accused_phone ?? null" maxlength="15" placeholder="09171234567" />
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Incident</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="complaint_type" label="Complaint Type" required :value="$blotter->complaint_type ?? null" maxlength="100" placeholder="e.g. Noise Complaint" />
+        <x-form.field name="complaint_subtype" label="Subtype" :value="$blotter->complaint_subtype ?? null" maxlength="100" />
+        <x-form.field name="complaint_date" label="Incident Date" type="date" required :value="$blotter?->complaint_date?->toDateString() ?? now()->toDateString()" :max="now()->toDateString()" />
+        <x-form.field name="complaint_time" label="Incident Time" type="time" step="60" :value="$blotter?->complaint_time?->format('H:i') ?? null" />
+        <div class="sm:col-span-2">
+            <x-form.field name="alleged_offense" label="Alleged Offense / Narrative" type="textarea" :rows="4" maxlength="2000" required :value="$blotter->alleged_offense ?? null" />
+        </div>
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend class="text-sm font-semibold text-gray-900 mb-4">Status & Handling</legend>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <x-form.field name="status" label="Status" type="select" required :options="['Open', 'Pending', 'Resolved', 'Dismissed']" :value="$blotter->status ?? 'Open'" />
+        <x-form.field name="arrest_made" label="Arrest Made" type="select" required :options="['No', 'Yes']" :value="$blotter->arrest_made ?? 'No'" />
+        <x-form.field name="investigator" label="Investigator" :value="$blotter->investigator ?? null" maxlength="255" />
+        <x-form.field name="officer_id" label="Handling Officer" type="select" optional-hint :options="$officerOptions" placeholder-option="None" :value="$blotter->officer_id ?? null" />
+        <div class="sm:col-span-2">
+            <x-form.field name="disposition" label="Disposition" type="textarea" :rows="3" maxlength="2000" optional-hint :value="$blotter->disposition ?? null" />
+            <p id="disposition-help" class="mt-1 hidden text-xs text-amber-700">A disposition and disposition date are required when the case is Resolved or Dismissed.</p>
+        </div>
+        <x-form.field name="disposition_date" label="Disposition Date" type="date" :value="$blotter?->disposition_date?->toDateString() ?? null" :max="now()->toDateString()" />
+        <div class="sm:col-span-2">
+            <x-form.field name="remarks" label="Remarks" type="textarea" :rows="2" maxlength="2000" :value="$blotter->remarks ?? null" />
+        </div>
+    </div>
+</fieldset>
+
+<script>
+    (function () {
+        const residentDetails = @json($residentAutofill);
+        const bindings = {
+            complainant: {
+                name: 'complainant_name',
+                address: 'complainant_address',
+                phone: 'complainant_phone',
+            },
+            accused: {
+                name: 'accused_name',
+                address: 'accused_address',
+                phone: 'accused_phone',
+            },
+        };
+
+        document.querySelectorAll('[data-resident-autofill]').forEach((select) => {
+            const binding = bindings[select.dataset.residentAutofill];
+            if (!binding) return;
+
+            const fields = Object.values(binding).map((id) => document.getElementById(id)).filter(Boolean);
+            const apply = () => {
+                const detail = residentDetails[select.value];
+                const linked = Boolean(detail);
+                if (detail) {
+                    document.getElementById(binding.name).value = detail.name || '';
+                    document.getElementById(binding.address).value = detail.address || '';
+                    document.getElementById(binding.phone).value = detail.phone || '';
+                }
+                fields.forEach((field) => {
+                    field.readOnly = linked;
+                    field.classList.toggle('bg-neutral-100', linked);
+                });
+            };
+
+            select.addEventListener('change', apply);
+            apply();
+        });
+    })();
+</script>
+
+<script>
+    (function () {
+        const status = document.getElementById('status');
+        const disposition = document.getElementById('disposition');
+        const dispositionDate = document.getElementById('disposition_date');
+        const help = document.getElementById('disposition-help');
+        if (!status || !disposition || !dispositionDate || !help) return;
+
+        const sync = () => {
+            const required = ['Resolved', 'Dismissed'].includes(status.value);
+            disposition.required = required;
+            dispositionDate.required = required;
+            help.classList.toggle('hidden', !required);
+        };
+
+        status.addEventListener('change', sync);
+        sync();
+    })();
+</script>

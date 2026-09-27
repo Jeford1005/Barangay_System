@@ -3,55 +3,165 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Request;
 
-/**
- * Append-only audit trail. Record who did what to which entity, with the
- * before/after values, for the admin-only audit log screen.
- *
- *   AuditLog::record('approved', 'user', $user->id, $before, $after);
- */
 class AuditLog extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
-        'user_id', 'action', 'entity_type', 'entity_id',
-        'before', 'after', 'ip_address', 'user_agent', 'created_at',
+        'occurred_at',
+        'user_id',
+        'user_email',
+        'actor_type',
+        'actor_id',
+        'actor_email',
+        'subject_type',
+        'subject_id',
+        'subject_label',
+        'event',
+        'ip_address',
+        'user_agent',
+        'properties',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'before' => 'array',
-            'after' => 'array',
-            'created_at' => 'datetime',
-        ];
+    protected $casts = [
+        'occurred_at' => 'datetime',
+        'actor_id' => 'integer',
+        'subject_id' => 'integer',
+        'properties' => 'array',
+    ];
+
+    /**
+     * Record an accountability event. Never throws — auditing must not
+     * break the request it is observing.
+     */
+    public static function record(
+        string $event,
+        ?int $userId,
+        ?string $email,
+        ?string $ip,
+        ?string $userAgent,
+        array $properties = [],
+    ): ?self {
+        $actorType = $userId ? 'user' : (str_starts_with($event, 'system.') ? 'system' : 'guest');
+        $actorId = $userId;
+        $actorEmail = $email;
+        $subjectType = null;
+        $subjectId = null;
+        $subjectLabel = null;
+
+        // Password-reset requests are made by an unauthenticated visitor;
+        // the user in the legacy user_id/user_email fields is the subject.
+        if (str_starts_with($event, 'password_reset.')) {
+            $actorType = 'guest';
+            $actorId = null;
+            $actorEmail = null;
+            $subjectType = 'user';
+            $subjectId = $userId;
+            $subjectLabel = $email;
+        } elseif (array_key_exists('actor_id', $properties)) {
+            // Account-management events historically stored the target in the
+            // legacy fields. New rows preserve that compatibility while
+            // recording the real administrator as the actor and the target as
+            // the explicit subject.
+            $actorId = $properties['actor_id'] !== null ? (int) $properties['actor_id'] : null;
+            $actorEmail = $properties['actor_email'] ?? null;
+            $actorType = $actorId ? 'user' : 'system';
+            $subjectType = 'user';
+            $subjectId = $userId;
+            $subjectLabel = $email;
+        } elseif (isset($properties['resident_id'])) {
+            $subjectType = 'resident';
+            $subjectId = (int) $properties['resident_id'];
+            $subjectLabel = $properties['resident_name'] ?? null;
+        } elseif (isset($properties['case_number'])) {
+            $subjectType = 'blotter';
+            $subjectLabel = (string) $properties['case_number'];
+        } elseif (isset($properties['control_number'])) {
+            $subjectType = 'certificate';
+            $subjectLabel = (string) $properties['control_number'];
+        }
+
+        try {
+            return static::create([
+                'occurred_at' => now(),
+                'user_id' => $userId,
+                'user_email' => $email,
+                'actor_type' => $actorType,
+                'actor_id' => $actorId,
+                'actor_email' => $actorEmail,
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'subject_label' => $subjectLabel,
+                'event' => $event,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent !== null ? mb_substr($userAgent, 0, 500) : null,
+                'properties' => $properties,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
     }
 
-    public function user(): BelongsTo
+    public static function recordWithSubject(
+        string $event,
+        ?int $actorId,
+        ?string $actorEmail,
+        ?string $ip,
+        ?string $userAgent,
+        string $subjectType,
+        ?int $subjectId,
+        ?string $subjectLabel,
+        array $properties = [],
+    ): ?self {
+        $properties = array_merge($properties, [
+            'actor_id' => $actorId,
+            'actor_email' => $actorEmail,
+        ]);
+
+        try {
+            return static::create([
+                'occurred_at' => now(),
+                'user_id' => $subjectType === 'user' ? $subjectId : $actorId,
+                'user_email' => $subjectType === 'user' ? $subjectLabel : $actorEmail,
+                'actor_type' => $actorId ? 'user' : 'system',
+                'actor_id' => $actorId,
+                'actor_email' => $actorEmail,
+                'subject_type' => $subjectType,
+                'subject_id' => $subjectId,
+                'subject_label' => $subjectLabel,
+                'event' => $event,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent !== null ? mb_substr($userAgent, 0, 500) : null,
+                'properties' => $properties,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public static function record(
-        string $action,
-        string $entityType,
-        int|string|null $entityId = null,
-        ?array $before = null,
-        ?array $after = null,
-    ): void {
-        static::create([
-            'user_id' => auth()->id(),
-            'action' => $action,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId !== null ? (int) $entityId : null,
-            'before' => $before,
-            'after' => $after,
-            'ip_address' => Request::ip(),
-            'user_agent' => str(Request::userAgent() ?? '')->limit(250, ''),
-            'created_at' => now(),
-        ]);
+    public function actor()
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    /**
+     * Human-readable label for the admin log page.
+     */
+    public function getEventLabelAttribute(): string
+    {
+        return match ($this->event) {
+            'password_reset.code_requested' => 'Reset code requested',
+            'password_reset.completed' => 'Password reset completed',
+            'password_reset.failed_code' => 'Failed reset attempt (invalid/expired code)',
+            default => ucwords(str_replace(['.', '_'], ' ', $this->event)),
+        };
     }
 }

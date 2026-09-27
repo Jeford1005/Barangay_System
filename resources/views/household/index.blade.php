@@ -1,0 +1,110 @@
+<x-app-layout>
+@section('page_header')
+    <x-page-header title="Household Management" />
+@endsection
+
+@section('content')
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow overflow-visible">
+        <!-- Search + filters + create action -->
+        <div class="module-toolbar-sticky no-print mb-4 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+            <form method="GET" action="{{ route('households.index') }}" class="p-3">
+                <div class="module-toolbar module-toolbar--two">
+                    <label for="household-search" class="sr-only">Search households</label>
+                    <input id="household-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search code, street, or barangay" class="min-h-10 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <label for="household-purok" class="sr-only">Filter by purok</label>
+                    <select id="household-purok" name="purok_id" onchange="this.form.submit()" class="min-h-10 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="">All puroks</option>
+                        @foreach ($puroks as $id => $name)
+                            <option value="{{ $id }}" @selected(request('purok_id') == $id)>{{ $name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="flex min-w-0 items-center justify-end gap-2">
+                        @if (auth()->user()?->isAdmin())
+                         <a href="{{ route('admin.exports.households', request()->query()) }}" class="inline-flex min-h-10 items-center rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
+                         @endif
+                         @if (request()->filled('search') || request()->filled('purok_id'))
+                            <a href="{{ route('households.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-neutral-500 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500">Reset</a>
+                        @endif
+                        <x-primary-action :href="route('households.create')" compact data-dialog-open="household-dialog">
+                            <x-icon name="plus" class="h-4 w-4" />
+                            Add Household
+                        </x-primary-action>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="p-6">
+            @if($households->isEmpty())
+                <div class="text-center py-8 text-gray-500">
+                    <x-icon name="households" class="mx-auto mb-4 h-12 w-12 text-gray-200" />
+                    <p class="mt-2">No households found</p>
+                    <x-primary-action :href="route('households.create')" data-dialog-open="household-dialog" class="no-print mt-2">
+                        Add your first household
+                    </x-primary-action>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Household Code</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purok</th>
+                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Head</th>
+                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($households as $household)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="font-medium text-gray-900">{{ e($household->household_code) }}</span>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-gray-500">{{ $household->purok ? $household->purok->name : 'N/A' }}</span>
+                                    </td>
+                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-gray-500">{{ $household->head ? $household->head->last_name . ', ' . $household->head->first_name : 'N/A' }}</span>
+                                    </td>
+                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-gray-500">{{ $household->num_members }}</span>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ $household->status == 'Occupied' ? 'bg-green-100 text-green-800' : ($household->status == 'Vacant' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                                            {{ ucfirst($household->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
+                                        <span class="inline-flex items-center justify-end gap-1 min-h-11">
+                                            <a href="{{ route('households.edit', $household->id) }}" data-dialog-open="household-dialog" data-fetch-url="{{ route('households.edit', $household->id) }}" data-fetch-mode="edit"
+                                                class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-green-700 hover:text-green-800 hover:bg-green-50 active:bg-green-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600">
+                                                Edit
+                                            </a>
+                                            <form action="{{ route('households.destroy', $household->id) }}" method="POST" class="inline {{ auth()->user()?->isStaff() ? 'hidden' : '' }}"
+                                                onsubmit="return confirm('Delete household {{ e($household->household_code) }}?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    {{ $households->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+{{-- Create/edit household dialog --}}
+<x-crud-dialog id="household-dialog" title="Household Record" description="Household profile, address, and members" :fetch-base="route('households.create')" size="lg" />
+@endsection
+</x-app-layout>

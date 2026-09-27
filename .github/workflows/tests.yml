@@ -1,0 +1,59 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, fileinfo, gd, mbstring, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer validate --no-check-publish
+      - run: composer audit --no-interaction
+      - run: npm ci
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: php artisan test
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
+  browser:
+    runs-on: ubuntu-latest
+    needs: php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, fileinfo, gd, mbstring, pdo_sqlite
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: php artisan migrate --force
+      # The authenticated acceptance spec skips itself unless these are set, and
+      # it needs a real account to sign in with. Without the seed the whole
+      # authenticated admin shell has no browser coverage at all.
+      - run: php artisan db:seed --force
+      - run: npm run build
+      - run: npm run test:browser
+        env:
+          BROWSER_BASE_URL: http://127.0.0.1:8000
+          E2E_ADMIN_EMAIL: admin@barangay.local
+          E2E_ADMIN_PASSWORD: password

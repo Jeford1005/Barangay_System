@@ -2,191 +2,207 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Certificates\IssueCertificateRequest;
-use App\Http\Requests\Certificates\VoidCertificateRequest;
 use App\Models\AuditLog;
 use App\Models\CertificateIssuance;
 use App\Models\Document;
+use App\Models\Official;
 use App\Models\Resident;
-use App\Models\SequenceCounter;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\RedirectResponse;
+use App\Services\SequenceCounter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
+use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
-/**
- * Barangay office certificate counter: issue, list, print and void.
- *
- * The printable page is intentionally a standalone screen — print() hands it
- * nothing but the issuance and lets the view resolve the Punong Barangay.
- */
 class CertificateController extends Controller
 {
-    /** Issued / voided register with search, filters and today's counter. */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         $query = CertificateIssuance::query()
-            ->with(['document', 'resident', 'issuer'])
-            ->leftJoin('residents', 'residents.id', '=', 'certificate_issuances.resident_id')
-            ->select('certificate_issuances.*');
+            ->with(['document', 'resident.purok'])
+            ->latest('id');
 
-        $term = trim((string) $request->query('q'));
-
-        if ($term !== '') {
-            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
-
-            $query->where(function (Builder $q) use ($like): void {
-                $q->where('certificate_issuances.control_number', 'like', $like)
-                    ->orWhere('certificate_issuances.purpose', 'like', $like)
-                    ->orWhere('residents.full_name', 'like', $like);
+        if ($request->filled('search')) {
+            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $query->where(function ($q) use ($search) {
+                $q->where('control_number', 'like', '%'.$search.'%')
+                    ->orWhere('purpose', 'like', '%'.$search.'%')
+                    ->orWhereHas('resident', function ($r) use ($search) {
+                        $r->where('first_name', 'like', '%'.$search.'%')
+                            ->orWhere('last_name', 'like', '%'.$search.'%');
+                    });
             });
         }
 
-        $status = (string) $request->query('status');
-
-        if (in_array($status, [CertificateIssuance::STATUS_ISSUED, CertificateIssuance::STATUS_VOIDED], true)) {
-            $query->where('certificate_issuances.status', $status);
+        if ($request->filled('status') && in_array($request->status, ['Issued', 'Voided'], true)) {
+            $query->where('status', $request->status);
         }
 
-        $documentId = (int) $request->query('document_id');
-
-        if ($documentId > 0) {
-            $query->where('certificate_issuances.document_id', $documentId);
+        if ($request->filled('document_id')) {
+            $query->where('document_id', (int) $request->document_id);
         }
 
-        return view('certificates.index', [
-            'rows' => $query->orderByDesc('certificate_issuances.id')->paginate(20)->withQueryString(),
-            'documents' => Document::query()->orderBy('code')->get(['id', 'code', 'title']),
-            'todayCount' => CertificateIssuance::whereDate('created_at', today())->count(),
-            'filters' => [
-                'q' => $term,
-                'status' => in_array($status, [CertificateIssuance::STATUS_ISSUED, CertificateIssuance::STATUS_VOIDED], true) ? $status : '',
-                'document_id' => $documentId,
-            ],
-        ]);
+        $issuances = $query->paginate(20);
+        $documents = Document::orderBy('code')->get();
+        $todayCount = CertificateIssuance::whereBetween('created_at', [
+            today()->startOfDay(),
+            today()->endOfDay(),
+        ])->count();
+
+        return view('certificates.index', compact('issuances', 'documents', 'todayCount'));
     }
 
-    /** The issuance form: active residents, active certificates/clearances. */
-    public function create(Request $request): View
+    public function create()
     {
-        $residents = Resident::query()
-            ->active()
-            ->with('purok')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get()
-            ->map(fn (Resident $resident): array => [
-                'id' => $resident->id,
-                'label' => $resident->full_name.' — '.($resident->resolvedAddress() !== ''
-                    ? $resident->resolvedAddress()
-                    : ($resident->purok?->name ?? 'No address on file')),
-            ]);
+        abort_unless(Auth::user()?->hasPermission('certificates.issue'), 403);
 
         return view('certificates.create', [
-            'residents' => $residents,
-            'documents' => Document::query()
-                ->active()
-                ->whereIn('document_type', ['Certificate', 'Clearance'])
-                ->orderBy('code')
-                ->get(),
-            'selectedResident' => old('resident_id', $request->query('resident')),
+            'documents' => Document::active()->certificate()->orderBy('code')->get(),
+            'residents' => Resident::active()
+                ->with('purok:id,name')
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'purok_id']),
         ]);
     }
 
-    /** Issue a certificate and jump straight to the printable page. */
-    public function store(IssueCertificateRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        $data = $request->validated();
-        $user = $request->user();
+        abort_unless(Auth::user()?->hasPermission('certificates.issue'), 403);
 
-        abort_unless($user !== null, 403);
+        $validated = $request->validate([
+            'document_id' => [
+                'required',
+                'integer',
+                Rule::exists('documents', 'id')
+                    ->where('status', 'Active')
+                    ->whereIn('document_type', ['Certificate', 'Clearance']),
+            ],
+            'resident_id' => [
+                'required',
+                'integer',
+                Rule::exists('residents', 'id')->where('status', 'Active'),
+            ],
+            'purpose' => 'required|string|max:255',
+            'copies' => 'required|integer|min:1|max:5',
+            'fee' => 'nullable|numeric|decimal:0,2|min:0|max:9999',
+            'remarks' => 'nullable|string|max:1000',
+        ], [
+            'document_id.integer' => 'Please select a certificate type from the list.',
+            'document_id.exists' => 'The selected certificate type is no longer available. Please choose another.',
+            'resident_id.integer' => 'Please select a resident from the list.',
+            'resident_id.exists' => 'The selected resident is no longer available. Please choose another.',
+            'copies.integer' => 'Enter a whole number of copies from 1 to 5.',
+        ]);
 
-        $document = Document::find((int) $data['document_id']);
-        $resident = Resident::find((int) $data['resident_id']);
-
-        // Defensive re-checks: validation already guaranteed both exist and
-        // are usable, but nothing here may proceed without them.
-        if ($document === null || $resident === null) {
-            return redirect()->route('certificates.create')
-                ->with('error', 'The certificate could not be issued — please try again.');
-        }
-
-        // Staff always pay the catalog fee; only admins may override it.
-        $feeOverride = $data['fee'] ?? null;
-
-        $fee = ($user->isAdmin() && $feeOverride !== null)
-            ? round((float) $feeOverride, 2)
-            : (float) $document->fee;
-
-        $issuance = DB::transaction(function () use ($document, $resident, $data, $fee, $user): CertificateIssuance {
-            $control = SequenceCounter::nextControlNumber($document->code);
+        $issuance = DB::transaction(function () use ($request, $validated) {
+            $document = Document::findOrFail($validated['document_id']);
+            $resident = Resident::with('purok')->findOrFail($validated['resident_id']);
+            $fee = Auth::user()?->isStaff()
+                ? $document->fee
+                : ($validated['fee'] ?? $document->fee);
 
             $issuance = CertificateIssuance::create([
-                'control_number' => $control,
+                'control_number' => static::getNextControlNumber($document->code),
                 'document_id' => $document->id,
                 'resident_id' => $resident->id,
-                'purpose' => $data['purpose'],
+                'recipient_snapshot' => CertificateIssuance::residentSnapshot($resident),
+                'document_snapshot' => CertificateIssuance::documentSnapshot($document),
+                'purpose' => $validated['purpose'],
+                'copies' => $validated['copies'],
+                // Administrators may waive or adjust the fee at the counter.
+                // Staff issuance always uses the posted catalog price.
                 'fee' => $fee,
-                'copies' => (int) $data['copies'],
-                'recipient_snapshot' => CertificateIssuance::snapshotFor($resident),
-                'status' => CertificateIssuance::STATUS_ISSUED,
-                'issued_by' => $user->id,
-                'issued_at' => now(),
+                'status' => 'Issued',
+                'remarks' => $validated['remarks'] ?? null,
+                'issued_by' => Auth::id(),
+                'created_by' => Auth::id(),
             ]);
 
-            AuditLog::record('issued', 'certificate_issuance', $issuance->id, null, [
-                'control_number' => $issuance->control_number,
-                'document' => $document->code,
-                'resident_id' => $resident->id,
-                'resident' => $resident->full_name,
-                'purpose' => $issuance->purpose,
-                'fee' => $issuance->fee,
-                'copies' => $issuance->copies,
-            ]);
+            AuditLog::record(
+                'certificate.issued',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                [
+                    'control_number' => $issuance->control_number,
+                    'resident_id' => $issuance->resident_id,
+                    'document' => $document->title,
+                ],
+            );
 
             return $issuance;
         });
 
         return redirect()
             ->route('certificates.print', $issuance)
-            ->with('status', sprintf('Certificate %s issued for %s.', $issuance->control_number, $resident->full_name));
+            ->with('success', "Certificate {$issuance->control_number} issued — printing.");
     }
 
-    /** Standalone printable page — the view receives only the issuance. */
-    public function print(CertificateIssuance $issuance): View
+    /**
+     * Printable official certificate. Standalone layout (no app chrome) so
+     * Ctrl+P yields a clean document, mirroring the blotter case sheet.
+     */
+    public function print(CertificateIssuance $issuance)
     {
-        return view('certificates.print', ['issuance' => $issuance]);
+        abort_unless(Auth::user()?->hasPermission('certificates.issue'), 403);
+
+        return view('certificates.print', [
+            'issuance' => $issuance->load(['document', 'resident.purok']),
+            'punongBarangay' => Official::where('position', 'Punong Barangay')->active()->first(),
+        ]);
     }
 
-    /** Administrator voiding an issued certificate (admin middleware + guard). */
-    public function void(VoidCertificateRequest $form, CertificateIssuance $issuance): RedirectResponse
+    public function void(Request $request, CertificateIssuance $issuance)
     {
-        if ($issuance->isVoided()) {
-            return back()->with('error', sprintf('Certificate %s has already been voided.', $issuance->control_number));
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        if ($issuance->status === 'Voided') {
+            return redirect()->route('certificates.index')
+                ->with('error', "Certificate {$issuance->control_number} is already voided.");
         }
 
-        $before = [
-            'status' => $issuance->status,
-            'void_reason' => $issuance->void_reason,
-        ];
-
-        $reason = $form->validated('void_reason');
-
         $issuance->update([
-            'status' => CertificateIssuance::STATUS_VOIDED,
+            'status' => 'Voided',
+            'voided_by' => Auth::id(),
             'voided_at' => now(),
-            'voided_by' => auth()->id(),
-            'void_reason' => $reason !== null ? (string) $reason : null,
         ]);
 
-        AuditLog::record('voided', 'certificate_issuance', $issuance->id, $before, [
-            'status' => $issuance->status,
-            'voided_at' => $issuance->voided_at?->toDateTimeString(),
-            'void_reason' => $issuance->void_reason,
-            'control_number' => $issuance->control_number,
-        ]);
+        AuditLog::record(
+            'certificate.voided',
+            Auth::id(),
+            Auth::user()?->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['control_number' => $issuance->control_number],
+        );
 
-        return back()->with('status', sprintf('Certificate %s has been voided.', $issuance->control_number));
+        return redirect()->route('certificates.index')
+            ->with('success', "Certificate {$issuance->control_number} voided.");
+    }
+
+    /**
+     * The next control number in the barangay's <CODE>-YYYY-#### sequence,
+     * e.g. CLR-2026-0007. Takes a shared lock — call inside a transaction so
+     * concurrent clerks can't collide (same pattern as blotter case numbers).
+     */
+    public static function getNextControlNumber(string $documentCode): string
+    {
+        $documentCode = strtoupper(trim($documentCode));
+        if (! preg_match('/^[A-Z0-9]{2,8}$/', $documentCode)) {
+            throw new InvalidArgumentException('Certificate codes must contain 2–8 letters or numbers.');
+        }
+
+        $year = now()->format('Y');
+        $prefix = $documentCode."-{$year}-";
+
+        $max = DB::table('certificate_issuances')
+            ->where('control_number', 'like', $prefix.'%')
+            ->max('control_number');
+        $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
+        $next = app(SequenceCounter::class)->reserve('certificate:'.$documentCode, (int) $year, $currentMaximum);
+
+        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 }

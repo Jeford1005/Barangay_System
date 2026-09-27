@@ -5,81 +5,76 @@ namespace App\Http\Controllers;
 use App\Models\Resident;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Streams a resident's photo from private storage.
+ * Serves resident photos.
  *
- * Photos never live on a public URL: the file is only reachable through this
- * authenticated route, which allows office users plus the resident who owns
- * the picture.
+ * Photos are personal data. They used to be written to the `public` disk and
+ * referenced by a stable URL under /storage, which meant anyone with the URL
+ * could fetch them with no session, no CSRF token, and no role check, and the
+ * URL leaked through page HTML, browser cache, and the Referer header. New
+ * uploads go to the private `local` disk and are streamed only to an
+ * authenticated office user or the resident the photo belongs to.
  */
 class ResidentPhotoController extends Controller
 {
-    public function show(Request $request, Resident $resident): Response
+    public function __invoke(Request $request, Resident $resident): Response
     {
         $user = $request->user();
 
-        $allowed = $user !== null
-            && ($user->isAdmin()
-                || $user->isStaff()
-                || (int) $user->resident_id === (int) $resident->id);
+        abort_unless($user, 403);
+        abort_unless(
+            $user->isAdmin() || $user->isStaff() || $resident->user_id === $user->id,
+            403,
+        );
 
-        abort_unless($allowed, 403);
+        abort_if(blank($resident->photo), 404);
 
-        $path = $resident->photo_path;
+        return $this->stream($resident->photo);
+    }
 
-        if ($path === null || $path === '' || str_contains($path, '..')) {
-            abort(404);
-        }
+    /**
+     * The signed-in resident's own photo, from the resident-only route group.
+     */
+    public function mine(Request $request): Response
+    {
+        $resident = $request->user()?->residentProfile;
 
-        $diskName = 'local';
-        $disk = Storage::disk($diskName);
+        abort_unless($resident, 404);
+        abort_if(blank($resident->photo), 404);
 
-        if (! $disk->exists($path)) {
-            // Legacy files may still sit on the public disk.
-            $diskName = 'public';
-            $disk = Storage::disk($diskName);
+        return $this->stream($resident->photo);
+    }
 
-            if (! $disk->exists($path)) {
-                abort(404);
+    /**
+     * Stream the stored file, falling back to the public disk so photos taken
+     * before this change keep rendering.
+     */
+    private function stream(string $path): Response
+    {
+        $path = ltrim(str_replace('\\', '/', $path), '/');
+
+        // Defence in depth: the column is only ever written by `store()`, but a
+        // traversal here would expose arbitrary files under storage/.
+        abort_if(str_contains($path, '..'), 404);
+
+        foreach ([Storage::disk('local'), Storage::disk('public')] as $disk) {
+            if ($disk->exists($path)) {
+                $response = new BinaryFileResponse($disk->path($path));
+
+                $mime = $disk->mimeType($path) ?: 'application/octet-stream';
+                $response->headers->set('Content-Type', $mime);
+                $response->headers->set('Cache-Control', 'private, no-store');
+                $response->headers->set('X-Content-Type-Options', 'nosniff');
+                // Never let a crafted upload render as markup in our origin.
+                $response->headers->set('Content-Disposition', 'inline');
+
+                return $response;
             }
         }
 
-        $response = $disk->response($path, $resident->full_name, [
-            'Content-Type' => $this->mimeType($diskName, $path),
-        ]);
-
-        // The photo is personal data: never cache it in a shared cache.
-        $response->headers->set('Cache-Control', 'private, no-store');
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-
-        if (! str_starts_with((string) $response->headers->get('Content-Disposition'), 'inline')) {
-            $response->headers->set('Content-Disposition', 'inline');
-        }
-
-        return $response;
-    }
-
-    /** Content type for the stored file, guessed from the extension as a fallback. */
-    private function mimeType(string $diskName, string $path): string
-    {
-        try {
-            $mime = Storage::disk($diskName)->mimeType($path);
-        } catch (\Throwable) {
-            $mime = null;
-        }
-
-        if (is_string($mime) && str_starts_with($mime, 'image/')) {
-            return $mime;
-        }
-
-        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'bmp' => 'image/bmp',
-            default => 'image/jpeg',
-        };
+        abort(404);
     }
 }

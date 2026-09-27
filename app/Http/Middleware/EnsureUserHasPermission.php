@@ -6,31 +6,34 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Route middleware: ->middleware('permission:residents.view') (comma-separated
- * for alternatives: 'permission:reports.view,analytics.view').
- *
- * Backed by User::hasPermission() — the single source of truth for what each
- * role may do. Denied users are redirected to their dashboard with a notice.
- */
 class EnsureUserHasPermission
 {
-    public function handle(Request $request, Closure $next, string ...$permissions): Response
+    /**
+     * Allow an authenticated user with the requested application permission.
+     * The default permission is used by the broad `staff` route gate.
+     *
+     * @param  Closure(Request): (Response)  $next
+     */
+    public function handle(Request $request, Closure $next, string $permission = 'operations.access'): Response
     {
         $user = $request->user();
 
-        if ($user === null) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        foreach ($permissions as $permission) {
-            if ($user->hasPermission($permission)) {
-                return $next($request);
-            }
+        if ($user->hasPermission($permission)) {
+            return $next($request);
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'You do not have access to this resource.'], 403);
+        }
+
+        // Redirecting with no message is indistinguishable from a normal
+        // navigation, so the user never learns the action is restricted.
         return redirect()
             ->route('dashboard')
-            ->with('error', 'You do not have permission to open that page.');
+            ->with('error', 'Your role does not have permission to open that page. Ask an administrator if you need access.');
     }
 }

@@ -5,9 +5,10 @@
 
     RewriteEngine On
 
-    # Deployed at the subfolder /Barangay_Management_System (Apache Alias) -
-    # without this base, rewrites build URLs from the document root and loop
-    RewriteBase /Barangay_Management_System
+    # Served through the Apache Alias /Barangay_Management_System -> public/,
+    # so per-directory rewriting must anchor here or Apache builds the target
+    # from the htdocs docroot and loops (AH00124).
+    RewriteBase /Barangay_Management_System/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -27,3 +28,9 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Never serve dotfiles (.env, .git, ...) even if the vhost DocumentRoot is
+# misconfigured to the project root instead of public/.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
