@@ -21,6 +21,18 @@ php artisan serve        # http://127.0.0.1:8000
 Configuration lives in `.env` (MySQL database `barangay_management`, mail for
 password-reset links).
 
+### Performance notes
+
+- **OPcache is enabled** in `C:\xampp\php\php.ini` (shared by CLI and Apache).
+  Without it every request re-parses the whole framework (~1s/page); with it
+  pages render in ~15–170 ms. Restart Apache / the dev server after editing
+  `php.ini`.
+- Config, events, routes and views are cached via `php artisan optimize`.
+  After changing any route or config file run `php artisan optimize:clear`
+  (then `optimize` again) or you will keep seeing the old definitions.
+- `php artisan serve` is single-threaded — prefer the Apache URL
+  `http://localhost/Barangay_Management_System` for daily use.
+
 ## Seeded accounts
 
 All passwords are `password` (change them before any real use):
