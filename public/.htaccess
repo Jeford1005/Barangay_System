@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Deployed at the subfolder /Barangay_Management_System (Apache Alias) -
+    # without this base, rewrites build URLs from the document root and loop
+    RewriteBase /Barangay_Management_System
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

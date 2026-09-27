@@ -1,0 +1,13 @@
+# Security only. Routing is handled by the Apache Alias
+# (/Barangay_Management_System -> public/) plus public/.htaccess.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Deny hidden files and folders (.env, .git, editor configs, ...)
+    RewriteRule (^|/)\. - [F]
+</IfModule>
+
+# Never serve dotfiles even if mod_rewrite is unavailable
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
