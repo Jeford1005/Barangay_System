@@ -6,15 +6,10 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Route middleware: ->middleware('role:admin') or 'role:admin,staff'.
- *
- * Non-members get a friendly redirect back to their dashboard with a notice,
- * instead of a bare 403 page.
- */
-class EnsureUserHasRole
+/** Route middleware: ->middleware('admin') — administrator screens only. */
+class EnsureUserIsAdmin
 {
-    public function handle(Request $request, Closure $next, string ...$roles): Response
+    public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
@@ -22,7 +17,7 @@ class EnsureUserHasRole
             return redirect()->route('login');
         }
 
-        if (! in_array($user->role, $roles, true)) {
+        if (! $user->isAdmin()) {
             return redirect()
                 ->route('dashboard')
                 ->with('error', 'You do not have permission to open that page.');

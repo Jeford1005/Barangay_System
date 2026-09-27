@@ -242,7 +242,7 @@
         {{-- centered panel --}}
         <div class="absolute inset-0 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
-                <div class="relative w-full max-w-md rounded-2xl border border-white/10 bg-[#0B2C57] p-6 shadow-[0_30px_80px_-20px_rgba(2,10,25,0.9)] sm:p-7">
+                <div class="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0B2C57] p-6 shadow-[0_30px_80px_-20px_rgba(2,10,25,0.9)] sm:p-7">
 
                     <button type="button"
                             data-close-modal
@@ -270,51 +270,216 @@
                           class="mt-6 space-y-4">
                         @csrf
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="reg_first_name" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">First name <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                                <input id="reg_first_name"
+                                       type="text"
+                                       name="first_name"
+                                       value="{{ old('first_name') }}"
+                                       required
+                                       maxlength="80"
+                                       autocomplete="given-name"
+                                       placeholder="Juan"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('first_name', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('first_name', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_last_name" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Last name <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                                <input id="reg_last_name"
+                                       type="text"
+                                       name="last_name"
+                                       value="{{ old('last_name') }}"
+                                       required
+                                       maxlength="80"
+                                       autocomplete="family-name"
+                                       placeholder="Dela Cruz"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('last_name', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('last_name', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_middle_name" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Middle name <span class="text-white/40 normal-case tracking-normal">optional</span></label>
+                                <input id="reg_middle_name"
+                                       type="text"
+                                       name="middle_name"
+                                       value="{{ old('middle_name') }}"
+                                       maxlength="80"
+                                       autocomplete="additional-name"
+                                       placeholder="Santos"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('middle_name', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('middle_name', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_suffix" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Suffix <span class="text-white/40 normal-case tracking-normal">optional</span></label>
+                                <input id="reg_suffix"
+                                       type="text"
+                                       name="suffix"
+                                       value="{{ old('suffix') }}"
+                                       maxlength="10"
+                                       placeholder="Jr., Sr., III"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('suffix', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('suffix', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="reg_birth_date" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Birth date <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                                <input id="reg_birth_date"
+                                       type="date"
+                                       name="birth_date"
+                                       value="{{ old('birth_date') }}"
+                                       required
+                                       min="1900-01-01"
+                                       max="{{ now()->toDateString() }}"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white [color-scheme:dark] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('birth_date', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('birth_date', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_sex" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Sex <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                                <select id="reg_sex"
+                                        name="sex"
+                                        required
+                                        class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('sex', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                    <option value="" class="bg-[#0B2C57]" @selected(old('sex') === null)>Select…</option>
+                                    <option value="Male" class="bg-[#0B2C57]" @selected(old('sex') === 'Male')>Male</option>
+                                    <option value="Female" class="bg-[#0B2C57]" @selected(old('sex') === 'Female')>Female</option>
+                                    <option value="Other" class="bg-[#0B2C57]" @selected(old('sex') === 'Other')>Other</option>
+                                </select>
+                                @error('sex', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_civil_status" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Civil status <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                                <select id="reg_civil_status"
+                                        name="civil_status"
+                                        required
+                                        class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('civil_status', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                    <option value="" class="bg-[#0B2C57]" @selected(old('civil_status') === null)>Select…</option>
+                                    <option value="Single" class="bg-[#0B2C57]" @selected(old('civil_status') === 'Single')>Single</option>
+                                    <option value="Married" class="bg-[#0B2C57]" @selected(old('civil_status') === 'Married')>Married</option>
+                                    <option value="Divorced" class="bg-[#0B2C57]" @selected(old('civil_status') === 'Divorced')>Divorced</option>
+                                    <option value="Widowed" class="bg-[#0B2C57]" @selected(old('civil_status') === 'Widowed')>Widowed</option>
+                                    <option value="Separated" class="bg-[#0B2C57]" @selected(old('civil_status') === 'Separated')>Separated</option>
+                                </select>
+                                @error('civil_status', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_phone_number" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Mobile number <span class="text-white/40 normal-case tracking-normal">optional</span></label>
+                                <input id="reg_phone_number"
+                                       type="tel"
+                                       name="phone_number"
+                                       value="{{ old('phone_number') }}"
+                                       maxlength="30"
+                                       autocomplete="tel"
+                                       placeholder="09XX XXX XXXX"
+                                       class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('phone_number', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                @error('phone_number', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div>
-                            <label for="reg_name" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Full name</label>
-                            <input id="reg_name"
+                            <label for="reg_address" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Home address <span class="text-white/40 normal-case tracking-normal">*</span></label>
+                            <input id="reg_address"
                                    type="text"
-                                   name="reg_name"
-                                   value="{{ old('reg_name') }}"
+                                   name="address"
+                                   value="{{ old('address') }}"
                                    required
-                                   maxlength="150"
-                                   autocomplete="name"
-                                   placeholder="Juan Dela Cruz"
-                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('reg_name') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
-                            @error('reg_name')
+                                   maxlength="255"
+                                   autocomplete="street-address"
+                                   placeholder="House no., street, sitio"
+                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('address', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                            @error('address', 'register')
                                 <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="reg_purok_id" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Purok <span class="text-white/40 normal-case tracking-normal">optional</span></label>
+                                <select id="reg_purok_id"
+                                        name="purok_id"
+                                        class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('purok_id', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                    <option value="" class="bg-[#0B2C57]" @selected(old('purok_id') === null)>Select…</option>
+                                    @foreach ($puroks as $purok)
+                                        <option value="{{ $purok->id }}" class="bg-[#0B2C57]" @selected((string) old('purok_id') === (string) $purok->id)>
+                                            {{ $purok->code }} &middot; {{ $purok->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('purok_id', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="reg_household_id" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Household <span class="text-white/40 normal-case tracking-normal">optional</span></label>
+                                <select id="reg_household_id"
+                                        name="household_id"
+                                        class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('household_id', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                    <option value="" class="bg-[#0B2C57]" @selected(old('household_id') === null)>Select…</option>
+                                    @foreach ($households as $household)
+                                        <option value="{{ $household->id }}" class="bg-[#0B2C57]" @selected((string) old('household_id') === (string) $household->id)>
+                                            {{ $household->household_number }} &middot; {{ $household->address }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('household_id', 'register')
+                                    <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div>
-                            <label for="reg_email" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Email address</label>
+                            <label for="reg_email" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Email address <span class="text-white/40 normal-case tracking-normal">*</span></label>
                             <input id="reg_email"
                                    type="email"
-                                   name="reg_email"
-                                   value="{{ old('reg_email') }}"
+                                   name="email"
+                                   value="{{ old('email') }}"
                                    required
                                    maxlength="150"
-                                   autocomplete="username"
+                                   autocomplete="email"
                                    placeholder="name@example.com"
-                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('reg_email') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
-                            @error('reg_email')
+                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('email', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                            @error('email', 'register')
                                 <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
-                            <label for="reg_password" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Password</label>
+                            <label for="reg_password" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Password <span class="text-white/40 normal-case tracking-normal">*</span></label>
 
                             <div class="relative mt-2">
                                 <input id="reg_password"
                                        type="password"
-                                       name="reg_password"
+                                       name="password"
                                        required
                                        minlength="8"
                                        maxlength="100"
                                        autocomplete="new-password"
                                        placeholder="At least 8 characters"
-                                       class="block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 pr-12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('reg_password') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                                       class="block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 pr-12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('password', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
 
                                 <button type="button"
                                         data-toggle-password="reg_password"
@@ -335,21 +500,24 @@
                                 </button>
                             </div>
 
-                            @error('reg_password')
+                            @error('password', 'register')
                                 <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div>
-                            <label for="reg_password_confirmation" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Confirm password</label>
+                            <label for="reg_password_confirmation" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Confirm password <span class="text-white/40 normal-case tracking-normal">*</span></label>
                             <input id="reg_password_confirmation"
                                    type="password"
-                                   name="reg_password_confirmation"
+                                   name="password_confirmation"
                                    required
                                    maxlength="100"
                                    autocomplete="new-password"
                                    placeholder="Re-enter your password"
-                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20">
+                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('password_confirmation', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+                            @error('password_confirmation', 'register')
+                                <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <button type="submit"

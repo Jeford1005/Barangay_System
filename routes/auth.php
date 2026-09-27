@@ -1,11 +1,9 @@
 <?php
 
-use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -35,24 +33,5 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Administration
-|--------------------------------------------------------------------------
-|
-| Administrator-only screens: account creation, approvals, suspensions and
-| role changes. Staff and residents are turned away by the role middleware.
-|
-*/
-Route::middleware(['auth', 'role:admin'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
-        Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
-        Route::post('/accounts/{user}/approve', [AccountController::class, 'approve'])->name('accounts.approve');
-        Route::post('/accounts/{user}/reject', [AccountController::class, 'reject'])->name('accounts.reject');
-        Route::post('/accounts/{user}/suspend', [AccountController::class, 'suspend'])->name('accounts.suspend');
-        Route::post('/accounts/{user}/reactivate', [AccountController::class, 'reactivate'])->name('accounts.reactivate');
-        Route::patch('/accounts/{user}/role', [AccountController::class, 'changeRole'])->name('accounts.role');
-    });
+// Administrator-only screens (accounts, officials, exports, audit trail,
+// archive) live in routes/modules/admin.php, guarded by the `admin` alias.

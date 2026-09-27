@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\EnsureAccountIsActive;
-use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\EnsureUserHasPermission;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsResident;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => EnsureUserHasRole::class,
+            'admin' => EnsureUserIsAdmin::class,
+            'permission' => EnsureUserHasPermission::class,
+            'resident' => EnsureUserIsResident::class,
         ]);
 
         // Runs after the session is started: blocks pending/rejected/suspended

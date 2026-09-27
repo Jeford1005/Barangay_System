@@ -15,9 +15,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 antialiased">
-    @php($user = auth()->user())
+    @php
+        $user = auth()->user();
+    @endphp
 
-    <header class="border-b border-slate-200 bg-white">
+    <header class="border-b border-slate-200 bg-white print:hidden">
         <div class="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-2">
             <div class="flex items-center gap-3">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
@@ -31,25 +33,74 @@
                     </div>
                 </a>
 
-                {{-- role-based navigation --}}
-                <nav class="ml-4 hidden items-center gap-1 sm:flex" aria-label="Main">
-                    <a href="{{ route('dashboard') }}"
-                       @class([
-                           'rounded-md px-3 py-1.5 text-sm font-medium transition',
-                           'bg-slate-100 text-slate-900' => request()->routeIs('dashboard'),
-                           'text-slate-600 hover:bg-slate-50 hover:text-slate-900' => ! request()->routeIs('dashboard'),
-                       ])>
-                        Dashboard
-                    </a>
+                {{-- role-filtered navigation --}}
+                <nav class="ml-4 hidden items-center gap-0.5 flex-wrap lg:flex" aria-label="Main">
+                    @if ($user && $user->isOfficeUser())
+                        @php
+                            $navItems = [
+                                ['label' => 'Dashboard', 'route' => 'dashboard', 'pattern' => 'dashboard'],
+                                ['label' => 'Residents', 'route' => 'residents.index', 'pattern' => 'residents.*', 'permission' => 'residents.view'],
+                                ['label' => 'Households', 'route' => 'households.index', 'pattern' => 'households.*', 'permission' => 'households.view'],
+                                ['label' => 'Puroks', 'route' => 'puroks.index', 'pattern' => 'puroks.*', 'permission' => 'puroks.view'],
+                                ['label' => 'Blotter', 'route' => 'blotter.index', 'pattern' => 'blotter.*', 'permission' => 'blotter.view'],
+                                ['label' => 'Welfare', 'route' => 'welfare.index', 'pattern' => 'welfare.*', 'permission' => 'welfare.view'],
+                                ['label' => 'Certificates', 'route' => 'certificates.index', 'pattern' => 'certificates.*', 'permission' => 'certificates.view'],
+                                ['label' => 'Requests', 'route' => 'admin.certificate-requests.index', 'pattern' => 'admin.certificate-requests.*', 'permission' => 'certificate-requests.view', 'badge' => 'requests'],
+                                ['label' => 'Reports', 'route' => 'reports.index', 'pattern' => 'reports.*', 'permission' => 'reports.view'],
+                                ['label' => 'Analytics', 'route' => 'analytics', 'pattern' => 'analytics', 'permission' => 'analytics.view'],
+                                ['label' => 'Accounts', 'route' => 'admin.accounts.index', 'pattern' => 'admin.accounts.*', 'admin' => true, 'badge' => 'accounts'],
+                                ['label' => 'Types', 'route' => 'admin.certificate-types.index', 'pattern' => 'admin.certificate-types.*', 'admin' => true],
+                                ['label' => 'Officials', 'route' => 'admin.officials.index', 'pattern' => 'admin.officials.*', 'admin' => true],
+                                ['label' => 'Audit', 'route' => 'admin.audit-logs.index', 'pattern' => 'admin.audit-logs.*', 'admin' => true],
+                                ['label' => 'Archive', 'route' => 'archive.index', 'pattern' => 'archive.*', 'admin' => true],
+                            ];
 
-                    @if ($user?->isAdmin())
-                        <a href="{{ route('admin.accounts.index') }}"
+                            $visibleNav = collect($navItems)->filter(function (array $item) use ($user) {
+                                if (! empty($item['admin'])) {
+                                    return $user->isAdmin();
+                                }
+
+                                return empty($item['permission']) || $user->hasPermission($item['permission']);
+                            });
+                        @endphp
+
+                        @foreach ($visibleNav as $item)
+                            @php
+                                $badgeCount = match ($item['badge'] ?? null) {
+                                    'accounts' => \App\Models\User::where('status', \App\Models\User::STATUS_PENDING)->count(),
+                                    'requests' => \App\Models\CertificateRequest::where('status', 'Pending')->count(),
+                                    default => 0,
+                                };
+                            @endphp
+                            <a href="{{ route($item['route']) }}"
+                               @class([
+                                   'relative rounded-md px-2.5 py-1.5 text-sm font-medium transition',
+                                   'bg-slate-100 text-slate-900' => request()->routeIs($item['pattern']),
+                                   'text-slate-600 hover:bg-slate-50 hover:text-slate-900' => ! request()->routeIs($item['pattern']),
+                               ])>
+                                {{ $item['label'] }}
+                                @if ($badgeCount > 0)
+                                    <span class="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">{{ $badgeCount > 99 ? '99+' : $badgeCount }}</span>
+                                @endif
+                            </a>
+                        @endforeach
+                    @elseif ($user)
+                        {{-- resident portal navigation --}}
+                        <a href="{{ route('resident.portal') }}"
                            @class([
                                'rounded-md px-3 py-1.5 text-sm font-medium transition',
-                               'bg-slate-100 text-slate-900' => request()->routeIs('admin.*'),
-                               'text-slate-600 hover:bg-slate-50 hover:text-slate-900' => ! request()->routeIs('admin.*'),
+                               'bg-slate-100 text-slate-900' => request()->routeIs('resident.portal'),
+                               'text-slate-600 hover:bg-slate-50 hover:text-slate-900' => ! request()->routeIs('resident.portal'),
                            ])>
-                            Accounts
+                            My barangay
+                        </a>
+                        <a href="{{ route('resident.requests') }}"
+                           @class([
+                               'rounded-md px-3 py-1.5 text-sm font-medium transition',
+                               'bg-slate-100 text-slate-900' => request()->routeIs('resident.requests'),
+                               'text-slate-600 hover:bg-slate-50 hover:text-slate-900' => ! request()->routeIs('resident.requests'),
+                           ])>
+                            My requests
                         </a>
                     @endif
                 </nav>

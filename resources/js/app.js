@@ -153,3 +153,18 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.querySelectorAll('[data-modal][data-open-on-load]').forEach((modal) => openModal(modal));
+
+/**
+ * Print buttons: [data-print] triggers the browser print dialog.
+ * Works everywhere — including standalone print pages that bundle app.js.
+ */
+document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) {
+        return;
+    }
+
+    if (event.target.closest('[data-print]')) {
+        event.preventDefault();
+        window.print();
+    }
+});
