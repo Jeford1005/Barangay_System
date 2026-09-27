@@ -25,11 +25,16 @@ password-reset links).
 
 - **OPcache is enabled** in `C:\xampp\php\php.ini` (shared by CLI and Apache).
   Without it every request re-parses the whole framework (~1s/page); with it
-  pages render in ~15–170 ms. Restart Apache / the dev server after editing
+  pages render in ~6–300 ms. Restart Apache / the dev server after editing
   `php.ini`.
-- Config, events, routes and views are cached via `php artisan optimize`.
-  After changing any route or config file run `php artisan optimize:clear`
-  (then `optimize` again) or you will keep seeing the old definitions.
+- Routes, events and views are cached (`route:cache`, `event:cache`,
+  `view:cache`). **Config is deliberately NOT cached in development**: a
+  cached config bakes `.env` values and overrides `phpunit.xml`, which makes
+  the test suite run `RefreshDatabase` against the live MySQL database
+  instead of the test database. Run `php artisan optimize` only when
+  deploying, and `php artisan optimize:clear` before running tests.
+- After changing any route file run `php artisan route:cache` again (or you
+  will keep seeing the old definitions).
 - `php artisan serve` is single-threaded — prefer the Apache URL
   `http://localhost/Barangay_Management_System` for daily use.
 
