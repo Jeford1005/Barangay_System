@@ -242,7 +242,7 @@
         {{-- centered panel --}}
         <div class="absolute inset-0 overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
-                <div class="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0B2C57] p-6 shadow-[0_30px_80px_-20px_rgba(2,10,25,0.9)] sm:p-7">
+                <div class="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0B2C57] p-6 shadow-[0_30px_80px_-20px_rgba(2,10,25,0.9)] sm:p-7">
 
                     <button type="button"
                             data-close-modal
@@ -507,14 +507,35 @@
 
                         <div>
                             <label for="reg_password_confirmation" class="block text-[11px] font-semibold uppercase tracking-[0.2em] text-[#5CB2DE]/90">Confirm password <span class="text-white/40 normal-case tracking-normal">*</span></label>
-                            <input id="reg_password_confirmation"
-                                   type="password"
-                                   name="password_confirmation"
-                                   required
-                                   maxlength="100"
-                                   autocomplete="new-password"
-                                   placeholder="Re-enter your password"
-                                   class="mt-2 block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('password_confirmation', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+
+                            <div class="relative mt-2">
+                                <input id="reg_password_confirmation"
+                                       type="password"
+                                       name="password_confirmation"
+                                       required
+                                       maxlength="100"
+                                       autocomplete="new-password"
+                                       placeholder="Re-enter your password"
+                                       class="block w-full rounded-lg border border-white/12 bg-white/[0.07] px-4 py-3 pr-12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition duration-200 placeholder:text-white/30 hover:bg-white/[0.09] focus:border-[#5CB2DE]/70 focus:bg-white/[0.10] focus:ring-4 focus:ring-[#5CB2DE]/20 @error('password_confirmation', 'register') border-red-400/70 focus:border-red-400/70 focus:ring-red-500/15 @enderror">
+
+                                <button type="button"
+                                        data-toggle-password="reg_password_confirmation"
+                                        aria-label="Show password"
+                                        aria-controls="reg_password_confirmation"
+                                        aria-pressed="false"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border-0 bg-transparent p-1.5 text-white/45 outline-none transition duration-200 hover:text-white/85 focus-visible:ring-2 focus-visible:ring-[#5CB2DE]/70">
+                                    <svg class="password-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
+                                        <path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                    <svg class="password-eye-slash hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
+                                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c4.6 0 8.6 3.1 9.94 7a10.1 10.1 0 0 1-1.87 3.19"/>
+                                        <path d="M6.06 6.06A10.9 10.9 0 0 0 2.06 11.65a1 1 0 0 0 0 .7 10.75 10.75 0 0 0 13.1 5.52"/>
+                                        <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                        <path d="m2 2 20 20"/>
+                                    </svg>
+                                </button>
+                            </div>
                             @error('password_confirmation', 'register')
                                 <p class="mt-2 text-sm text-red-300">{{ $message }}</p>
                             @enderror
