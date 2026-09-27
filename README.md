@@ -1,59 +1,154 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Barangay Management System — Barangay Bidduang
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A clean rewrite of the Barangay Management System for **Barangay Bidduang, Municipality of Pamplona, Cagayan**.
+Laravel 12 · PHP 8.2 · MySQL · Tailwind CSS 4 · Vite.
 
-## About Laravel
+Logic, features and data model follow the original Barangay_System2 project
+(improved and re-architected); the visual language is our own — the official
+seal, the Cagayan palette (sky `#5CB2DE`, gold `#E8B93B`, green `#2F8F5B`,
+navy `#08234A`, coral `#FF6B5C`) and a CSP-ready UI with no inline scripts
+or styles.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Running locally
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+composer install
+npm install && npm run build
+php artisan migrate --seed
+php artisan serve        # http://127.0.0.1:8000
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Configuration lives in `.env` (MySQL database `barangay_management`, mail for
+password-reset links).
 
-## Learning Laravel
+## Seeded accounts
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+All passwords are `password` (change them before any real use):
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Email                   | Role    | Status |
+|-------------------------|---------|--------|
+| admin@barangay.local    | admin   | active |
+| staff@barangay.local    | staff   | active |
+| resident@barangay.local | resident| active |
 
-## Laravel Sponsors
+Seeded data: 5 puroks (P1–P5), 3 document types (CLR ₱50, COR ₱30, IND ₱0),
+2 officials, 3 households, 3 residents.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Roles & access
 
-### Premium Partners
+Roles are exactly `admin | staff | resident`; statuses
+`pending | active | rejected | suspended`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Capability | Admin | Staff | Resident |
+|--------------------------------------|:-----:|:-----:|:--------:|
+| Sign in / manage own password | ✅ | ✅ | ✅ |
+| Full-record self-registration (dialog on login) | — | — | creates **pending** application |
+| Residents, households, puroks (view/manage) | ✅ | ✅ | — |
+| Blotter, welfare intake | ✅ | ✅ | — |
+| Issue certificates, review request queue | ✅ | ✅ (view + approve blocked) | — |
+| Reports & analytics | ✅ | ✅ | — |
+| Accounts, officials, certificate types, audit, exports, archive | ✅ | ❌ | — |
+| Own profile + online certificate requests | — | — | ✅ |
 
-## Contributing
+Access is enforced by route middleware aliases — `admin`, `permission:x`
+(office capability list, admin bypasses), `resident` — plus the global
+`EnsureAccountIsActive` middleware: pending, rejected and suspended accounts
+can sign out but see a status page instead of any application screen, and
+cannot sign in at all (`LoginRequest` refuses them). Denials redirect to the
+dashboard with a flash message (no bare 403 pages).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Privileged columns (`role`, `status`, `approved_at`, `reviewed_by`,
+`suspended_*`, `resident_id`, `rejection_reason`) are **not** mass-assignable —
+controllers write them with `forceFill()` only after an authorization check.
 
-## Code of Conduct
+## Registration → approval → profile
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. A resident opens **Create an account** on the sign-in page and submits the
+   full record (name parts, birth date, sex, civil status, phone, address,
+   purok, household, email, password). Validation lands in the named
+   `register` error bag so errors never paint under the sign-in form.
+2. This creates a **pending** `users` row plus a `resident_applications` row —
+   registration never claims or mutates an existing resident record.
+3. The administrator reviews the submitted details on **Accounts** (details
+   dialog), then **Approves** (account becomes active, application marked
+   Approved, and the resident profile is created/linked in the same
+   transaction — with an email-match guard so no duplicate is ever created)
+   or **Rejects** with an optional reason (stored for the applicant).
+4. The resident signs in and lands on `/my` with a complete portal profile.
 
-## Security Vulnerabilities
+Staff and official accounts are created by the administrator only.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Screens
 
-## License
+- **Sign-in** — single screen, no scrolling: sign-in form, *Create an account*
+  dialog and *Reset password* dialog (both centered modals, `Esc`/backdrop
+  close, focus trap), password eye-toggles, red right-aligned reset link.
+- **/dashboard** — office workspace for admin + staff (module counts,
+  pending-approval badges); residents are redirected to `/my`.
+- **Residents** — searchable table, directory (printable), full profile page,
+  create/edit with photo upload, archive/restore (admin).
+- **Households** — auto numbers (HH-001…), head assignment, member counts,
+  show/edit, admin delete.
+- **Puroks** — auto codes (P#…), admin CRUD, occupied-purok delete refusal.
+- **Blotter** — control numbers (BLTR-YYYY-0001), complainant/respondent
+  narrative records, status workflow, printable blotter sheet.
+- **Certificates** — issue register with fee status, control numbers
+  (CLR/COR/IND-YYYY-0001), resident snapshots, fee override (admin only),
+  void (admin), standalone A4 print page.
+- **Certificate requests** — resident online requests (`/my/requests`) flow
+  into the office queue; approval issues the certificate, rejection records a
+  reason.
+- **Welfare** — assistance requests with status workflow
+  (Requested → Under Review → Approved/Denied → Released), amount rules.
+- **Reports** — population, blotter and welfare reports with date ranges and
+  CSV-friendly printing; **Analytics** — KPIs + CSS-only charts.
+- **Portal (`/my`)** — profile with photo, contact updates, certificate
+  requests, download of issued certificates.
+- **Admin extras** — accounts (create/approve/reject/suspend/reactivate/role),
+  officials CRUD (Punong Barangay protected), certificate-type catalog,
+  audit trail with before/after diffs, CSV exports (formula-injection safe),
+  archive with restore/purge.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Project structure
+
+```
+app/Http/Controllers/          module controllers (residents, households,
+                               puroks, certificates, blotter, welfare,
+                               reports, analytics, portal) + Admin\*, Auth\*
+app/Http/Middleware/           EnsureUserIsAdmin, EnsureUserHasPermission,
+                               EnsureUserIsResident, EnsureAccountIsActive
+app/Http/Requests/             FormRequests per module (validation)
+app/Models/                    User (permissions), Resident, Household, Purok,
+                               Official, Document, CertificateIssuance,
+                               CertificateRequest, SequenceCounter, Blotter,
+                               Welfare, ResidentApplication, AuditLog
+routes/                        web.php, auth.php + routes/modules/*.php
+resources/views/               auth/, dashboard/, residents/, households/,
+                               puroks/, certificates/, blotter/, welfare/,
+                               reports/, analytics/, resident/, admin/,
+                               archive/, errors/, layouts/
+database/                      migrations, seeders (re-runnable)
+```
+
+Rules of the house (inherited from the original system's lessons):
+
+- no inline `<script>` / `<style>` (CSP-ready) — behavior lives in
+  `resources/js/app.js`; standalone printable pages and themed error pages
+  (403/404/419/500 via `public/css/errors.css`) are self-contained by design
+- validation lives in FormRequests (or a named error bag for the login-page
+  registration dialog); controllers stay thin
+- control numbers are reserved atomically (`SequenceCounter` + row lock) and
+  are never reused
+- audit trail (`AuditLog`) records created/updated/deleted/approved/rejected/
+  issued/voided events with before/after payloads
+- every screen is reachable from a role-aware nav; no dead links
+
+## Tests
+
+```bash
+php artisan test
+```
+
+Ships a focused auth suite (login, logout, password-reset dialog flows) —
+15 tests. Feature modules are verified end-to-end through the live HTTP
+surface rather than committed throwaway test files.
