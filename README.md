@@ -37,6 +37,12 @@ password-reset links).
   will keep seeing the old definitions).
 - `php artisan serve` is single-threaded — prefer the Apache URL
   `http://localhost/Barangay_Management_System` for daily use.
+- Apache serves the clean URL via an `Alias` configured in
+  `C:\Xampp\apache\conf\extra\httpd-vhosts.conf`
+  (`/Barangay_Management_System` → `public/`). The project's root
+  `.htaccess` only blocks dotfiles (`.env`, `.git`); `public/.htaccess`
+  carries a `RewriteBase` for the subfolder — remove it if you ever deploy
+  at the domain root.
 
 ## Seeded accounts
 
