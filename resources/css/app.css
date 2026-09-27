@@ -26,3 +26,53 @@ input:-webkit-autofill:focus {
     caret-color: #ffffff;
     transition: background-color 9999s ease-out;
 }
+
+/* ------------------------------------------------------------------
+   Authenticated shell: fixed navy sidebar on large screens, an
+   off-canvas drawer with backdrop below lg. Chrome never prints.
+   ------------------------------------------------------------------ */
+.app-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+}
+
+.app-sidebar[data-open='true'] {
+    transform: translateX(0);
+}
+
+.app-backdrop {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.app-backdrop[data-open='true'] {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+    .app-shell {
+        padding-left: 16rem;
+    }
+
+    .app-sidebar {
+        transform: translateX(0);
+    }
+
+    .app-backdrop {
+        display: none;
+    }
+}
+
+@media print {
+    .app-sidebar,
+    .app-backdrop,
+    .app-topbar {
+        display: none !important;
+    }
+
+    .app-shell {
+        padding-left: 0 !important;
+    }
+}

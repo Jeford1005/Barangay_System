@@ -155,6 +155,44 @@ document.addEventListener('keydown', (event) => {
 document.querySelectorAll('[data-modal][data-open-on-load]').forEach((modal) => openModal(modal));
 
 /**
+ * Sidebar drawer (small screens): [data-sidebar-toggle] opens / closes it,
+ * the backdrop and [data-sidebar-close] dismiss it, Escape closes it.
+ * Open state lives in the data-open attribute on [data-sidebar] and the
+ * backdrop; CSS does the sliding.
+ */
+function setSidebar(open) {
+    document.querySelectorAll('[data-sidebar], [data-sidebar-backdrop]').forEach((el) => {
+        el.setAttribute('data-open', String(open));
+    });
+
+    document.querySelectorAll('[data-sidebar-toggle]').forEach((el) => {
+        el.setAttribute('aria-expanded', String(open));
+    });
+}
+
+document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) {
+        return;
+    }
+
+    if (event.target.closest('[data-sidebar-toggle]')) {
+        const sidebar = document.querySelector('[data-sidebar]');
+        setSidebar(sidebar?.getAttribute('data-open') !== 'true');
+        return;
+    }
+
+    if (event.target.closest('[data-sidebar-backdrop], [data-sidebar-close]')) {
+        setSidebar(false);
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.querySelector('[data-sidebar][data-open="true"]')) {
+        setSidebar(false);
+    }
+});
+
+/**
  * Print buttons: [data-print] triggers the browser print dialog.
  * Works everywhere — including standalone print pages that bundle app.js.
  */
