@@ -16,6 +16,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Vercel terminates TLS at its edge and forwards the request over plain
+        // HTTP with X-Forwarded-* headers. Without trusting that proxy Laravel
+        // sees http:// and generates http:// asset, form-action and redirect
+        // URLs, which browsers block as mixed content on an https:// page.
+        //
+        // Opt-in only: nothing is trusted by default, and `env()` is read
+        // directly because the config repository is not yet bound this early in
+        // bootstrap. Vercel injects real process environment variables, so this
+        // still resolves when the config cache is in place.
+        if (env('APP_TRUSTED_PROXIES') === 'vercel') {
+            $middleware->trustProxies(at: '*');
+        }
+
         $middleware->web(append: [
             EnsureUserIsActive::class,
         ]);

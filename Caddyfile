@@ -1,0 +1,14 @@
+# FrankenPHP / Caddy config for the Vercel container.
+#
+# Vercel passes the listening port in $PORT (defaults to 80 locally).
+# The document root is /app/public, NOT /app: serving the project root would
+# make .env, database/ and storage/ downloadable.
+
+:{$PORT:80} {
+	root * /app/public
+	encode zstd gzip
+
+	php_server {
+		try_files {path} index.php
+	}
+}
