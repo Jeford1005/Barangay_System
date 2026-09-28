@@ -176,6 +176,7 @@
             thead { display: table-header-group; }
         }
     </style>
+@include('components.bare-url')
 </head>
 <body>
     <div class="toolbar no-print">

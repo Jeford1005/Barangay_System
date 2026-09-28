@@ -18,6 +18,9 @@
     <link rel="icon" type="image/svg+xml" href="{{ asset('images/bidduang-mark.svg') }}">
     <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+    @unless ($isFragment)
+        @include('components.bare-url')
+    @endunless
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else

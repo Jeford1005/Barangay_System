@@ -15,6 +15,7 @@
     @else
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
+@include('components.bare-url')
 </head>
 <body class="min-h-screen bg-slate-200 text-slate-900 antialiased">
     {{-- The seal, oversized and held at a whisper — the same backdrop the

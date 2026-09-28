@@ -39,6 +39,7 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
     <noscript><style>.js-only { display: none !important; }</style></noscript>
+@include('components.bare-url')
 </head>
 <body class="min-h-screen bg-slate-200 text-slate-800 antialiased">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-sky-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
