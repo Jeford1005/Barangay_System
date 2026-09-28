@@ -16,9 +16,9 @@ A comprehensive web-based management system for Philippine barangays, built with
 ## System Requirements
 
 - PHP >= 8.2
-- Composer
-- Node.js >= 18.x and NPM
-- SQLite (default) or MySQL/PostgreSQL
+- Composer 2
+- Node.js ^20.19 or >=22.12 (Vite 7's requirement) and NPM
+- SQLite (default, recommended) or MySQL
 
 ## Installation
 
@@ -227,48 +227,38 @@ php artisan migrate:fresh
 
 ## Production Deployment
 
-### 1. Environment Configuration
+Full, step-by-step guide: **[docs/operations/deploy.md](docs/operations/deploy.md)**
 
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://your-domain.com
-```
-
-### 2. Optimize for Production
+Quick version — the four things that break first:
 
 ```bash
-# Cache configuration
-php artisan config:cache
-
-# Cache routes
-php artisan route:cache
-
-# Cache views
-php artisan view:cache
-
-# Optimize autoloader
-composer install --optimize-autoloader --no-dev
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build          # public/build/ is NOT in git — required
+php artisan migrate --force
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
-### 3. Build Assets
+Plus two processes that must stay running:
+
+```cron
+* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+…and a **queue worker** (supervisor, or a cron fallback) — without it certificate
+notifications and backups never leave `Queued`.
 
 ```bash
-npm run build
+php artisan queue:work --sleep=3 --tries=3 --timeout=60
 ```
 
-### 4. Set Proper Permissions
+Key details the guide covers: doc root must be `public/`; `APP_DEBUG=false`;
+**do not `db:seed` in production** (it creates `admin@barangay.local` /
+`password`); and the **in-app backup only works on SQLite** — MySQL installs
+need an external `mysqldump` cron.
 
-```bash
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
-```
-
-### 5. Set Up Queue Workers (if using queues)
-
-```bash
-php artisan queue:work --daemon
-```
+**Hosting:** any PHP host (VPS + Forge, shared cPanel, Render/Railway).
+**Not** Vercel/Netlify/serverless — this is Laravel, and it needs a PHP runtime,
+a database, a writable filesystem for photo uploads, and a queue worker.
 
 ## Mail / Gmail SMTP (password-reset emails)
 
