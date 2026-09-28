@@ -59,8 +59,8 @@
             </form>
         </div>
 
-        @if (config('database.default') !== 'sqlite')
-            <p class="mt-5 border-l-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">Automatic backup creation is currently enabled for SQLite only. Configure a database-specific backup job before using another driver.</p>
+        @if (! in_array(config('database.default'), ['sqlite', 'mysql', 'mariadb'], true))
+            <p class="mt-5 border-l-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">Automatic backup creation is not supported for the "{{ config('database.default') }}" driver. Configure a database-specific backup job before using it.</p>
         @endif
 
         <div class="mt-5 overflow-x-auto border-y border-slate-200">

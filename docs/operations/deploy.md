@@ -39,27 +39,21 @@ project root, `.env` and `database/` become downloadable.
 
 ---
 
-## 2. Pick the database first — it decides your backup story
+## 2. Choose a database
 
 `config/database.php` ships all five Laravel connections (`sqlite`, `mysql`, `mariadb`,
 `pgsql`, `sqlsrv`), but only **SQLite and MySQL are actually exercised** — SQLite runs the
 whole test suite, MySQL is what local development uses. Treat the other three as untested.
 
-Either way, **the in-app backup feature only works on SQLite.**
+**In-app backups work on SQLite, MySQL and MariaDB.** `BackupService` writes a
+byte-for-byte copy of the SQLite file, and an importable `.sql` script for the two MySQL
+dialects — from both the admin **Backup** button and the 03:00 scheduled job. `pgsql` and
+`sqlsrv` are rejected with a clear error rather than failing nightly.
 
-`App\Services\BackupService::create()` opens with:
+The MySQL writer is pure PHP over PDO: it needs no `mysqldump` binary and no `exec()`.
+See [Backups](#backups) for what each format contains and how to restore one.
 
-```php
-if (config('database.default') !== 'sqlite') {
-    throw new RuntimeException('Automatic backup creation is currently enabled for SQLite only.');
-}
-```
-
-It uses `VACUUM INTO`, a SQLite statement — there is no `mysqldump` call anywhere in
-the codebase. Consequence on MySQL: the **03:00 scheduled backup job fails every night**,
-writes a `Failed` row to `backup_runs`, and rethrows into `failed_jobs`.
-
-### Option A — SQLite (recommended for a single barangay office)
+### Option A — SQLite (smallest footprint for a single office)
 
 ```env
 DB_CONNECTION=sqlite
@@ -73,17 +67,14 @@ Why it fits this app:
   commented as being for *"the office's small deployments"*.
 - The full test suite runs on SQLite (`phpunit.xml`: `DB_CONNECTION=sqlite`, `:memory:`),
   so it is a first-class path, not a fallback.
-- **In-app backups work** (Admin → Backup, plus a nightly scheduled one).
+- **A backup is one file copy** — no export step, no dialect to translate.
 - Nothing to install, patch, or monitor.
 
 Note WAL writes `*.sqlite-wal` and `*.sqlite-shm` sidecar files. Do **not** back up with
 a plain `cp` while the app is live — you can copy a torn state. Use the in-app backup,
 or `sqlite3 database.sqlite ".backup out.sqlite"`.
 
-### Option B — MySQL / MariaDB
-
-Your local development uses this (`DB_HOST=127.0.0.1`, `DB_DATABASE=barangay_management`).
-Use it in production only if you already have MySQL infrastructure.
+### Option B — MySQL / MariaDB (what local development uses)
 
 ```env
 DB_CONNECTION=mysql
@@ -94,14 +85,19 @@ DB_USERNAME=...
 DB_PASSWORD=...
 ```
 
-**You must replace the in-app backup with an external job:**
+Nothing extra is required for backups — the same button and the same 03:00 job work.
+Worth knowing:
+
+- The writer is pure PHP, so it does not need `mysqldump` or `exec()` to be enabled —
+  both are frequently restricted on shared hosting.
+- It streams to disk as it goes, so the database never has to fit in PHP's memory.
+- Rows are read inside one transaction, so the file describes a single moment even if
+  an office worker saves a record mid-backup.
+- Keeping one copy **outside** the app is still wise:
 
 ```cron
-0 2 * * * mysqldump -u USER -p'PASSWORD' DBNAME | gzip > /backups/db-$(date +\%F).sql.gz
+0 2 * * * mysqldump --single-transaction --routines --triggers -u USER -p'PASSWORD' DBNAME | gzip > /backups/db-$(date +\%F).sql.gz
 ```
-
-Otherwise the nightly 03:00 job fails continuously. The manual **Backup** button in the
-admin area will also fail on MySQL — that is expected, not a bug you introduced.
 
 ---
 
@@ -340,14 +336,41 @@ repo will fail its build or deploy a site that 404s on every route.
 
 Back up **three** things, not one:
 
-1. **Database** — in-app backup (SQLite) or `mysqldump` cron (MySQL).
+1. **Database** — the in-app backup handles SQLite, MySQL and MariaDB alike.
 2. **`storage/app/private/residents`** — resident photos. Personal data with no other copy.
 3. **`.env`** — especially `APP_KEY`. Losing it makes encrypted sessions/data unreadable.
 
-In-app backups land in `storage/app/private/backups`, keep the newest 10, and are never
+Run one from **Admin → Settings → Maintenance → Create backup**, or let the 03:00 job do
+it. Backups land in `storage/app/private/backups`, keep the newest 10, and are never
 placed under `public/`. Confirm that directory survives your host's deploy cycle — on
 platforms that replace the whole release folder on every deploy, **`storage/` must be a
 mounted/persistent volume** or you will silently lose uploads between deploys.
+
+### Restoring
+
+There is no restore button. Stop the queue worker and the web server first, and take a
+fresh backup before you start — a restore discards everything written since the snapshot.
+
+**SQLite** — the file *is* the database:
+
+```bash
+rm -f database/database.sqlite-wal database/database.sqlite-shm   # stale WAL would win
+cp storage/app/private/backups/barangay-YYYYMMDD-HHMMSS.sqlite database/database.sqlite
+php artisan migrate --force    # only if the backup predates a migration
+```
+
+**MySQL / MariaDB** — the file is an importable script that **overwrites every table it
+contains**:
+
+```bash
+mysql -u USER -p barangay_management < storage/app/private/backups/barangay-YYYYMMDD-HHMMSS.sql
+```
+
+The script is written to import cleanly as-is: it sets `NAMES utf8mb4`, disables
+foreign-key checks around the load, drops each table before recreating it, and sets
+`NO_AUTO_VALUE_ON_ZERO` so an `id` of `0` comes back as `0` rather than as the next
+auto-increment value. Column data — quotes, newlines, emoji, `NULL`, DECIMALs — round-trips
+byte for byte; that is covered by a restore test in the suite.
 
 ---
 
@@ -376,7 +399,7 @@ not backward compatible.
 | Unstyled pages, JS 404 | Assets never built | `npm ci && npm run build` |
 | Requests stuck `Queued` | Worker not running | §5b |
 | Scheduled jobs never run | No cron | §5a |
-| Backup run `Failed` nightly | MySQL — backups are SQLite-only | §2 Option B |
+| Backup run `Failed` nightly | Unsupported driver, disk full, or DB unreachable | `error_message` on Admin → Maintenance, then [Backups](#backups) |
 | `No application encryption key` | `.env` copied without `key:generate` | `php artisan key:generate` |
 | 500 after editing config | Stale cache | `php artisan config:clear` then re-`config:cache` |
 | `SQLSTATE[HY000] [2002] Connection refused` | `DB_HOST=127.0.0.1` but DB is remote | Set the real host, or use SQLite |

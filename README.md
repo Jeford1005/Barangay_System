@@ -184,15 +184,20 @@ php artisan migrate:rollback
 
 ### Database Backup
 
-For SQLite:
+The simplest path is the **in-app backup**: Admin → Settings → Maintenance →
+**Create backup**, or let the 03:00 scheduled job run one. It works on SQLite, MySQL and
+MariaDB, writes to `storage/app/private/backups`, and keeps the newest 10.
+
 ```bash
-cp database/database.sqlite database/backups/backup-$(date +%Y%m%d).sqlite
+# SQLite: a raw copy of a live WAL database can be torn - prefer the in-app backup,
+# or stop the app first and remove the sidecar files.
+sqlite3 database/database.sqlite ".backup backups/backup-$(date +%Y%m%d).sqlite"
+
+# MySQL: an extra copy held outside the app
+mysqldump --single-transaction -u root -p barangay_db > backup-$(date +%Y%m%d).sql
 ```
 
-For MySQL:
-```bash
-mysqldump -u root -p barangay_db > backup-$(date +%Y%m%d).sql
-```
+Restore steps for both formats: [docs/operations/deploy.md](docs/operations/deploy.md#backups)
 
 ### Log Files
 
@@ -253,8 +258,8 @@ php artisan queue:work --sleep=3 --tries=3 --timeout=60
 
 Key details the guide covers: doc root must be `public/`; `APP_DEBUG=false`;
 **do not `db:seed` in production** (it creates `admin@barangay.local` /
-`password`); and the **in-app backup only works on SQLite** — MySQL installs
-need an external `mysqldump` cron.
+`password`); and backups are built in for **SQLite, MySQL and MariaDB** — see the
+[backup and restore notes](docs/operations/deploy.md#backups).
 
 **Hosting:** any PHP host (VPS + Forge, shared cPanel, Render/Railway).
 **Not** Vercel/Netlify/serverless — this is Laravel, and it needs a PHP runtime,
