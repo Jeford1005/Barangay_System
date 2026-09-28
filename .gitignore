@@ -14,6 +14,9 @@
 /.zed
 /auth.json
 /.vercel
+/.agents
+/.claude
+/skills-lock.json
 /node_modules
 /public/build
 /public/hot
