@@ -19,4 +19,14 @@ else
     echo "[entrypoint] WARNING: the app and its logs stay reachable." >&2
 fi
 
+# Demo data. DatabaseSeeder builds every row with firstOrCreate, so running it
+# on each boot is idempotent: nothing duplicates and nothing errors. Without
+# this the database would hold no accounts at all and nobody could sign in.
+echo "[entrypoint] Seeding..."
+if php artisan db:seed --force; then
+    echo "[entrypoint] Seed complete."
+else
+    echo "[entrypoint] WARNING: seeding failed -- the app will have no accounts." >&2
+fi
+
 exec frankenphp run --config /etc/frankenphp/Caddyfile

@@ -19,8 +19,9 @@ class LoginTest extends TestCase
 
     public function test_root_url_routes_by_role(): void
     {
-        // Guests land on sign-in — never the stock Laravel welcome page.
-        $this->get('/')->assertRedirect('/login');
+        // Guests see the sign-in screen served at the bare domain, so the
+        // address bar never exposes an internal path.
+        $this->get('/')->assertOk()->assertSee('Sign in');
 
         // Signed-in admins land on their workspace.
         $admin = User::factory()->create(['user_type' => 'admin']);

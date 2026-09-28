@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountApprovalController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BlotterController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateRequestAdminController;
@@ -49,7 +50,12 @@ use Illuminate\Support\Facades\Route;
 // guests to sign-in, signed-in users straight to their workspace.
 Route::get('/', function () {
     if (! auth()->check()) {
-        return redirect()->route('login');
+        // Render sign-in at the domain root instead of bouncing to /login, so
+        // the address bar shows the bare URL rather than an internal path.
+        // /login still exists and remains what every middleware redirect and
+        // "Sign in" link targets; the controller owns the view data (puroks,
+        // households, reset cooldown), so this stays a thin alias for it.
+        return app(AuthenticatedSessionController::class)->create();
     }
 
     return redirect()->route(
