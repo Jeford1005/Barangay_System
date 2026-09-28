@@ -53,21 +53,22 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.055]">
     </div>
 
-    {{-- py-6 rather than py-10: on a tall window the card is centred and the
-         padding never binds, so it costs nothing visually - but on a 1366x768
-         laptop (~640px of usable height) it is the difference between the
-         card fitting the fold and the page scrolling. --}}
-    <main id="main-content" class="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+    {{-- py-4 rather than py-10: on a tall window the card is centred and the
+         padding never binds, so it costs nothing visually - but on a short
+         window it is the difference between the card fitting the fold and the
+         page scrolling. Kept deliberately small because every auth screen
+         shares it and the sign-in card has to land under ~600px. --}}
+    <main id="main-content" class="relative z-10 flex min-h-screen items-center justify-center px-4 py-4 sm:px-6">
         <div class="w-full max-w-md">
             <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
 
                 <header class="text-center">
                     <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt=""
                         class="mx-auto h-11 w-11 rounded-full">
-                    <p class="mt-3 text-[13px] font-medium text-slate-500">
+                    <p class="mt-2 text-[13px] font-medium text-slate-500">
                         {{ config('app.name', 'Barangay Management System') }}
                     </p>
-                    <h1 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900">Sign in</h1>
+                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900">Sign in</h1>
                 </header>
 
                 @if (session('status'))
@@ -76,7 +77,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('login') }}" id="login-form" class="mt-5">
+                <form method="POST" action="{{ route('login') }}" id="login-form" class="mt-4">
                     @csrf
 
                     {{-- Tabs on a shared rule rather than two pills: the labels
@@ -112,14 +113,13 @@
 
                     <input type="hidden" id="login-user-type" value="{{ $selectedRole }}">
 
-                    {{-- Two lines reserved: both blurbs run long enough to wrap,
-                         and without the min-height switching tabs would nudge
-                         the fields underneath. --}}
-                    <p data-role-summary class="mt-3 min-h-10 text-[12.5px] leading-snug text-slate-500">
-                        {{ $roles[$selectedRole]['can'] }}
-                    </p>
-
-                    <div class="space-y-4">
+                    {{-- No role blurb here. It cost two lines of reserved height
+                         (mt-3 + min-h-10 = 52px) and pushed the card past the
+                         fold on short windows; the tabs and the closing line
+                         below already carry the choice. role-switch guards on
+                         [data-role-summary] with an `if`, so dropping the node
+                         is safe. --}}
+                    <div class="mt-4 space-y-4">
                         <div>
                             <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">Email address</label>
                             <input
@@ -184,12 +184,12 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="mt-5 flex min-h-11 w-full items-center justify-center rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2">
+                    <button type="submit" class="mt-4 flex min-h-11 w-full items-center justify-center rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2">
                         Sign in
                     </button>
                 </form>
 
-                <p class="mt-4 border-t border-slate-200 pt-3 text-center text-[13px] text-slate-500">
+                <p class="mt-3 border-t border-slate-200 pt-3 text-center text-[13px] text-slate-500">
                     <span data-role-copy="resident" @if ($selectedRole !== 'resident') class="hidden" @endif>
                         Don't have an account?
                         <button type="button" data-open-register class="js-only font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800">

@@ -25,7 +25,7 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.055]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
+    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-4 sm:px-6">
         <div class="mx-auto w-full max-w-2xl">
             <div class="rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
                 <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5">
