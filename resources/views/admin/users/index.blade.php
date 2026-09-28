@@ -1,6 +1,15 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory" />
+    <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory">
+        <x-slot:actions>
+            <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Account Approvals
+                @if ($pendingCount)
+                    <span class="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{{ $pendingCount }}</span>
+                @endif
+            </a>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
@@ -38,14 +47,6 @@
                     <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-10 items-center rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Reset</a>
                 @endif
             </div>
-            </div>
-            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-200 pt-3 lg:flex-nowrap lg:ml-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Account Approvals
-                    @if ($pendingCount)
-                        <span class="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{{ $pendingCount }}</span>
-                    @endif
-                </a>
             </div>
         </div>
     </form>

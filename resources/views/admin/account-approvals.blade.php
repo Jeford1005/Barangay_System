@@ -1,17 +1,18 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Account Approvals" subtitle="Resident applications awaiting review." />
+    <x-page-header title="Account Approvals" subtitle="Resident applications awaiting review.">
+        <x-slot:actions>
+            <span class="rounded-full px-3 py-1 text-sm font-medium {{ $pending->total() ? 'bg-blue-50 text-blue-700' : 'bg-neutral-100 text-neutral-500' }}">
+                {{ $pending->total() }} pending
+            </span>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 <x-settings-shell current="approvals">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div class="no-print mb-4 flex flex-wrap items-center justify-end rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
-            <span class="rounded-full px-3 py-1 text-sm font-medium {{ $pending->total() ? 'bg-blue-50 text-blue-700' : 'bg-neutral-100 text-neutral-500' }}">
-                {{ $pending->total() }} pending
-            </span>
-        </div>
         <div class="space-y-4">
             @forelse ($pending as $applicant)
                 @php

@@ -41,7 +41,7 @@
         <div class="bg-gray-50 px-6 py-4">
             <h3 class="text-sm font-semibold text-gray-900">Quick Actions</h3>
         </div>
-        <div class="p-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="p-6 grid grid-cols-1 gap-4 {{ auth()->user()?->isAdmin() ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3' }}">
             <a href="{{ route('residents.index') }}?open=resident" class="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500">
                 <x-icon name="user-plus" class="h-4 w-4 text-green-600" />
                 Register a resident

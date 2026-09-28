@@ -1,15 +1,15 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="My Certificate Requests" subtitle="Request barangay certificates online — we'll email you when they're ready." />
+    <x-page-header title="My Certificate Requests" subtitle="Request barangay certificates online — we'll email you when they're ready.">
+        <x-slot:actions>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-neutral-500 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">← Back to My Profile</a>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 
 <div class="max-w-4xl mx-auto">
-    <div class="no-print mb-4 flex flex-wrap items-center justify-end rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
-        <a href="{{ route('resident.portal') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-neutral-500 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">← Back to My Profile</a>
-    </div>
-
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {{-- Request form --}}
         <div class="lg:col-span-1 rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden h-fit">

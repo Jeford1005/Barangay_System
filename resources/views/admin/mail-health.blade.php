@@ -1,17 +1,18 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Mail Health Check" subtitle="Verifies the setup that password-reset emails depend on. Current driver: {{ $report['mailer'] }}" />
+    <x-page-header title="Mail Health Check" subtitle="Verifies the setup that password-reset emails depend on. Current driver: {{ $report['mailer'] }}">
+        <x-slot:actions>
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+                {{ $report['ready'] ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                {{ $report['ready'] ? 'Ready' : 'Needs attention' }}
+            </span>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 <x-settings-shell current="mail">
 <div class="max-w-3xl mx-auto">
-    <div class="no-print mb-4 flex flex-wrap items-center justify-end rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
-        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
-            {{ $report['ready'] ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-            {{ $report['ready'] ? 'Ready' : 'Needs attention' }}
-        </span>
-    </div>
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
         <div class="p-6">

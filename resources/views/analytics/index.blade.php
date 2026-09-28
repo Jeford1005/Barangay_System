@@ -1,14 +1,14 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Analytics" subtitle="Live at-a-glance statistics across all barangay modules." />
+    <x-page-header title="Analytics" subtitle="Live at-a-glance statistics across all barangay modules.">
+        <x-slot:actions>
+            <a href="{{ route('reports.index') }}" class="inline-flex min-h-10 items-center px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Printable reports →</a>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-
-    <div class="no-print mb-4 flex flex-wrap items-center justify-end rounded-xl border border-neutral-200 bg-white p-3 shadow-sm">
-        <a href="{{ route('reports.index') }}" class="inline-flex min-h-10 items-center px-2 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">Printable reports →</a>
-    </div>
 
     {{-- KPI cards ------------------------------------------------------ --}}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">

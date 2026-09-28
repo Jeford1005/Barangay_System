@@ -5,8 +5,13 @@
      so the toggle is rendered here and hidden on desktop.
      Usage:
        @section('page_header')
+           Either slot form works — use whichever reads better:
            <x-page-header title="Residents" subtitle="5 active residents">
                <a href="...">Add Resident</a>
+           </x-page-header>
+
+           <x-page-header title="Residents" subtitle="5 active residents">
+               <x-slot:actions><a href="...">Add Resident</a></x-slot:actions>
            </x-page-header>
        @endsection
      Print sheets simply don't provide the section. --}}
@@ -32,8 +37,15 @@
                 @endif
             </div>
         </div>
-        @isset($actions)
-            <div class="flex flex-wrap items-center gap-2 shrink-0">{{ $actions }}</div>
-        @endisset
+        @php
+            // Header buttons may arrive as a named `actions` slot or as the
+            // default slot (the usage shown above). Render whichever one has
+            // content so neither can be silently dropped.
+            $headerActions = $actions ?? $slot;
+            $hasHeaderActions = trim((string) $headerActions) !== '';
+        @endphp
+        @if ($hasHeaderActions)
+            <div class="flex flex-wrap items-center gap-2 shrink-0">{{ $headerActions }}</div>
+        @endif
     </div>
 </div>

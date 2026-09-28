@@ -1,9 +1,10 @@
 <x-app-layout>
 @section('page_header')
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <x-page-header title="Certificate catalog" subtitle="Govern which document types residents and clerks may request or issue." />
-        <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">New document type</a>
-    </div>
+    <x-page-header title="Certificate catalog" subtitle="Govern which document types residents and clerks may request or issue.">
+        <x-slot:actions>
+            <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">New document type</a>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')

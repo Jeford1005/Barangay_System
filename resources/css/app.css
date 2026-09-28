@@ -140,7 +140,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 1.25rem 0.75rem 0.5rem;
+    padding: 0.75rem 0.75rem 0.25rem;
     color: var(--sidebar-faint);
     font-size: 0.625rem;
     font-weight: 750;
@@ -167,7 +167,7 @@
 .nav-row {
     position: relative;
     display: flex;
-    min-height: 2.75rem;
+    min-height: 2.625rem;
     align-items: center;
     gap: 0.75rem;
     border-radius: 0.5rem;
