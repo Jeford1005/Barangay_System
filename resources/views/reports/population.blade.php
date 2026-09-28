@@ -10,51 +10,51 @@
         <div class="p-6">
             <form method="GET" action="{{ route('reports.population') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div class="flex-1">
-                    <label for="population-from" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Registered from</label>
+                    <label for="population-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Registered from</label>
                     <input id="population-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
                 <div class="flex-1">
-                    <label for="population-to" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Registered to</label>
+                    <label for="population-to" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Registered to</label>
                     <input id="population-to" type="date" name="to" value="{{ $to?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
-                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                     Filter
                 </button>
-                <a href="{{ route('reports.population') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-gray-500 hover:text-gray-800">Reset</a>
+                <a href="{{ route('reports.population') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Reset</a>
                 <a href="{{ route('reports.population', array_merge(request()->only(['from', 'to']), ['print' => 1])) }}"
-                     class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     class="inline-flex items-center justify-center rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
                      Print / PDF
                  </a>
             </form>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Purok</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Purok</th>
                             @foreach ($brackets as $bracket)
-                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase hidden md:table-cell">{{ $bracket['label'] }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase hidden md:table-cell">{{ $bracket['label'] }}</th>
                             @endforeach
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Male</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Female</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Male</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Female</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody class="divide-y divide-slate-200">
                         @foreach ($rows as $row)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-3 font-medium text-gray-900">{{ $row->label }}</td>
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-3 font-medium text-slate-900">{{ $row->label }}</td>
                                 @foreach ($brackets as $bracket)
-                                    <td class="px-3 py-3 text-right text-gray-600 hidden md:table-cell">{{ $row->brackets[$bracket['label']] }}</td>
+                                    <td class="px-3 py-3 text-right text-slate-600 hidden md:table-cell">{{ $row->brackets[$bracket['label']] }}</td>
                                 @endforeach
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->male }}</td>
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->female }}</td>
-                                <td class="px-3 py-3 text-right font-semibold text-gray-900">{{ $row->total }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->male }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->female }}</td>
+                                <td class="px-3 py-3 text-right font-semibold text-slate-900">{{ $row->total }}</td>
                             </tr>
                         @endforeach
-                        <tr class="bg-gray-50 font-semibold">
+                        <tr class="bg-slate-50 font-semibold">
                             <td class="px-3 py-3">Total</td>
                             @foreach ($brackets as $bracket)
                                 <td class="px-3 py-3 text-right hidden md:table-cell">{{ $totals->brackets[$bracket['label']] }}</td>
@@ -67,7 +67,7 @@
                 </table>
             </div>
             @if ($from || $to)
-                <p class="mt-3 text-xs text-gray-500">Filtering by registration date: {{ $from?->format('M j, Y') ?? 'the beginning' }} → {{ $to?->format('M j, Y') ?? 'today' }}.</p>
+                <p class="mt-3 text-xs text-slate-500">Filtering by registration date: {{ $from?->format('M j, Y') ?? 'the beginning' }} → {{ $to?->format('M j, Y') ?? 'today' }}.</p>
             @endif
         </div>
     </div>

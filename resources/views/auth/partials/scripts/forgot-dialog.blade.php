@@ -86,16 +86,16 @@
 
                     resendBtn.disabled = true;
                     resendBtn.textContent = `Resend available in ${cooldown}s`;
-                    resendBtn.classList.add('text-neutral-400');
-                    resendBtn.classList.remove('text-blue-600', 'hover:text-blue-700');
+                    resendBtn.classList.add('text-slate-500');
+                    resendBtn.classList.remove('text-sky-700', 'hover:text-sky-700');
                 } else {
                     sendBtn.disabled = false;
                     sendBtn.textContent = 'Send Reset Code';
 
                     resendBtn.disabled = false;
                     resendBtn.textContent = 'Send a new one';
-                    resendBtn.classList.remove('text-neutral-400');
-                    resendBtn.classList.add('text-blue-600', 'hover:text-blue-700');
+                    resendBtn.classList.remove('text-slate-500');
+                    resendBtn.classList.add('text-sky-700', 'hover:text-sky-700');
                 }
             }
 

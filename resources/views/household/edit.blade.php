@@ -11,7 +11,7 @@
         @method('PUT')
         @include('household._form', ['household' => $household])
 
-        <x-form.actions color="amber" cancel-href="{{ route('households.index') }}" submit-label="Update Household" />
+        <x-form.actions cancel-href="{{ route('households.index') }}" submit-label="Update Household" />
     </form>
 </div>
 @endsection

@@ -17,50 +17,42 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
 </head>
-<body class="bg-neutral-100 text-neutral-900 antialiased">
-    <main class="relative min-h-screen overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-900 to-blue-950 px-4 py-10 sm:px-6">
-        {{-- Ambient glows, echoing the login page's brand panel --}}
-        <div class="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" aria-hidden="true"></div>
-        <div class="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl" aria-hidden="true"></div>
-        <div class="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full border border-white/5" aria-hidden="true"></div>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+    {{-- The seal, oversized and held at a whisper — the same backdrop the
+         sign-in page opens on, so every unauthenticated route reads as one
+         system. Fixed, so it stays put when the form scrolls. --}}
+    <div aria-hidden="true" class="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden">
+        <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt=""
+            class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.055]">
+    </div>
 
-        <div class="relative mx-auto w-full max-w-md">
-            {{-- Brand lockup --}}
-            <div class="mb-8 flex items-center justify-center gap-3">
-                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-white p-1 shadow-lg shadow-blue-950/50">
-                    <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt="Barangay Bidduang official seal" class="h-full w-full object-contain">
-                </div>
-                <div>
-                    <p class="text-sm font-semibold tracking-tight text-white">Barangay Management System</p>
-                    <p class="text-xs text-neutral-400">Office of the Barangay</p>
-                </div>
-            </div>
-
+    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
+        <div class="mx-auto w-full max-w-md">
             {{-- Card --}}
-            <div class="rounded-2xl border border-white/10 bg-white shadow-2xl">
-                {{-- Card header: blue lock tile, like the dialog --}}
-                <div class="flex items-start justify-between border-b border-neutral-100 px-6 py-5">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
+                {{-- Card header: the lock marks the flow, the seal sits behind it --}}
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-600 shadow-sm">
                             <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-base font-semibold tracking-tight">Reset your password</h1>
-                            <p class="text-xs text-neutral-400">Step 1 of 2 · your email address</p>
+                            <h1 class="text-base font-semibold tracking-tight text-slate-900">Reset your password</h1>
+                            <p class="text-xs text-slate-500">Step 1 of 2 · your email address</p>
                         </div>
                     </div>
-                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">1 / 2</span>
+                    <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">1 / 2</span>
                 </div>
 
                 <div class="px-6 py-6">
-                    <p class="text-sm text-neutral-500">
+                    <p class="text-sm text-slate-500">
                         Enter your email and we'll send you a reset code.
                     </p>
 
                     @if (session('status'))
-                        <div class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                        <div class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                             {{ session('status') }}
                         </div>
                     @endif
@@ -69,7 +61,7 @@
                         @csrf
 
                         <div>
-                            <label for="email" class="mb-1.5 block text-sm font-medium text-neutral-700">
+                            <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">
                                 Email address
                             </label>
                             <input
@@ -81,7 +73,7 @@
                                 autofocus
                                 autocomplete="username"
                                 placeholder="you@example.com"
-                                class="w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm placeholder-neutral-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 @error('email') border-red-400 @enderror"
+                                class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('email') border-red-500! @enderror"
                             >
                             @error('email')
                                 <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
@@ -92,7 +84,7 @@
                             type="submit"
                             id="send-code-btn"
                             @if ($cooldownSeconds > 0) disabled aria-disabled="true" @endif
-                            class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
+                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             @if ($cooldownSeconds > 0)
                                 Wait {{ $cooldownSeconds }}s to resend
@@ -102,14 +94,14 @@
                         </button>
                     </form>
 
-                    <p class="mt-5 border-t border-neutral-100 pt-4 text-center text-sm text-neutral-500">
+                    <p class="mt-5 border-t border-slate-200 pt-4 text-center text-sm text-slate-500">
                         Remembered it after all?
-                        <a href="{{ route('login') }}" class="font-medium text-blue-600 hover:text-blue-700">Back to sign in</a>
+                        <a href="{{ route('login') }}" class="font-medium text-sky-700 hover:text-sky-800">Back to sign in</a>
                     </p>
                 </div>
             </div>
 
-            <p class="mt-6 text-center text-xs text-neutral-500">
+            <p class="mt-6 text-center text-xs text-slate-500">
                 &copy; {{ date('Y') }} {{ config('app.name', 'Barangay Management System') }}
             </p>
         </div>
@@ -130,7 +122,7 @@
                         btn.disabled = false;
                         btn.removeAttribute('aria-disabled');
                         btn.textContent = label;
-                        btn.classList.remove('disabled:bg-neutral-300', 'disabled:text-neutral-500', 'disabled:cursor-not-allowed');
+                        btn.classList.remove('disabled:bg-slate-300', 'disabled:text-slate-500', 'disabled:cursor-not-allowed');
                         return;
                     }
 

@@ -1,4 +1,5 @@
-{{-- Shared CRUD action: create/update (green), view (blue), delete (red). --}}
+{{-- Shared CRUD action. Sky carries every primary action; red is reserved for
+     delete. The variants stay so call sites can name their intent. --}}
 @props([
     'href' => null,
     'variant' => 'create',
@@ -12,10 +13,8 @@
         : 'min-h-11 px-3 py-2.5';
 
     $variantClasses = match ($variant) {
-        'view' => 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 active:bg-blue-800',
-        'update' => 'bg-green-600 hover:bg-green-700 focus:ring-green-500 active:bg-green-800',
         'delete' => 'bg-red-600 hover:bg-red-700 focus:ring-red-500 active:bg-red-800',
-        default => 'bg-green-600 hover:bg-green-700 focus:ring-green-500 active:bg-green-800',
+        default => 'bg-sky-600 hover:bg-sky-700 focus:ring-sky-600 active:bg-sky-800',
     };
 
     $classes = $baseClasses.' '.$sizeClasses.' '.$variantClasses;

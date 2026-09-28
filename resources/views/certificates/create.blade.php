@@ -10,12 +10,12 @@
         @csrf
 
         <fieldset>
-            <legend class="text-sm font-semibold text-gray-900 mb-4">Certificate</legend>
+            <legend class="text-sm font-semibold text-slate-900 mb-4">Certificate</legend>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2">
-                    <label for="document_id" class="block text-sm font-medium text-gray-700">Certificate Type <span class="text-red-500">*</span></label>
+                    <label for="document_id" class="mb-1.5 block text-sm font-medium text-slate-700">Certificate Type <span class="text-red-500">*</span></label>
                     <select name="document_id" id="document_id" required
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">Choose a certificate…</option>
                         @foreach ($documents as $document)
                             <option value="{{ $document->id }}"
@@ -27,13 +27,13 @@
                         @endforeach
                     </select>
                     @error('document_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    <p id="requirements-hint" class="mt-1 hidden text-sm text-gray-500"></p>
+                    <p id="requirements-hint" class="mt-1 hidden text-sm text-slate-500"></p>
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label for="resident_id" class="block text-sm font-medium text-gray-700">Resident <span class="text-red-500">*</span></label>
+                    <label for="resident_id" class="mb-1.5 block text-sm font-medium text-slate-700">Resident <span class="text-red-500">*</span></label>
                     <select name="resident_id" id="resident_id" required
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">Choose a resident…</option>
                         @foreach ($residents as $resident)
                             <option value="{{ $resident->id }}" @selected(old('resident_id') == $resident->id)>
@@ -45,37 +45,37 @@
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label for="purpose" class="block text-sm font-medium text-gray-700">Purpose <span class="text-red-500">*</span></label>
+                    <label for="purpose" class="mb-1.5 block text-sm font-medium text-slate-700">Purpose <span class="text-red-500">*</span></label>
                     <input type="text" name="purpose" id="purpose" required maxlength="255"
                         value="{{ old('purpose') }}" placeholder="e.g. Local employment, school requirement, medical assistance"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600" />
                     @error('purpose') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="copies" class="block text-sm font-medium text-gray-700">Copies <span class="text-red-500">*</span></label>
+                    <label for="copies" class="mb-1.5 block text-sm font-medium text-slate-700">Copies <span class="text-red-500">*</span></label>
                     <input type="number" name="copies" id="copies" required min="1" max="5" step="1" inputmode="numeric" value="{{ old('copies', 1) }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600" />
                     @error('copies') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="fee" class="block text-sm font-medium text-gray-700">Fee (₱)</label>
+                    <label for="fee" class="mb-1.5 block text-sm font-medium text-slate-700">Fee (₱)</label>
                     @if (auth()->user()?->isAdmin())
                      <input type="number" name="fee" id="fee" min="0" max="9999" step="0.01" inputmode="decimal"
                         value="{{ old('fee') }}" placeholder="Standard fee applies"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
-                    <p class="mt-1 text-xs text-gray-500">Defaults to the posted fee. Leave blank to charge the standard price, or set 0 to waive.</p>
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600" />
+                    <p class="mt-1 text-xs text-slate-500">Defaults to the posted fee. Leave blank to charge the standard price, or set 0 to waive.</p>
                     @error('fee') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                      @else
-                         <p class="mt-1 text-xs text-gray-500">The posted catalog fee applies. Fee waivers and overrides require an administrator.</p>
+                         <p class="mt-1 text-xs text-slate-500">The posted catalog fee applies. Fee waivers and overrides require an administrator.</p>
                      @endif
                 </div>
 
                 <div class="sm:col-span-2">
-                    <label for="remarks" class="block text-sm font-medium text-gray-700">Remarks</label>
+                    <label for="remarks" class="mb-1.5 block text-sm font-medium text-slate-700">Remarks</label>
                     <textarea name="remarks" id="remarks" rows="2" maxlength="1000"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ old('remarks') }}</textarea>
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">{{ old('remarks') }}</textarea>
                     @error('remarks') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
             </div>

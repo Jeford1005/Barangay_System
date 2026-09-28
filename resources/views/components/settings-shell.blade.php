@@ -57,8 +57,8 @@
 
 <div class="mx-auto max-w-6xl">
     <div class="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
-        <aside class="border-b border-neutral-200 pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
-            <p class="px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400">Settings</p>
+        <aside class="border-b border-slate-200 pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
+            <p class="px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Settings</p>
             <nav class="settings-tabs mt-3 flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible" aria-label="Settings sections">
                 @foreach ($sections as $section)
                     @php
@@ -70,7 +70,7 @@
                         <span class="settings-tab-icon"><x-icon :name="$section['icon']" class="h-4 w-4" /></span>
                         <span class="min-w-0">
                             <span class="block truncate text-sm font-medium">{{ $section['label'] }}</span>
-                            <span class="mt-0.5 block truncate text-xs text-neutral-400">{{ $section['hint'] }}</span>
+                            <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $section['hint'] }}</span>
                         </span>
                     </a>
                 @endforeach

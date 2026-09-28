@@ -11,7 +11,7 @@
         @method('PUT')
         @include('purok._form', ['purok' => $purok])
 
-        <x-form.actions color="amber" cancel-href="{{ route('puroks.index') }}" submit-label="Update Purok" />
+        <x-form.actions cancel-href="{{ route('puroks.index') }}" submit-label="Update Purok" />
     </form>
 </div>
 @endsection

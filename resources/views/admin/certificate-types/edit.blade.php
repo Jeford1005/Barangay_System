@@ -4,7 +4,7 @@
 @endsection
 @section('content')
 <div class="mx-auto max-w-3xl">
-    <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         @include('admin.certificate-types._form', ['document' => $document])
     </div>
 </div>

@@ -10,76 +10,76 @@
         <div class="p-6">
             <form method="GET" action="{{ route('reports.blotter') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div class="flex-1">
-                    <label for="blotter-report-from" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Incident from</label>
+                    <label for="blotter-report-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Incident from</label>
                     <input id="blotter-report-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
                 <div class="flex-1">
-                    <label for="blotter-report-to" class="block text-xs font-medium text-gray-500 uppercase tracking-wide">Incident to</label>
+                    <label for="blotter-report-to" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Incident to</label>
                     <input id="blotter-report-to" type="date" name="to" value="{{ $to?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
-                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Filter</button>
-                <a href="{{ route('reports.blotter') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-gray-500 hover:text-gray-800">Reset</a>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Filter</button>
+                <a href="{{ route('reports.blotter') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Reset</a>
                 <a href="{{ route('reports.blotter', array_merge(request()->only(['from', 'to']), ['print' => 1])) }}"
-                     class="inline-flex items-center justify-center rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     class="inline-flex items-center justify-center rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
                      Print / PDF
                  </a>
             </form>
 
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-                @foreach ([['Open', $statusTotals->open, 'text-red-600'], ['Pending', $statusTotals->pending, 'text-yellow-600'], ['Resolved', $statusTotals->resolved, 'text-green-600'], ['Dismissed', $statusTotals->dismissed, 'text-gray-500'], ['Arrests', $statusTotals->arrests, 'text-blue-600']] as [$label, $value, $color])
-                    <div class="rounded-lg border border-gray-200 p-4">
-                        <p class="text-xs font-medium text-gray-500 uppercase">{{ $label }}</p>
+                @foreach ([['Open', $statusTotals->open, 'text-red-600'], ['Pending', $statusTotals->pending, 'text-amber-600'], ['Resolved', $statusTotals->resolved, 'text-emerald-600'], ['Dismissed', $statusTotals->dismissed, 'text-slate-500'], ['Arrests', $statusTotals->arrests, 'text-sky-700']] as [$label, $value, $color])
+                    <div class="rounded-lg border border-slate-200 p-4">
+                        <p class="text-xs font-medium text-slate-500 uppercase">{{ $label }}</p>
                         <p class="mt-1 text-2xl font-bold {{ $color }}">{{ $value }}</p>
                     </div>
                 @endforeach
             </div>
 
             <div class="overflow-x-auto mb-6">
-                <h3 class="text-sm font-semibold text-gray-900 mb-2">Cases by Complaint Type</h3>
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50">
+                <h3 class="text-sm font-semibold text-slate-900 mb-2">Cases by Complaint Type</h3>
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Complaint Type</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Open</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pending</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Resolved</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Dismissed</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Complaint Type</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Open</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Pending</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Resolved</th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Dismissed</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody class="divide-y divide-slate-200">
                         @forelse ($byType as $type => $row)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-3 font-medium text-gray-900">{{ $type }}</td>
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-3 py-3 font-medium text-slate-900">{{ $type }}</td>
                                 <td class="px-3 py-3 text-right font-semibold">{{ $row->count }}</td>
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->open }}</td>
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->pending }}</td>
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->resolved }}</td>
-                                <td class="px-3 py-3 text-right text-gray-600">{{ $row->dismissed }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->open }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->pending }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->resolved }}</td>
+                                <td class="px-3 py-3 text-right text-slate-600">{{ $row->dismissed }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">No cases in this period.</td></tr>
+                            <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">No cases in this period.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
             <div class="overflow-x-auto mb-6">
-                <h3 class="text-sm font-semibold text-gray-900 mb-2">Monthly Trend</h3>
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead class="bg-gray-50">
+                <h3 class="text-sm font-semibold text-slate-900 mb-2">Monthly Trend</h3>
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50">
                         <tr>
                             @foreach ($months as $month => $count)
-                                <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ $month }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">{{ $month }}</th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             @foreach ($months as $count)
-                                <td class="px-3 py-3 text-right font-semibold {{ $count > 0 ? 'text-gray-900' : 'text-gray-300' }}">{{ $count }}</td>
+                                <td class="px-3 py-3 text-right font-semibold {{ $count > 0 ? 'text-slate-900' : 'text-slate-300' }}">{{ $count }}</td>
                             @endforeach
                         </tr>
                     </tbody>
@@ -88,12 +88,12 @@
 
             @if ($recent->isNotEmpty())
                 <div class="overflow-x-auto">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-2">Most Recent Cases</h3>
-                    <ul class="divide-y divide-gray-200 text-sm">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Most Recent Cases</h3>
+                    <ul class="divide-y divide-slate-200 text-sm">
                         @foreach ($recent as $case)
                             <li class="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                <span class="font-medium text-gray-900">{{ $case->case_number }} — {{ $case->complaint_type }}</span>
-                                <span class="text-gray-500 text-xs">{{ $case->complaint_date->format('M j, Y') }} · {{ $case->status }}</span>
+                                <span class="font-medium text-slate-900">{{ $case->case_number }} — {{ $case->complaint_type }}</span>
+                                <span class="text-slate-500 text-xs">{{ $case->complaint_date->format('M j, Y') }} · {{ $case->status }}</span>
                             </li>
                         @endforeach
                     </ul>

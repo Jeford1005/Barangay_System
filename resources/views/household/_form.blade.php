@@ -4,7 +4,7 @@ $residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->first_name.
 @endphp
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Household Details</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Household Details</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="household_code" label="Household Code" required :value="$household->household_code ?? null" maxlength="20" placeholder="e.g. HH-004" />
         <x-form.field name="purok_id" label="Purok" type="select" optional-hint :options="$puroks" placeholder-option="Unassigned" :value="$household->purok_id ?? null" />
@@ -14,13 +14,13 @@ $residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->first_name.
         <x-form.field name="num_members" label="Number of Members" type="number" step="1" required :value="$household->num_members ?? 1" min="1" max="4294967295" placeholder="1" />
         <x-form.field name="lot_area" label="Lot Area" :value="$household->lot_area ?? null" maxlength="50" placeholder="e.g. 100 sqm" />
         <x-form.field name="floor_area" label="Floor Area" :value="$household->floor_area ?? null" maxlength="50" placeholder="e.g. 50 sqm" />
-        <p class="text-xs text-neutral-500 sm:col-span-2">Household codes are text labels, such as HH-004. Choose a purok from the list, or leave it unassigned; its internal ID is saved automatically.</p>
+        <p class="text-xs text-slate-500 sm:col-span-2">Household codes are text labels, such as HH-004. Choose a purok from the list, or leave it unassigned; its internal ID is saved automatically.</p>
         <x-form.field name="status" label="Status" type="select" required :options="['Occupied', 'Vacant', 'Under Construction']" :value="$household->status ?? 'Occupied'" />
     </div>
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Address</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Address</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="sitio" label="Sitio" :value="$household->sitio ?? null" maxlength="100" />
         <x-form.field name="street" label="Street" :value="$household->street ?? null" maxlength="150" />
@@ -33,12 +33,12 @@ $residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->first_name.
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Head Assignment</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Head Assignment</legend>
     <x-form.field name="head_of_household_id" label="Head of Household" type="select" optional-hint :options="$residentOptions" placeholder-option="None" :value="$household->head_of_household_id ?? null" />
-    <p class="mt-1 text-xs text-gray-500">Register residents first, then assign a head here.</p>
+    <p class="mt-1 text-xs text-slate-500">Register residents first, then assign a head here.</p>
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Additional Information</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Additional Information</legend>
     <x-form.field name="remarks" label="Remarks" type="textarea" :rows="3" maxlength="1000" :value="$household->remarks ?? null" />
 </fieldset>

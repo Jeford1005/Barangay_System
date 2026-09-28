@@ -29,19 +29,19 @@
 
     @foreach ($toasts as $toast)
         <div class="toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95
-            {{ ['success' => 'border-green-200', 'error' => 'border-red-200', 'warning' => 'border-amber-200'][$toast['type']] ?? 'border-neutral-200' }}"
+            {{ ['success' => 'border-emerald-200', 'error' => 'border-red-200', 'warning' => 'border-amber-200'][$toast['type']] ?? 'border-slate-200' }}"
             role="status">
             <span class="mt-0.5 shrink-0">
                 @if ($toast['type'] === 'success')
-                    <svg class="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
+                    <svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
                 @elseif ($toast['type'] === 'error')
                     <svg class="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
                 @else
                     <svg class="h-5 w-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                 @endif
             </span>
-            <p class="flex-1 text-sm font-medium text-neutral-800">{{ $toast['message'] }}</p>
-            <button type="button" class="shrink-0 rounded-md p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 focus:outline-none" aria-label="Dismiss" onclick="this.closest('.toast').remove()">
+            <p class="flex-1 text-sm font-medium text-slate-800">{{ $toast['message'] }}</p>
+            <button type="button" class="shrink-0 rounded-md p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Dismiss" onclick="this.closest('.toast').remove()">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
         </div>
@@ -102,16 +102,16 @@
         // window.showToast('Saved', 'success')
         window.showToast = function (message, type) {
             var colors = {
-                success: 'border-green-200',
+                success: 'border-emerald-200',
                 error: 'border-red-200',
                 warning: 'border-amber-200',
             };
             var el = document.createElement('div');
-            el.className = 'toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95 ' + (colors[type] || 'border-neutral-200');
+            el.className = 'toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95 ' + (colors[type] || 'border-slate-200');
             el.setAttribute('role', 'status');
             el.innerHTML =
-                '<p class="flex-1 text-sm font-medium text-neutral-800"></p>' +
-                '<button type="button" class="shrink-0 rounded-md p-1 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 focus:outline-none" aria-label="Dismiss">' +
+                '<p class="flex-1 text-sm font-medium text-slate-800"></p>' +
+                '<button type="button" class="shrink-0 rounded-md p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Dismiss">' +
                 '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>' +
                 '</button>';
             el.querySelector('p').textContent = message;

@@ -14,5 +14,5 @@
     </div>
     @error('code')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
     @error('document_id')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
-    <div class="flex justify-end gap-2"><a href="{{ route('admin.certificate-types.index') }}" class="inline-flex min-h-10 items-center rounded-lg border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-50">Cancel</a><button type="submit" class="min-h-10 rounded-lg bg-green-600 px-4 text-sm font-semibold text-white hover:bg-green-700">{{ $editing ? 'Update document' : 'Create document' }}</button></div>
+    <div class="flex justify-end gap-2"><a href="{{ route('admin.certificate-types.index') }}" class="inline-flex min-h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-medium hover:bg-slate-50">Cancel</a><button type="submit" class="min-h-10 rounded-lg bg-sky-600 px-4 text-sm font-semibold text-white hover:bg-sky-700">{{ $editing ? 'Update document' : 'Create document' }}</button></div>
 </form>

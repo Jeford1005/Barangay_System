@@ -29,15 +29,15 @@
      NEVER scrolls; only the #content-scroll region inside does. The sidebar is an
      icon rail: full (w-64) by default, minimized (w-[68px], icons only) via the
      rail toggle, persisted in localStorage. On mobile it is the off-canvas drawer. --}}
-<body class="bg-neutral-50 text-neutral-900 antialiased {{ $isFragment ? 'bg-white' : 'h-screen overflow-hidden' }}">
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[110] focus:rounded-md focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+<body class="bg-slate-50 text-slate-900 antialiased {{ $isFragment ? 'bg-white' : 'h-screen overflow-hidden' }}">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[110] focus:rounded-md focus:bg-sky-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
         Skip to main content
     </a>
 
     <div class="flex h-full">
         {{-- Sidebar: icon rail on desktop (minimizable), off-canvas drawer on mobile --}}
         <aside id="sidebar"
-            class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 transition-all duration-200 ease-in-out bg-neutral-900 text-white flex flex-col"
+            class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 transition-all duration-200 ease-in-out bg-slate-900 text-white flex flex-col"
             data-minimized="false" aria-hidden="true" inert>
 
             {{-- Rail header: seal chip + two-line name (expanded) + collapse toggle --}}
@@ -52,7 +52,7 @@
                 </button>
                 {{-- Mobile: close the drawer --}}
                 <button type="button" id="sidebar-close"
-                    class="lg:hidden ml-auto inline-flex items-center justify-center h-11 w-11 shrink-0 rounded-md text-neutral-300 hover:bg-white/10 hover:text-white"
+                    class="lg:hidden ml-auto inline-flex items-center justify-center h-11 w-11 shrink-0 rounded-md text-slate-300 hover:bg-white/10 hover:text-white"
                     aria-label="Close navigation" onclick="toggleSidebar(false)">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 18 18 6M6 6l12 12"/></svg>
                 </button>
@@ -76,7 +76,7 @@
         </aside>
 
         {{-- Mobile drawer backdrop --}}
-        <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-neutral-950/50 lg:hidden" onclick="toggleSidebar(false)"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden" onclick="toggleSidebar(false)"></div>
 
         {{-- Content column: its own height is locked to the viewport; it never scrolls. --}}
         <div id="app-content" class="flex-1 flex flex-col lg:ml-64 min-w-0 h-full transition-[margin] duration-200 ease-in-out">

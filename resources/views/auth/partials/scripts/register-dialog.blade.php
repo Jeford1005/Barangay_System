@@ -70,7 +70,7 @@
             // ---------- inline field errors ----------
             function clearErrors() {
                 form.querySelectorAll('.register-error').forEach((p) => p.remove());
-                form.querySelectorAll('.border-red-400').forEach((el) => el.classList.remove('border-red-400'));
+                form.querySelectorAll('.border-red-500\\!').forEach((el) => el.classList.remove('border-red-500!'));
             }
 
             function showErrors(errors) {
@@ -80,7 +80,7 @@
                     const input = form.querySelector('[name="' + field + '"]');
                     if (!input) return;
 
-                    input.classList.add('border-red-400');
+                    input.classList.add('border-red-500!');
 
                     const p = document.createElement('p');
                     p.className = 'register-error mt-1 text-sm text-red-600';

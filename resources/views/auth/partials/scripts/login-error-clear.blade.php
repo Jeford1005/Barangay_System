@@ -14,7 +14,7 @@
             window.setTimeout(function () {
                 if (!error) return;
                 error.classList.add('hidden');
-                field.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500/20');
+                field.classList.remove('border-red-500!', 'focus:border-red-500', 'focus:ring-red-500/20');
                 field.removeAttribute('aria-invalid');
                 field.removeAttribute('aria-describedby');
                 field.blur();

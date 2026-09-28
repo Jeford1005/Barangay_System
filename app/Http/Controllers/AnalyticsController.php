@@ -32,19 +32,19 @@ class AnalyticsController extends Controller
 
         // ---- Sex distribution ----------------------------------------------
         $sexDistribution = [
-            ['label' => 'Male', 'count' => $residents->where('sex', 'Male')->count(), 'color' => '#2563eb'],
-            ['label' => 'Female', 'count' => $residents->where('sex', 'Female')->count(), 'color' => '#ec4899'],
-            ['label' => 'Other', 'count' => $residents->where('sex', 'Other')->count(), 'color' => '#a3a3a3'],
+            ['label' => 'Male', 'count' => $residents->where('sex', 'Male')->count(), 'color' => '#0284c7'],
+            ['label' => 'Female', 'count' => $residents->where('sex', 'Female')->count(), 'color' => '#1e293b'],
+            ['label' => 'Other', 'count' => $residents->where('sex', 'Other')->count(), 'color' => '#94a3b8'],
         ];
 
         // ---- Age brackets (PSA-style, shared with the population report) ----
         $ageBrackets = [
-            ['label' => '0–6', 'min' => 0, 'max' => 6, 'color' => '#f59e0b'],
-            ['label' => '7–17', 'min' => 7, 'max' => 17, 'color' => '#eab308'],
-            ['label' => '18–30', 'min' => 18, 'max' => 30, 'color' => '#22c55e'],
-            ['label' => '31–45', 'min' => 31, 'max' => 45, 'color' => '#14b8a6'],
-            ['label' => '46–59', 'min' => 46, 'max' => 59, 'color' => '#3b82f6'],
-            ['label' => '60+', 'min' => 60, 'max' => 200, 'color' => '#8b5cf6'],
+            ['label' => '0–6', 'min' => 0, 'max' => 6, 'color' => '#0284c7'],
+            ['label' => '7–17', 'min' => 7, 'max' => 17, 'color' => '#0284c7'],
+            ['label' => '18–30', 'min' => 18, 'max' => 30, 'color' => '#0284c7'],
+            ['label' => '31–45', 'min' => 31, 'max' => 45, 'color' => '#0284c7'],
+            ['label' => '46–59', 'min' => 46, 'max' => 59, 'color' => '#0284c7'],
+            ['label' => '60+', 'min' => 60, 'max' => 200, 'color' => '#0284c7'],
         ];
         // Calculate each age once; Carbon age calculations are comparatively
         // expensive when repeated for every bracket on a large resident set.
@@ -79,10 +79,10 @@ class AnalyticsController extends Controller
 
         // ---- Blotter: status split + top complaint types --------------------
         $blotterStatus = [
-            ['label' => 'Open', 'count' => Blotter::where('status', 'Open')->count(), 'color' => '#ef4444'],
-            ['label' => 'Pending', 'count' => Blotter::where('status', 'Pending')->count(), 'color' => '#f59e0b'],
-            ['label' => 'Resolved', 'count' => Blotter::where('status', 'Resolved')->count(), 'color' => '#22c55e'],
-            ['label' => 'Dismissed', 'count' => Blotter::where('status', 'Dismissed')->count(), 'color' => '#a3a3a3'],
+            ['label' => 'Open', 'count' => Blotter::where('status', 'Open')->count(), 'color' => '#dc2626'],
+            ['label' => 'Pending', 'count' => Blotter::where('status', 'Pending')->count(), 'color' => '#d97706'],
+            ['label' => 'Resolved', 'count' => Blotter::where('status', 'Resolved')->count(), 'color' => '#10b981'],
+            ['label' => 'Dismissed', 'count' => Blotter::where('status', 'Dismissed')->count(), 'color' => '#64748b'],
         ];
 
         $topComplaints = Blotter::query()

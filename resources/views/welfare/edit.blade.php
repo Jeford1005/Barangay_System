@@ -11,7 +11,7 @@
         @method('PUT')
         @include('welfare._form', ['welfare' => $welfare])
 
-        <x-form.actions color="amber" cancel-href="{{ route('welfare.index') }}" submit-label="Update Request" />
+        <x-form.actions cancel-href="{{ route('welfare.index') }}" submit-label="Update Request" />
     </form>
 </div>
 @endsection

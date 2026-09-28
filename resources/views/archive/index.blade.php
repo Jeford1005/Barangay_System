@@ -12,9 +12,9 @@
             <div class="flex flex-wrap gap-2 mb-4">
                 @foreach ($types as $key => $meta)
                     <a href="{{ route('archive.type', $key) }}" @if($type === $key) aria-current="page" @endif
-                        class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                        class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">
                         {{ $meta['label'] }}
-                        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold {{ $type === $key ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600' }}">{{ $counts[$key] }}</span>
+                        <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold {{ $type === $key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600' }}">{{ $counts[$key] }}</span>
                     </a>
                 @endforeach
             </div>
@@ -23,46 +23,46 @@
             <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-col gap-2 sm:flex-row">
                 <label for="archive-search" class="sr-only">Search archived {{ strtolower($types[$type]['label']) }}</label>
                 <input id="archive-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search archived {{ strtolower($types[$type]['label']) }}…"
-                    class="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    <x-icon name="funnel" class="mr-2 h-4 w-4 text-gray-500" />
+                    class="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    <x-icon name="funnel" class="mr-2 h-4 w-4 text-slate-500" />
                     Search
                 </button>
                 @if (request('search'))
-                    <a href="{{ route('archive.type', $type) }}" class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-gray-500 hover:text-gray-800">Clear</a>
+                    <a href="{{ route('archive.type', $type) }}" class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Clear</a>
                 @endif
             </form>
 
             @if($records->isEmpty())
-                <div class="text-center py-8 text-gray-500">
-                    <x-icon name="inbox" class="mx-auto mb-4 h-12 w-12 text-gray-200" />
+                <div class="text-center py-8 text-slate-500">
+                    <x-icon name="inbox" class="mx-auto mb-4 h-12 w-12 text-slate-200" />
                     <p class="mt-2">Nothing in the {{ strtolower($types[$type]['label']) }} archive{{ request('search') ? ' matching your search' : '' }}.</p>
                 </div>
             @else
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Record</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deleted</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Record</th>
+                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deleted</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white divide-y divide-slate-200">
                             @foreach($records as $record)
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-slate-50">
                                     <td class="px-3 sm:px-6 py-4">
                                         @if ($type === 'residents')
-                                            <span class="font-medium text-gray-900">{{ e($record->full_name) }}</span>
-                                            <span class="block text-xs text-gray-500">{{ e($record->sex) }}@if($record->birth_date) · {{ $record->birth_date->format('M j, Y') }}@endif</span>
+                                            <span class="font-medium text-slate-900">{{ e($record->full_name) }}</span>
+                                            <span class="block text-xs text-slate-500">{{ e($record->sex) }}@if($record->birth_date) · {{ $record->birth_date->format('M j, Y') }}@endif</span>
                                         @elseif ($type === 'households')
-                                            <span class="font-medium text-gray-900">{{ e($record->household_code) }}</span>
+                                            <span class="font-medium text-slate-900">{{ e($record->household_code) }}</span>
                                         @else
-                                            <span class="font-medium text-gray-900">{{ e($record->case_number) }}</span>
+                                            <span class="font-medium text-slate-900">{{ e($record->case_number) }}</span>
                                         @endif
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-gray-500">
+                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
                                         @if ($type === 'residents')
                                             {{ e($record->purok?->name ?? 'No purok') }}@if($record->address) · {{ e(Str::limit($record->address, 40)) }}@endif
                                         @elseif ($type === 'households')
@@ -71,15 +71,15 @@
                                             {{ e(Str::limit($record->complaint_type, 50)) }}
                                         @endif
                                     </td>
-                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                         {{ $record->deleted_at->format('M j, Y') }}
-                                        <span class="block text-xs text-gray-400">{{ $record->deleted_at->diffForHumans() }}</span>
+                                        <span class="block text-xs text-slate-500">{{ $record->deleted_at->diffForHumans() }}</span>
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="inline-flex items-center gap-1">
                                             <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}">
                                                 @csrf
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-green-200 bg-white px-3 text-sm font-medium text-green-700 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500" title="Restore this record">
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600" title="Restore this record">
                                                     Restore
                                                 </button>
                                             </form>

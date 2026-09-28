@@ -1,7 +1,5 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
@@ -15,14 +13,17 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* The palette, stated once. Deep navy rail, slate neutrals, sky as the single
+   action accent. Status colour is reserved for status: emerald = done/active,
+   amber = pending/warning, red = destructive. Colour never decorates. */
 :root {
-    --sidebar-bg: #15181b;
-    --sidebar-border: rgba(255, 255, 255, 0.08);
-    --sidebar-text: #e8edf0;
-    --sidebar-muted: #8b969f;
-    --sidebar-faint: #5c6872;
-    --sidebar-accent: #8bb9dc;
-    --sidebar-accent-soft: rgba(139, 185, 220, 0.12);
+    --sidebar-bg: #0f172a;
+    --sidebar-border: rgba(148, 163, 184, 0.16);
+    --sidebar-text: #e2e8f0;
+    --sidebar-muted: #94a3b8;
+    --sidebar-faint: #7e8fa6;
+    --sidebar-accent: #38bdf8;
+    --sidebar-accent-soft: rgba(56, 189, 248, 0.12);
 }
 
 #sidebar {
@@ -35,7 +36,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.025), transparent 48%);
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0.05), transparent 48%);
 }
 
 #sidebar > * {
@@ -158,7 +159,7 @@
 }
 
 .nav-section-index {
-    color: #53606a;
+    color: var(--sidebar-faint);
     font-size: 0.5625rem;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.08em;
@@ -216,7 +217,7 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    color: #7d8992;
+    color: var(--sidebar-muted);
     transition: color 160ms ease, transform 160ms ease;
 }
 
@@ -237,7 +238,7 @@
     gap: 0.625rem;
     border-radius: 0.375rem;
     padding: 0.375rem 0.625rem;
-    color: #7f8b94;
+    color: var(--sidebar-muted);
     font-size: 0.75rem;
     font-weight: 500;
     line-height: 1.25;
@@ -261,7 +262,7 @@
     flex: none;
     align-items: center;
     justify-content: center;
-    color: #6f7c85;
+    color: var(--sidebar-faint);
 }
 
 .nav-subrow:hover .nav-subicon,
@@ -276,10 +277,10 @@
     align-items: center;
     justify-content: center;
     margin-left: auto;
-    border: 1px solid rgba(139, 185, 220, 0.24);
+    border: 1px solid rgba(56, 189, 248, 0.28);
     border-radius: 0.25rem;
-    background: rgba(139, 185, 220, 0.1);
-    color: #b8d6e9;
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
     font-size: 0.625rem;
     font-variant-numeric: tabular-nums;
     font-weight: 750;
@@ -332,8 +333,8 @@
         left: calc(100% + 10px);
         top: 50%;
         transform: translateY(-50%) scale(0.96);
-        background: #0a0a0a;
-        color: #fff;
+        background: #0f172a;
+        color: #f8fafc;
         font-size: 12px;
         font-weight: 500;
         line-height: 1;
@@ -344,7 +345,7 @@
         pointer-events: none;
         transition: opacity 0.12s ease, transform 0.12s ease;
         z-index: 60;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
     }
 
     #sidebar[data-minimized="true"] nav a:hover::after,
@@ -437,9 +438,9 @@
 }
 
 .settings-tab-active {
-    border-left-color: #2563eb;
-    background: #eff6ff;
-    color: #1d4ed8;
+    border-left-color: #0284c7;
+    background: #f0f9ff;
+    color: #0369a1;
 }
 
 .settings-tab-icon {
@@ -456,8 +457,8 @@
 }
 
 .settings-tab-active .settings-tab-icon {
-    border-color: #bfdbfe;
-    color: #2563eb;
+    border-color: #bae6fd;
+    color: #0284c7;
 }
 
 .settings-row {
@@ -470,7 +471,7 @@
 }
 
 .settings-row:hover {
-    color: #1d4ed8;
+    color: #0369a1;
 }
 
 .settings-row-icon {
@@ -488,9 +489,9 @@
 
 .settings-row:hover .settings-row-icon,
 .settings-row:focus-visible .settings-row-icon {
-    border-color: #bfdbfe;
-    background: #eff6ff;
-    color: #2563eb;
+    border-color: #bae6fd;
+    background: #f0f9ff;
+    color: #0284c7;
 }
 
 .settings-count {

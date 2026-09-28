@@ -16,7 +16,7 @@
 @php
 $errorId = $name.'-error';
 $hasError = $errors->has($name);
-$fieldClass = 'min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 '.($hasError ? 'border-red-500 ' : '');
+$fieldClass = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 '.($hasError ? 'border-red-500! ' : '');
 $spanClass = $type === 'select' ? $fieldClass : $fieldClass;
 $numberInputMode = $type === 'number'
     ? (str_contains((string) $attributes->get('step'), '.') ? 'decimal' : 'numeric')
@@ -33,12 +33,12 @@ $optionValuesAreLabels = array_is_list($optionCollection->all());
 
 <div>
     @if ($type !== 'checkbox')
-        <label for="{{ $name }}" class="block text-sm font-medium text-gray-700 mb-1.5">
+        <label for="{{ $name }}" class="block text-sm font-medium text-slate-700 mb-1.5">
             {{ $label }}
             @if ($required)
                 <span class="text-red-500">*</span>
             @elseif ($optionalHint)
-                <span class="text-gray-400">(optional)</span>
+                <span class="text-slate-500">(optional)</span>
             @endif
         </label>
     @endif
@@ -65,8 +65,8 @@ $optionValuesAreLabels = array_is_list($optionCollection->all());
             <input type="hidden" name="{{ $name }}" value="0">
             <input id="{{ $name }}" type="checkbox" name="{{ $name }}" value="1" @checked(old($name, $checked))
                 @if($hasError) aria-invalid="true" aria-describedby="{{ $errorId }}" @endif
-                class="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500">
-            <span class="text-sm text-gray-700">{{ $slot ?: $label }}</span>
+                class="h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-600">
+            <span class="text-sm text-slate-700">{{ $slot ?: $label }}</span>
         </label>
     @else
         <input id="{{ $name }}" type="{{ $type }}" name="{{ $name }}" value="{{ old($name, $value) }}" @required($required)

@@ -10,7 +10,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 @endphp
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Complainant</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Complainant</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="complainant_name" label="Full Name" required :value="$blotter->complainant_name ?? null" maxlength="255" />
         <x-form.field name="complainant_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->complainant_id ?? null" data-resident-autofill="complainant" data-linked-fields="complainant_name,complainant_address,complainant_phone" />
@@ -20,7 +20,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Respondent (Accused)</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Respondent (Accused)</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="accused_name" label="Full Name" required :value="$blotter->accused_name ?? null" maxlength="255" />
         <x-form.field name="accused_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->accused_id ?? null" data-resident-autofill="accused" data-linked-fields="accused_name,accused_address,accused_phone" />
@@ -30,7 +30,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Incident</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Incident</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="complaint_type" label="Complaint Type" required :value="$blotter->complaint_type ?? null" maxlength="100" placeholder="e.g. Noise Complaint" />
         <x-form.field name="complaint_subtype" label="Subtype" :value="$blotter->complaint_subtype ?? null" maxlength="100" />
@@ -43,7 +43,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Status & Handling</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Status & Handling</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="status" label="Status" type="select" required :options="['Open', 'Pending', 'Resolved', 'Dismissed']" :value="$blotter->status ?? 'Open'" />
         <x-form.field name="arrest_made" label="Arrest Made" type="select" required :options="['No', 'Yes']" :value="$blotter->arrest_made ?? 'No'" />
@@ -91,7 +91,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
                 }
                 fields.forEach((field) => {
                     field.readOnly = linked;
-                    field.classList.toggle('bg-neutral-100', linked);
+                    field.classList.toggle('bg-slate-100', linked);
                 });
             };
 

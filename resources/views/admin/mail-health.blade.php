@@ -3,7 +3,7 @@
     <x-page-header title="Mail Health Check" subtitle="Verifies the setup that password-reset emails depend on. Current driver: {{ $report['mailer'] }}">
         <x-slot:actions>
             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
-                {{ $report['ready'] ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                {{ $report['ready'] ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
                 {{ $report['ready'] ? 'Ready' : 'Needs attention' }}
             </span>
         </x-slot:actions>
@@ -19,20 +19,20 @@
             <ol class="space-y-3">
                 @foreach ($report['checks'] as $check)
                     <li class="flex items-start gap-3 rounded-lg border p-4
-                        {{ $check['status'] === 'pass' ? 'border-green-200 bg-green-50' : ($check['status'] === 'warn' ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50') }}">
+                        {{ $check['status'] === 'pass' ? 'border-emerald-200 bg-emerald-50' : ($check['status'] === 'warn' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50') }}">
                         @if ($check['status'] === 'pass')
-                            <x-icon name="check-circle" class="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                            <x-icon name="check-circle" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                         @elseif ($check['status'] === 'warn')
-                            <x-icon name="exclamation-triangle" class="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
+                            <x-icon name="exclamation-triangle" class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                         @else
                             <x-icon name="x-circle" class="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
                         @endif
 
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-900">{{ $check['label'] }}</p>
-                            <p class="text-sm text-gray-600">{{ $check['detail'] }}</p>
+                            <p class="text-sm font-semibold text-slate-900">{{ $check['label'] }}</p>
+                            <p class="text-sm text-slate-600">{{ $check['detail'] }}</p>
                             @if ($check['hint'] ?? null)
-                                <p class="mt-1 text-xs text-yellow-800 bg-yellow-100 rounded px-2 py-1 inline-block">
+                                <p class="mt-1 text-xs text-amber-800 bg-amber-100 rounded px-2 py-1 inline-block">
                                     {{ $check['hint'] }}
                                 </p>
                             @endif
@@ -41,11 +41,11 @@
                 @endforeach
             </ol>
 
-            <div class="mt-6 border-t border-gray-200 pt-6">
-                <h3 class="text-sm font-semibold text-gray-900">Send a test email</h3>
-                <p class="mt-1 text-sm text-gray-500">
+            <div class="mt-6 border-t border-slate-200 pt-6">
+                <h3 class="text-sm font-semibold text-slate-900">Send a test email</h3>
+                <p class="mt-1 text-sm text-slate-500">
                     Confirms delivery end-to-end, exactly as a password-reset email would travel.
-                    With the log driver, the message appears in <code class="text-xs bg-gray-100 px-1 rounded">storage/logs/laravel.log</code>.
+                    With the log driver, the message appears in <code class="text-xs bg-slate-100 px-1 rounded">storage/logs/laravel.log</code>.
                 </p>
                 <form action="{{ route('admin.mail.test') }}" method="POST" class="mt-3 flex flex-col gap-2 sm:flex-row">
                     @csrf
@@ -56,9 +56,9 @@
                         name="email"
                         value="{{ old('email') }}"
                         placeholder="recipient@example.com"
-                        class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                     >
-                    <button type="submit" class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    <button type="submit" class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
                         Send Test Email
                     </button>
                 </form>
@@ -67,11 +67,11 @@
                 @enderror
             </div>
 
-            <div class="mt-6 rounded-lg bg-neutral-900 p-5 text-sm text-neutral-300">
+            <div class="mt-6 rounded-lg bg-slate-900 p-5 text-sm text-slate-300">
                 <p class="font-semibold text-white">Gmail quick setup</p>
                 <ol class="mt-2 list-decimal list-inside space-y-1 text-xs leading-relaxed">
                     <li>Enable 2-Step Verification on the sending Google account</li>
-                    <li>Create an App Password at <span class="text-blue-300">myaccount.google.com/apppasswords</span> (16 characters)</li>
+                    <li>Create an App Password at <span class="text-sky-300">myaccount.google.com/apppasswords</span> (16 characters)</li>
                     <li>In <code>.env</code>: <code>MAIL_MAILER=smtp</code>, <code>MAIL_HOST=smtp.gmail.com</code>, <code>MAIL_PORT=587</code></li>
                     <li><code>MAIL_USERNAME</code> and <code>MAIL_FROM_ADDRESS</code> = the same Gmail address, <code>MAIL_PASSWORD</code> = App Password</li>
                     <li>Restart <code>php artisan serve</code>, then re-run this check</li>

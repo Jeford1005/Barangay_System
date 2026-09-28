@@ -9,7 +9,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 @endphp
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Beneficiary</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Beneficiary</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="beneficiary_name" label="Full Name" required :value="$welfare->beneficiary_name ?? null" maxlength="255" />
         <x-form.field name="beneficiary_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$welfare->beneficiary_id ?? null" data-resident-autofill="beneficiary" data-linked-fields="beneficiary_name,beneficiary_address,beneficiary_phone" />
@@ -19,7 +19,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
 </fieldset>
 
 <fieldset>
-    <legend class="text-sm font-semibold text-gray-900 mb-4">Assistance</legend>
+    <legend class="text-sm font-semibold text-slate-900 mb-4">Assistance</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="assistance_type" label="Assistance Type" type="select" required :options="['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other']" :value="$welfare->assistance_type ?? 'Financial'" />
         <x-form.field name="program_name" label="Program Name" required :value="$welfare->program_name ?? null" maxlength="255" placeholder="e.g. Medical Assistance Program" />
@@ -39,7 +39,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
          @else
              <input type="hidden" name="status" value="Requested">
              <input type="hidden" name="approved_amount" value="0">
-             <p class="text-xs text-neutral-500 sm:col-span-2">Approval, release, and denial decisions are reserved for administrators.</p>
+             <p class="text-xs text-slate-500 sm:col-span-2">Approval, release, and denial decisions are reserved for administrators.</p>
          @endif
         <div class="sm:col-span-2">
             <x-form.field name="remarks" label="Remarks" type="textarea" :rows="2" maxlength="2000" :value="$welfare->remarks ?? null" />
@@ -67,7 +67,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
             }
             fields.forEach((field) => {
                 field.readOnly = linked;
-                field.classList.toggle('bg-neutral-100', linked);
+                field.classList.toggle('bg-slate-100', linked);
             });
         };
 

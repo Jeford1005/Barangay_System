@@ -2,7 +2,7 @@
 
 @php
     $classes = 'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors min-h-11 '.
-        ($active ? 'bg-neutral-800 text-white shadow-inner' : 'text-neutral-300 hover:text-white hover:bg-neutral-800/70');
+        ($active ? 'bg-slate-800 text-white shadow-inner' : 'text-slate-300 hover:text-white hover:bg-slate-800/70');
 @endphp
 
 <a {{ $attributes->merge(['class' => $classes]) }}>

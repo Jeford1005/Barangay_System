@@ -1,6 +1,6 @@
 {{-- Shared fields for resident create/edit. Expects $resident (null on create). --}}
-<fieldset class="border-b border-neutral-200 pb-6 last:border-0 last:pb-0">
-    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Personal Information</legend>
+<fieldset class="border-b border-slate-200 pb-6 last:border-0 last:pb-0">
+    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Personal Information</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-form.field name="first_name" label="First Name" required :value="$resident->first_name ?? null" maxlength="100" />
         <x-form.field name="middle_name" label="Middle Name" :value="$resident->middle_name ?? null" maxlength="100" />
@@ -19,8 +19,8 @@
     </div>
 </fieldset>
 
-<fieldset class="border-b border-neutral-200 pb-6 last:border-0 last:pb-0">
-    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Contact & Address</legend>
+<fieldset class="border-b border-slate-200 pb-6 last:border-0 last:pb-0">
+    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Contact & Address</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <x-form.field name="phone_number" label="Phone Number" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$resident->phone_number ?? null" maxlength="15" placeholder="09171234567" />
         <x-form.field name="email" label="Email" type="email" :value="$resident->email ?? null" maxlength="150" />
@@ -28,28 +28,28 @@
             <x-form.field name="address" label="Address" :value="$resident->address ?? null" maxlength="255" />
         </div>
         <div>
-            <label for="photo" class="mb-1.5 block text-sm font-medium text-gray-700">Photo <span class="text-gray-400">(optional)</span></label>
+            <label for="photo" class="mb-1.5 block text-sm font-medium text-slate-700">Photo <span class="text-slate-500">(optional)</span></label>
             @if ($resident?->photo)
                 <img src="{{ route('residents.photo', $resident) }}" alt="Current resident photo" class="mb-2 h-16 w-16 rounded-full object-cover">
             @endif
-            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100">
+            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
             @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
     </div>
 </fieldset>
 
-<fieldset class="border-b border-neutral-200 pb-6 last:border-0 last:pb-0">
-    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Location & Classification</legend>
+<fieldset class="border-b border-slate-200 pb-6 last:border-0 last:pb-0">
+    <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Location & Classification</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" placeholder-option="None" :value="$resident->purok_id ?? null" />
         <x-form.field name="household_id" label="Household" type="select" :options="$households" placeholder-option="None" :value="$resident->household_id ?? null" />
-        <p class="text-xs text-neutral-500 sm:col-span-2 lg:col-span-4">Choose a purok or household from the list. Names and codes are shown for readability; the system stores the selected record ID.</p>
+        <p class="text-xs text-slate-500 sm:col-span-2 lg:col-span-4">Choose a purok or household from the list. Names and codes are shown for readability; the system stores the selected record ID.</p>
         <x-form.field name="residency_status" label="Residency Status" :value="$resident->residency_status ?? null" maxlength="50" placeholder="e.g. Permanent" />
         @if (auth()->user()?->isAdmin())
          <x-form.field name="status" label="Status" type="select" required :options="['Active', 'Archived']" :value="$resident->status ?? 'Active'" />
          @else
          <input type="hidden" name="status" value="{{ $resident->status ?? 'Active' }}">
-         <p class="text-xs text-neutral-500">Status changes are administrator-only.</p>
+         <p class="text-xs text-slate-500">Status changes are administrator-only.</p>
          @endif
         <div class="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-3 pt-1 sm:col-span-2 lg:col-span-4">
             <x-form.field name="voter_status" label="" type="checkbox" :checked="$resident->voter_status ?? false">
