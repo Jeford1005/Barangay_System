@@ -1,16 +1,17 @@
 # Deploying to Vercel
 
 This app runs on Vercel as a **container service** (FrankenPHP), not as a
-serverless PHP function. Vercel has no PHP runtime and no database of its own,
-so both are supplied explicitly:
+serverless PHP function. Vercel has no PHP runtime of its own, so the runtime
+ships in the image; the database comes from the Vercel Marketplace, which
+injects its credentials as environment variables:
 
 | Piece | Provided by | File |
 |---|---|---|
 | PHP 8.4 runtime + web server | FrankenPHP image | `Dockerfile.vercel` |
 | Document root / routing | Caddy | `Caddyfile` |
 | Vercel project wiring | container service + catch-all rewrite | `vercel.json` |
-| Database | **external** Postgres (Neon / Supabase / Railway) | env var `DB_URL` |
-| First admin account | `php artisan app:create-admin` | env vars `ADMIN_*` |
+| Database | Neon Postgres provisioned by the **Vercel Marketplace** | env var `DATABASE_URL` (injected) |
+| Migrations + demo accounts | `docker/entrypoint.sh` on every container boot | `migrate --force`, then `db:seed --force` |
 
 ## Why the first deploy failed
 
@@ -32,12 +33,36 @@ rewrite, which is what tells Vercel to stop treating this as a static site.
 
 ### 1. Create a Postgres database
 
-Neon and Supabase both have free tiers; Railway works too. Copy the connection
-string — it looks like:
+Install Neon from the **Vercel Marketplace**, which provisions the database and
+links it to this project in a single step:
 
+```bash
+vercel install neon --name barangay-db --plan free_v3 \
+  -m region=iad1 -m auth=false -e production --non-interactive
 ```
-postgresql://user:password@host/dbname?sslmode=require
-```
+
+The first attempt may stop with `integration_terms_acceptance_required`. Open
+the `accept-terms` URL it prints, accept once, then re-run the same command.
+
+Neon's Free plan needs no card (0.5 GB, 100 compute-hours, 10 databases).
+Pick the region matching where the container runs — `iad1` here.
+
+Vercel injects the credentials into the Production environment for you:
+`DATABASE_URL` plus `DATABASE_URL_UNPOOLED` and the `PG*` / `POSTGRES_*`
+aliases. No connection string is ever pasted into a dashboard or committed.
+
+Two things matter about that injected value:
+
+- **The app uses the unpooled endpoint.** The pooled (`…-pooler`) hostname sits
+  behind PgBouncer, and against it Laravel's PDO driver failed every schema
+  transaction with `SQLSTATE[25P02] current transaction is aborted` — the very
+  same SQL, executed in the very same order against the same pooled endpoint
+  from another client, succeeded. `DB_URL` is therefore set to
+  `DATABASE_URL_UNPOOLED`. Direct is also the right choice for one container:
+  pooling buys nothing when a single instance holds a handful of connections.
+- **`DB_PORT` must be `5432`.** Neon's URL omits `:5432`, and Laravel's URL
+  parser drops null values before merging, so a port left behind by an earlier
+  MySQL configuration would survive and point a Postgres driver at 3306.
 
 > **SQLite will not work on Vercel.** The filesystem is read-only apart from a
 > per-instance `/tmp`, so a database file cannot be created or persisted, and
@@ -61,21 +86,27 @@ data.
 |---|---|---|
 | `APP_KEY` | `base64:…` | From the command above. Required. |
 | `APP_URL` | `https://<your-project>.vercel.app` | Must be `https://`. |
-| `DB_URL` | `postgresql://…` | Your Postgres connection string. |
-| `DB_CONNECTION` | `pgsql` | The container also sets this by default. |
+| `DB_URL` | `postgresql://…` | Set to the **unpooled** string. Optional: Laravel reads `DB_URL` first and falls back to the injected `DATABASE_URL`, so only set it when you want to override which endpoint is used. |
+| `DB_CONNECTION` | `pgsql` | Required. Without it the default driver is `sqlite` and no URL variable is consulted at all. |
+| `DB_PORT` | `5432` | Required. Overrides any port left over from an earlier MySQL setup (see §1). |
 | `APP_TRUSTED_PROXIES` | `vercel` | Makes Laravel see the request as HTTPS (see below). |
 | `SESSION_SECURE_COOKIE` | `true` | Optional; cookie hardening. |
-| `ADMIN_NAME` | your name | One-time, for the bootstrap admin. |
-| `ADMIN_EMAIL` | your email | One-time. |
-| `ADMIN_PASSWORD` | a strong password | **Delete this after first login.** |
 
 `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr`,
 `SESSION_DRIVER=database`, `CACHE_STORE=database` and `QUEUE_CONNECTION=sync`
 are already baked into the image.
 
-> **Do not run `php artisan db:seed`.** `DatabaseSeeder` creates
-> `admin@barangay.local` / `staff@barangay.local` with the password `password`.
-> On a public URL that is an open admin account.
+> **The container seeds on every boot.** `docker/entrypoint.sh` runs
+> `db:seed --force` once migrations finish, so a fresh database is populated
+> with `admin@barangay.local`, `staff@barangay.local` and
+> `resident@barangay.local`, all with the password `password`. That is
+> deliberate for a demo or stakeholder walkthrough.
+>
+> **Before anyone outside the classroom touches it**, delete the `db:seed`
+> line from `docker/entrypoint.sh` and create real accounts. The seeder is
+> built on `firstOrCreate`, so it never duplicates rows and never overwrites a
+> password you have already changed — but it will happily create
+> `password`-only accounts on a public URL if left in place.
 
 ### Why `APP_TRUSTED_PROXIES` is needed
 
@@ -94,26 +125,57 @@ request cannot spoof those headers.
 ```bash
 # From the repo root
 vercel login
+
+# Provision + link the database first (see §1)
+vercel install neon --name barangay-db --plan free_v3 \
+  -m region=iad1 -m auth=false -e production --non-interactive
+
 vercel link            # create/link the project
 
 vercel env add APP_KEY production
 vercel env add APP_URL production
-vercel env add DB_URL production
+vercel env add DB_CONNECTION production     # value: pgsql
+vercel env add DB_PORT production           # value: 5432
 vercel env add APP_TRUSTED_PROXIES production
 
 vercel deploy --prod
 ```
 
+`vercel env add` prompts for the value, so use `--value` (or stdin) when
+scripting:
+
+```bash
+echo "pgsql"  | vercel env add DB_CONNECTION production
+echo "5432"   | vercel env add DB_PORT production
+# equivalently:
+vercel env add DB_PORT production --value 5432 --yes
+```
+
+Prefer `--type config` for these — Vercel defaults new variables to *Secret*,
+which is right for `APP_KEY` but irrelevant for a driver name.
+
 Or import the GitHub repo in the Vercel dashboard — `vercel.json` and
-`Dockerfile.vercel` are picked up automatically.
+`Dockerfile.vercel` are picked up automatically, and dashboard pushes trigger
+a build on every commit.
 
 ## After the first deploy
 
-Migrations run automatically on container boot (`docker/entrypoint.sh`), so a
-fresh database is migrated for you. Then create the admin account.
+Nothing manual is required. `docker/entrypoint.sh` runs, on every container
+boot:
 
-Vercel containers have **no shell**, so `artisan` cannot be run directly. Add a
-temporary route instead, call it once, then delete it:
+1. `php artisan config:cache`
+2. `php artisan migrate --force` — prints `Nothing to migrate` once current
+3. `php artisan db:seed --force` — idempotent, so safe on every boot
+4. `exec`s FrankenPHP
+
+A failure in step 2 or 3 logs a warning and does **not** stop the container: a
+partially migrated app you can inspect beats a container that crash-loops, and
+the warnings show up in `vercel logs`.
+
+Vercel containers have **no shell**, so `artisan` cannot be run interactively.
+For a one-off command, either add a temporary route as below, or run it from
+any machine with the repo and a PHP 8.4 CLI pointed at the same `DB_URL` — the
+environment variables are the only thing that ties a command to Vercel.
 
 ```php
 // routes/web.php  — TEMPORARY, delete immediately after use
@@ -130,23 +192,25 @@ Route::get('/__bootstrap-admin', function () {
 });
 ```
 
-Set `ADMIN_BOOTSTRAP_TOKEN` to a long random string, visit
-`/__bootstrap-admin?token=…`, confirm the output says `Created administrator`,
-then **remove the route and delete `ADMIN_PASSWORD` and
-`ADMIN_BOOTSTRAP_TOKEN`** and redeploy.
-
-Alternatively, run the same command from any machine that has the repo and a
-PHP 8.2+ CLI against the same database — the environment variables are the only
-thing that ties it to Vercel.
+The route needs four variables that exist only while it does:
+`ADMIN_BOOTSTRAP_TOKEN`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`. Set the
+token to a long random string, visit `/__bootstrap-admin?token=…`, confirm the
+output says `Created administrator`, then **remove the route and delete all
+four variables** and redeploy.
 
 ## Verify
 
-1. `GET /up` returns 200 — Laravel's health endpoint.
-2. `/login` returns 200 **and is styled**. Unstyled means the asset build in the
-   image failed.
-3. Sign in with the admin account.
-4. `https://<project>.vercel.app/.env` must **404**.
-5. Check Vercel → Logs for errors after exercising the app.
+1. `GET /` returns 200 **and renders the sign-in form** — guests are served
+   sign-in at the domain root, so `/login` never has to appear in the address
+   bar. `/login` still exists for the redirects the framework issues.
+2. `/login` returns 200 **and is styled**. Unstyled means the asset build in
+   the image failed.
+3. `GET /up` returns 200 — Laravel's health endpoint.
+4. Sign in as `admin@barangay.local` / `password`; you should land on
+   `/dashboard` with live counts (Residents, Households, Puroks).
+5. `https://<project>.vercel.app/.env` must **404**.
+6. Check Vercel → Logs: expect `Nothing to migrate` and `Seed complete`, with
+   no `ERROR` lines.
 
 ## What does not work on Vercel
 
