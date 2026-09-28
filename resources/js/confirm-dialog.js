@@ -14,6 +14,9 @@
  *
  *   tone: "danger" (red, default) | "primary" (sky, reversible actions)
  *
+ * Element hooks inside the dialog markup use the data-confirm-dialog-*
+ * namespace, so they can never collide with the form attributes above.
+ *
  * Behaviour:
  *   - confirm re-submits the same form via requestSubmit(), so CSRF,
  *     method spoofing and validation are untouched;
@@ -75,7 +78,7 @@
 
     function open(form, message) {
         var d = node();
-        var acceptBtn = q('[data-confirm-accept]');
+        var acceptBtn = q('[data-confirm-dialog-accept]');
         if (!d || !acceptBtn) return false;
 
         pendingForm = form;
@@ -84,19 +87,19 @@
         var primary = (form.getAttribute('data-confirm-tone') || 'danger') === 'primary';
         var key = primary ? 'data-classes-primary' : 'data-classes-danger';
 
-        var title = q('[data-confirm-title]');
+        var title = q('[data-confirm-dialog-title]');
         if (title) title.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
 
-        var body = q('[data-confirm-message]');
+        var body = q('[data-confirm-dialog-message]');
         if (body) body.textContent = message;
 
-        var icon = q('[data-confirm-icon]');
+        var icon = q('[data-confirm-dialog-icon]');
         if (icon) icon.className = icon.getAttribute(key) || icon.className;
 
         acceptBtn.textContent = form.getAttribute('data-confirm-accept') || 'Confirm';
         acceptBtn.className = acceptBtn.getAttribute(key) || acceptBtn.className;
 
-        var dismissBtn = q('[data-confirm-cancel]');
+        var dismissBtn = q('[data-confirm-dialog-cancel]');
         if (dismissBtn) dismissBtn.textContent = form.getAttribute('data-confirm-dismiss') || 'Cancel';
 
         d.classList.remove('hidden');
@@ -126,12 +129,12 @@
         var target = event.target;
         if (!target || !target.closest) return;
 
-        if (target.closest('[data-confirm-accept]')) {
+        if (target.closest('[data-confirm-dialog-accept]')) {
             event.preventDefault();
             accept();
             return;
         }
-        if (target.closest('[data-confirm-cancel]')) {
+        if (target.closest('[data-confirm-dialog-cancel]')) {
             event.preventDefault();
             close();
             return;
