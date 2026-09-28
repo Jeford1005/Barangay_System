@@ -91,7 +91,10 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
+            // Prefer an explicit DB_URL, but fall back to DATABASE_URL: that is
+            // the name the Vercel Marketplace Neon integration injects, so the
+            // credential needs no manual pasting or copying between variables.
+            'url' => env('DB_URL', env('DATABASE_URL')),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),
