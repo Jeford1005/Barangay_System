@@ -20,10 +20,15 @@ use App\Http\Controllers\ResidentRecordChangeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\WelfareController;
+use App\Models\Blotter;
+use App\Models\CertificateIssuance;
+use App\Models\CertificateRequest;
 use App\Models\Household;
-use App\Models\Official;
 use App\Models\Purok;
 use App\Models\Resident;
+use App\Models\ResidentRecordChange;
+use App\Models\User;
+use App\Models\Welfare;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,17 +60,42 @@ Route::get('/', function () {
 // Login/throttled routes - add rate limiting protection
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     Route::get('/dashboard', function () {
-        if (auth()->user()->user_type === 'resident') {
+        $user = auth()->user();
+
+        if ($user->user_type === 'resident') {
             return redirect()->route('resident.portal');
         }
 
-        abort_unless(auth()->user()->isOfficeUser(), 403);
+        abort_unless($user->isOfficeUser(), 403);
+
+        $monthStart = now()->startOfMonth();
+
+        // Work waiting on the office. Each count below already backs a sidebar
+        // badge or an analytics slice - the dashboard surfaces counts the app
+        // computes anyway instead of inventing parallel ones.
+        $queues = [
+            ['label' => 'Certificate requests', 'count' => CertificateRequest::pending()->count(), 'href' => route('admin.certificate-requests.index'), 'critical' => false],
+            ['label' => 'Resident corrections', 'count' => ResidentRecordChange::where('status', 'Pending')->count(), 'href' => route('admin.resident-changes.index'), 'critical' => false],
+            ['label' => 'Welfare requests', 'count' => Welfare::whereIn('status', ['Requested', 'Under Review'])->count(), 'href' => route('welfare.index'), 'critical' => false],
+            ['label' => 'Open blotter cases', 'count' => Blotter::whereIn('status', ['Open', 'Pending'])->count(), 'href' => route('blotter.index'), 'critical' => true],
+        ];
+
+        // Account approvals sit behind the admin middleware, so a staff member
+        // following the link would land on a 403 - only offer it to admins.
+        if ($user->isAdmin()) {
+            $queues[] = ['label' => 'Account approvals', 'count' => User::where('user_type', 'resident')->where('status', 'pending')->count(), 'href' => route('admin.approvals.index'), 'critical' => false];
+        }
 
         return view('dashboard', [
             'residentCount' => Resident::count(),
             'householdCount' => Household::count(),
             'purokCount' => Purok::count(),
-            'officialCount' => Official::count(),
+            'issuedTotal' => CertificateIssuance::issued()->count(),
+            'issuedMonth' => CertificateIssuance::issued()->where('created_at', '>=', $monthStart)->count(),
+            'newResidentsMonth' => Resident::where('created_at', '>=', $monthStart)->count(),
+            'newHouseholdsMonth' => Household::where('created_at', '>=', $monthStart)->count(),
+            'queues' => $queues,
+            'attentionTotal' => array_sum(array_column($queues, 'count')),
         ]);
     })->name('dashboard');
 });
