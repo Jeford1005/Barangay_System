@@ -22,12 +22,12 @@
          system. Fixed, so it stays put when a long form scrolls. --}}
     <div aria-hidden="true" class="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden">
         <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt=""
-            class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.055]">
+            class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-4 sm:px-6">
+    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-3 sm:px-6">
         <div class="mx-auto w-full max-w-2xl">
-            <div class="rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
                 <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5">
                     <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt="" class="h-10 w-10 shrink-0 rounded-full">
                     <div>
