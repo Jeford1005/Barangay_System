@@ -26,12 +26,12 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.055]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 sm:px-6">
+    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6">
         <div class="mx-auto w-full max-w-md">
             {{-- Card --}}
             <div class="rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
                 {{-- Card header --}}
-                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
                     <div class="flex items-center gap-3">
                         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-600 shadow-sm">
                             <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -46,7 +46,7 @@
                     <span class="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">2 / 2</span>
                 </div>
 
-                <div class="px-6 py-6">
+                <div class="px-6 py-5">
                     @php
                         // Mask the address: keep the first 1–2 characters of the local
                         // part and stars for the rest, e.g. ad***@gmail.com.
@@ -68,7 +68,7 @@
                         Expires in {{ max($expiresInMinutes, 1) }} {{ $expiresInMinutes === 1 ? 'minute' : 'minutes' }}.
                     </p>
 
-                    <form id="reset-form" method="POST" action="{{ route('password.update') }}" class="mt-5 space-y-4">
+                    <form id="reset-form" method="POST" action="{{ route('password.update') }}" class="mt-4 space-y-4">
                         @csrf
 
                         <input type="hidden" name="email" value="{{ $email }}">
@@ -170,7 +170,7 @@
                         </button>
                     </form>
 
-                    <div class="mt-5 border-t border-slate-200 pt-4 text-center text-sm text-slate-500">
+                    <div class="mt-4 border-t border-slate-200 pt-3 text-center text-sm text-slate-500">
                         Didn't get the code?
                         @if ($maskedEmail !== '')
                             <form action="{{ route('password.email') }}" method="POST" class="mt-2">
