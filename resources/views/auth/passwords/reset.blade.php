@@ -17,7 +17,7 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+<body class="min-h-screen bg-slate-200 text-slate-900 antialiased">
     {{-- The seal, oversized and held at a whisper — the same backdrop the
          sign-in page opens on, so every unauthenticated route reads as one
          system. Fixed, so it stays put when the form scrolls. --}}

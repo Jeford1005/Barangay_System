@@ -26,7 +26,7 @@ class ResidentFactory extends Factory
             'phone_number' => null,
             'email' => null,
             'address' => null,
-            'residency_status' => null,
+            'residency_status' => 'Permanent',
             'voter_status' => false,
             'is_household_head' => false,
             'status' => 'Active',
