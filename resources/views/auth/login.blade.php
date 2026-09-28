@@ -140,17 +140,7 @@
                         </div>
 
                         <div>
-                            <div class="flex items-baseline justify-between gap-3">
-                                <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
-                                @if (Route::has('password.request'))
-                                    <button type="button" data-open-forgot class="js-only text-[13px] font-medium text-sky-700 hover:text-sky-800">
-                                        Forgot password?
-                                    </button>
-                                    <noscript>
-                                        <a href="{{ route('password.request') }}" class="text-[13px] font-medium text-sky-700 hover:text-sky-800">Forgot password?</a>
-                                    </noscript>
-                                @endif
-                            </div>
+                            <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
 
                             <div class="relative mt-1.5">
                                 <input
@@ -181,6 +171,22 @@
                                     <span>{{ $message }}</span>
                                 </p>
                             @enderror
+
+                            {{-- Recovery belongs to the input it acts on, so it
+                                 sits under the field rather than beside the
+                                 label. Red is the palette's critical token
+                                 (#DC2626 - 4.83:1 on white, so it holds AA),
+                                 which also matches the error line above it. --}}
+                            @if (Route::has('password.request'))
+                                <div class="mt-2">
+                                    <button type="button" data-open-forgot class="js-only text-[13px] font-medium text-red-600 hover:text-red-700">
+                                        Forgot password?
+                                    </button>
+                                    <noscript>
+                                        <a href="{{ route('password.request') }}" class="text-[13px] font-medium text-red-600 hover:text-red-700">Forgot password?</a>
+                                    </noscript>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
