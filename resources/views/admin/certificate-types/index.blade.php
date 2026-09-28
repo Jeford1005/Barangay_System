@@ -1,10 +1,6 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Certificate catalog" subtitle="Govern which document types residents and clerks may request or issue.">
-        <x-slot:actions>
-            <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">New document type</a>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Certificate catalog" subtitle="Govern which document types residents and clerks may request or issue." />
 @endsection
 
 @section('content')
@@ -17,6 +13,7 @@
             <div class="min-w-0 flex-1"><label for="document-search" class="sr-only">Search document catalog</label><input id="document-search" name="search" value="{{ $search }}" maxlength="100" placeholder="Search code, title, or category" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-sky-600 focus:ring-sky-600"></div>
             <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" class="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">All statuses</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
             <button class="min-h-10 rounded-lg border border-slate-300 px-4 text-sm font-medium hover:bg-slate-50" type="submit">Filter</button>
+            <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">New document type</a>
         </form>
     </div>
 
