@@ -1,0 +1,170 @@
+/**
+ * Confirmation dialog engine.
+ *
+ * Replaces every native `confirm()` box the CRUD actions used to raise
+ * ("barangay-system-ochre.vercel.app says / Delete household HH-001?").
+ *
+ * Usage in Blade — the copy lives on the <form>:
+ *
+ *   <form method="POST" action="..."
+ *         data-confirm="Delete household HH-001?"
+ *         data-confirm-title="Delete household"
+ *         data-confirm-accept="Delete"
+ *         data-confirm-tone="danger">...</form>
+ *
+ *   tone: "danger" (red, default) | "primary" (sky, reversible actions)
+ *
+ * Behaviour:
+ *   - confirm re-submits the same form via requestSubmit(), so CSRF,
+ *     method spoofing and validation are untouched;
+ *   - without JS (or if the dialog markup is absent) the form submits
+ *     normally — this is pure progressive enhancement;
+ *   - Escape / Cancel / backdrop click all dismiss without submitting.
+ */
+(function () {
+    'use strict';
+
+    var dialog = null;
+    var pendingForm = null;
+    var lastFocused = null;
+    var bypassForm = null;
+
+    function node() {
+        if (dialog === null) dialog = document.getElementById('confirm-dialog');
+        return dialog;
+    }
+
+    function q(sel) {
+        var d = node();
+        return d ? d.querySelector(sel) : null;
+    }
+
+    function scrollLock(on) {
+        if (on) {
+            document.body.classList.add('overflow-hidden');
+            return;
+        }
+        // Another dialog may still be open — don't unlock the page under it.
+        if (document.querySelector('.crud-dialog:not(.hidden)')) return;
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function close() {
+        var d = node();
+        if (!d || d.classList.contains('hidden')) return;
+        d.classList.add('hidden');
+        scrollLock(false);
+        pendingForm = null;
+        var restore = lastFocused;
+        lastFocused = null;
+        if (restore && restore.focus) restore.focus();
+    }
+
+    function accept() {
+        var form = pendingForm;
+        close();
+        if (!form) return;
+        if (typeof form.requestSubmit === 'function') {
+            bypassForm = form;
+            form.requestSubmit(); // fires submit again; the guard below lets it through
+        } else {
+            form.submit(); // legacy path: skips the submit event entirely
+            bypassForm = null;
+        }
+    }
+
+    function open(form, message) {
+        var d = node();
+        var acceptBtn = q('[data-confirm-accept]');
+        if (!d || !acceptBtn) return false;
+
+        pendingForm = form;
+        lastFocused = document.activeElement;
+
+        var primary = (form.getAttribute('data-confirm-tone') || 'danger') === 'primary';
+        var key = primary ? 'data-classes-primary' : 'data-classes-danger';
+
+        var title = q('[data-confirm-title]');
+        if (title) title.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
+
+        var body = q('[data-confirm-message]');
+        if (body) body.textContent = message;
+
+        var icon = q('[data-confirm-icon]');
+        if (icon) icon.className = icon.getAttribute(key) || icon.className;
+
+        acceptBtn.textContent = form.getAttribute('data-confirm-accept') || 'Confirm';
+        acceptBtn.className = acceptBtn.getAttribute(key) || acceptBtn.className;
+
+        var dismissBtn = q('[data-confirm-cancel]');
+        if (dismissBtn) dismissBtn.textContent = form.getAttribute('data-confirm-dismiss') || 'Cancel';
+
+        d.classList.remove('hidden');
+        scrollLock(true);
+
+        // Focus Cancel — Enter must not destroy a record by reflex.
+        (dismissBtn || acceptBtn).focus();
+        return true;
+    }
+
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!form || form.tagName !== 'FORM') return;
+        if (form === bypassForm) {
+            bypassForm = null;
+            return;
+        }
+        var message = form.getAttribute('data-confirm');
+        if (!message) return;
+        if (!node()) return; // dialog not rendered on this page — submit normally
+        if (open(form, message)) event.preventDefault();
+    });
+
+    document.addEventListener('click', function (event) {
+        var d = node();
+        if (!d || d.classList.contains('hidden')) return;
+        var target = event.target;
+        if (!target || !target.closest) return;
+
+        if (target.closest('[data-confirm-accept]')) {
+            event.preventDefault();
+            accept();
+            return;
+        }
+        if (target.closest('[data-confirm-cancel]')) {
+            event.preventDefault();
+            close();
+            return;
+        }
+        // Click on the dim backdrop (anything outside the panel) dismisses.
+        var panel = d.querySelector('.confirm-panel');
+        if (panel && !panel.contains(target)) close();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        var d = node();
+        if (!d || d.classList.contains('hidden')) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation(); // don't also close an open CRUD dialog
+            close();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        var focusables = d.querySelectorAll('button:not([disabled])');
+        if (!focusables.length) return;
+        var first = focusables[0];
+        var last = focusables[focusables.length - 1];
+        var active = document.activeElement;
+
+        if (event.shiftKey && (active === first || !d.contains(active))) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && (active === last || !d.contains(active))) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
+})();

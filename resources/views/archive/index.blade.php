@@ -84,7 +84,9 @@
                                                 </button>
                                             </form>
                                             <form method="POST" action="{{ route('archive.destroy', ['type' => $type, 'id' => $record->id]) }}"
-                                                onsubmit="return confirm('Permanently delete this {{ strtolower($types[$type]['singular']) }}? This cannot be undone.');">
+                                                data-confirm="Permanently delete this {{ strtolower($types[$type]['singular']) }}? This cannot be undone."
+                                                data-confirm-title="Delete forever"
+                                                data-confirm-accept="Delete forever">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50" title="Delete permanently">

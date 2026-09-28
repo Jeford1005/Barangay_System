@@ -84,7 +84,9 @@
                                                 Edit
                                             </a>
                                             <form action="{{ route('households.destroy', $household->id) }}" method="POST" class="inline {{ auth()->user()?->isStaff() ? 'hidden' : '' }}"
-                                                onsubmit="return confirm('Delete household {{ e($household->household_code) }}?');">
+                                                data-confirm="Delete household {{ $household->household_code }}?"
+                                                data-confirm-title="Delete household"
+                                                data-confirm-accept="Delete">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">

@@ -108,7 +108,10 @@
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('admin.approvals.reject', $applicant) }}" class="space-y-2"
-                                onsubmit="return confirm('Reject this application? The reason will be emailed to the applicant.');">
+                                data-confirm="Reject this application? The reason will be emailed to the applicant."
+                                data-confirm-title="Reject application"
+                                data-confirm-accept="Reject"
+                                data-confirm-tone="primary">
                                 @csrf
                                 <label for="rejection-reason-{{ $applicant->id }}" class="sr-only">Reason for rejecting {{ $applicant->name }}</label>
                                 <textarea id="rejection-reason-{{ $applicant->id }}" name="reason" rows="2" required minlength="5" maxlength="500"

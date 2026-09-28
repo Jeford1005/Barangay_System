@@ -22,7 +22,7 @@
                 <h2 class="mt-2 text-xl font-semibold tracking-tight text-slate-900">Runtime overview</h2>
                 <p class="mt-1 text-sm text-slate-500">Read-only checks for the services this application depends on.</p>
             </div>
-            <form method="POST" action="{{ route('admin.settings.cache.clear') }}" onsubmit="return confirm('Clear the application and view caches?');">
+            <form method="POST" action="{{ route('admin.settings.cache.clear') }}" data-confirm="Clear the application and view caches?" data-confirm-title="Clear caches" data-confirm-accept="Clear caches" data-confirm-tone="primary">
                 @csrf
                 <button type="submit" class="text-sm font-medium text-slate-600 hover:text-sky-700 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600">Clear caches</button>
             </form>
@@ -86,7 +86,7 @@
                                 <td class="no-print px-3 py-3 text-right">
                                     <div class="inline-flex gap-2">
                                         <a href="{{ route('admin.settings.backups.download', $backup['name']) }}" class="text-xs font-medium text-sky-700 hover:underline">Download</a>
-                                        <form method="POST" action="{{ route('admin.settings.backups.destroy', $backup['name']) }}" onsubmit="return confirm('Delete this backup?');">
+                                        <form method="POST" action="{{ route('admin.settings.backups.destroy', $backup['name']) }}" data-confirm="Delete this backup?" data-confirm-title="Delete backup" data-confirm-accept="Delete">>
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-xs font-medium text-red-700 hover:underline">Delete</button>

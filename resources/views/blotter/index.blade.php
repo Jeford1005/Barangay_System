@@ -102,7 +102,9 @@
                                                 Print
                                             </a>
                                             <form action="{{ route('blotter.destroy', $blotter->id) }}" method="POST" class="inline {{ auth()->user()?->isStaff() ? 'hidden' : '' }}"
-                                                onsubmit="return confirm('Delete case {{ e($blotter->case_number) }}?');">
+                                                data-confirm="Delete case {{ $blotter->case_number }}?"
+                                                data-confirm-title="Delete case"
+                                                data-confirm-accept="Delete">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">

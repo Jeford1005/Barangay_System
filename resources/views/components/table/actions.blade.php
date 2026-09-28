@@ -10,7 +10,7 @@
         </a>
     @endif
     @if ($deleteHref)
-        <form action="{{ $deleteHref }}" method="POST" class="inline" @if($confirm) onsubmit="return confirm({{ $confirm }})" @endif>
+        <form action="{{ $deleteHref }}" method="POST" class="inline" @if($confirm) data-confirm="{{ $confirm }}" data-confirm-accept="Delete" @endif>
             @csrf
             @method('DELETE')
             <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">

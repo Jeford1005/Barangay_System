@@ -65,7 +65,9 @@
                                                     Edit
                                                 </a>
                                                 <form action="{{ route('puroks.destroy', $purok->id) }}" method="POST" class="inline"
-                                                    onsubmit="return confirm('Delete {{ e($purok->name) }}?');">
+                                                    data-confirm="Delete {{ $purok->name }}?"
+                                                    data-confirm-title="Delete purok"
+                                                    data-confirm-accept="Delete">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
