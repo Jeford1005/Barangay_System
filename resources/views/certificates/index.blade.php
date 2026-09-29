@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
+    <x-module-tabs type="certificates" class="mb-4" />
     <div class="bg-white rounded-xl shadow overflow-visible">
 
         <div class="p-6">

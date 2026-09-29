@@ -9,6 +9,7 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
+    <x-module-tabs type="reports" class="mb-4" />
 
     {{-- KPI cards ------------------------------------------------------ --}}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">

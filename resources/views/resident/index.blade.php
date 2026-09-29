@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="space-y-4">
+    <x-module-tabs type="residents" />
     <div class="module-toolbar-sticky no-print overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <form method="GET" action="{{ route('residents.index') }}" class="p-3">
             <div class="module-toolbar module-toolbar--resident">

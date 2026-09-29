@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
+    <x-module-tabs type="reports" class="mb-4" />
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
         <a href="{{ route('reports.population') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow flex flex-col">
