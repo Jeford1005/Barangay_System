@@ -91,10 +91,26 @@ data.
 | `DB_PORT` | `5432` | Required. Overrides any port left over from an earlier MySQL setup (see §1). |
 | `APP_TRUSTED_PROXIES` | `vercel` | Makes Laravel see the request as HTTPS (see below). |
 | `SESSION_SECURE_COOKIE` | `true` | Optional; cookie hardening. |
+| `MAIL_MAILER` | `smtp` | **If this is missing, `config/mail.php` falls back to `log`** — every password-reset email is written to `storage/logs` instead of being sent, with no error shown anywhere. This was a real outage: the project had stale `SMTP_*` vars (47 days old) and zero `MAIL_*`, so resets looked like they worked. |
+| `MAIL_HOST` | `smtp.gmail.com` | Gmail's SMTP relay. |
+| `MAIL_PORT` | `587` | StartTLS. |
+| `MAIL_USERNAME` | your Gmail address | The account the mail is relayed through. |
+| `MAIL_PASSWORD` | Gmail **app password** | A 16-character app password, *not* your Google password. Store it as a Secret. |
+| `MAIL_FROM_ADDRESS` | the same Gmail address | Must match the relay account or Gmail refuses to send. |
+| `MAIL_FROM_NAME` | `${APP_NAME}` | Keep the literal `${APP_NAME}` — Laravel interpolates it at runtime. |
+
+Note that these are `MAIL_*`, not `SMTP_*`. Laravel never reads `SMTP_*`,
+so leftover variables under that name do nothing.
 
 `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=stderr`,
 `SESSION_DRIVER=database`, `CACHE_STORE=database` and `QUEUE_CONNECTION=sync`
 are already baked into the image.
+
+> **Verify mail after every deploy.** `/admin/mail-health` checks the driver,
+> the SMTP host/port/credentials, the from-address, and runs a live
+> `fsockopen` against `smtp.gmail.com:587`. It shows `Ready` only when every
+> check is green; `Needs attention` with a `log` driver means `MAIL_MAILER`
+> is missing from the environment.
 
 > **The container seeds on every boot.** `docker/entrypoint.sh` runs
 > `db:seed --force` once migrations finish, so a fresh database is populated
