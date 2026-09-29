@@ -14,7 +14,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
         <x-form.field name="beneficiary_name" label="Full Name" required :value="$welfare->beneficiary_name ?? null" maxlength="255" />
         <x-form.field name="beneficiary_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$welfare->beneficiary_id ?? null" data-resident-autofill="beneficiary" data-linked-fields="beneficiary_name,beneficiary_address,beneficiary_phone" />
         <x-form.field name="beneficiary_address" label="Address" :value="$welfare->beneficiary_address ?? null" maxlength="255" />
-        <x-form.field name="beneficiary_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$welfare->beneficiary_phone ?? null" maxlength="15" placeholder="09171234567" />
+        <x-form.field name="beneficiary_phone" label="Phone" type="tel" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*" :value="$welfare->beneficiary_phone ?? null" maxlength="15" placeholder="09XX XXX XXXX" />
     </div>
 </fieldset>
 

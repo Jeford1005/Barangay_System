@@ -10,6 +10,8 @@
  *   - 422: field errors are rendered client-side (red border + message
  *     under each field) — typed values are preserved, exactly like the
  *     login-page create-account dialog.
+ *   - network failure or a rejected file: <x-error-dialog> opens with a
+ *     silent retry that re-runs the same request (error-dialog.js).
  *   - success (redirect followed): the dialog closes, the list reloads
  *     and the server flash renders as a toast. If the dialog declares
  *     data-open-on-success (certificates), the redirect target (the
@@ -112,7 +114,10 @@
 
                 // Unwrap: move the card itself (not the wrapper) into the body.
                 var card = node.firstElementChild;
-                b.appendChild(card || node);
+                var inserted = card || node;
+                b.appendChild(inserted);
+                // Fade the freshly swapped content in (reduced-motion off).
+                inserted.classList.add('dialog-content-in');
                 dialog.dataset.loadedUrl = url;
                 hideSkeleton(dialog);
 
@@ -124,13 +129,27 @@
                     old.replaceWith(s);
                 });
 
-                wireForm(dialog, (card || node).querySelector('form') || (card || node));
+                wireForm(dialog, inserted.querySelector('form') || inserted);
                 dialog.removeAttribute('aria-busy');
                 focusFirstField(dialog);
             })
             .catch(function () {
-                // Hard fallback: navigate to the full page so nothing is lost.
-                window.location.href = url;
+                // The fragment never arrived. Show the network card instead of
+                // dragging the user to a full page — typed values elsewhere are
+                // untouched because the dialog never left. Cancelling closes
+                // the (still empty) dialog; retrying re-runs this exact load.
+                hideSkeleton(dialog);
+                dialog.removeAttribute('aria-busy');
+                var shown = showErrorCard({
+                    type: 'network',
+                    title: 'Network error',
+                    message: 'The form could not be loaded. Check your connection and try again.',
+                    actionLabel: 'Retry',
+                    retry: function () { loadFragment(dialog, url); },
+                    dismiss: function () { close(dialog); },
+                });
+                // No error dialog on this page: keep the hard-navigation fallback.
+                if (!shown) window.location.href = url;
             });
     }
 
@@ -147,37 +166,82 @@
                 return;
             }
 
-            var btn = form.querySelector('button[type="submit"]');
-            var label = btn ? btn.textContent : '';
-            if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-
-            fetch(form.action, {
-                method: 'POST', // method spoofing via the _method field
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
-                body: new FormData(form),
-            })
-                .then(function (res) {
-                    if (res.redirected || res.ok) {
-                        success(dialog, res);
-                        return null;
-                    }
-                    if (res.status === 422) {
-                        return res.json().then(function (data) {
-                            showErrors(form, data.errors || {});
-                            window.showToast?.(firstError(data.errors) || 'Please review the highlighted fields.', 'error');
-                        });
-                    }
-                    return res.json().catch(function () { return {}; }).then(function (data) {
-                        window.showToast?.(data.message || 'Something went wrong. Please try again.', 'error');
-                    });
-                })
-                .catch(function () {
-                    window.showToast?.('Network error — please try again.', 'error');
-                })
-                .finally(function () {
-                    if (btn) { btn.disabled = false; btn.textContent = label; }
-                });
+            submitViaFetch(dialog, form);
         });
+    }
+
+    /**
+     * Open the shared error card when it is on the page, falling back to
+     * false so callers can keep their old toast / hard-navigation path.
+     */
+    function showErrorCard(options) {
+        if (typeof window.showErrorDialog === 'function') {
+            return window.showErrorDialog(options);
+        }
+        return false;
+    }
+
+    /**
+     * POST the form and route the outcome:
+     *   - success / 422: unchanged (reload + toast, or inline field errors);
+     *   - a response that rejected an attached file (413 or any failure on
+     *     a form carrying a selected file): the upload error card, with a
+     *     silent retry that re-posts this exact form;
+     *   - a request the network itself swallowed: the network error card,
+     *     same silent retry — the dialog and every typed value stay open
+     *     underneath, because only the card closes.
+     */
+    function submitViaFetch(dialog, form) {
+        var btn = form.querySelector('button[type="submit"]');
+        var label = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        var fileInput = form.querySelector('input[type="file"]');
+        var hasFile = !!(fileInput && fileInput.files && fileInput.files.length);
+
+        fetch(form.action, {
+            method: 'POST', // method spoofing via the _method field
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrf },
+            body: new FormData(form),
+        })
+            .then(function (res) {
+                if (res.redirected || res.ok) {
+                    success(dialog, res);
+                    return null;
+                }
+                if (res.status === 422) {
+                    return res.json().then(function (data) {
+                        showErrors(form, data.errors || {});
+                        window.showToast?.(firstError(data.errors) || 'Please review the highlighted fields.', 'error');
+                    });
+                }
+                if (res.status === 413 || hasFile) {
+                    var shown = showErrorCard({
+                        type: 'upload',
+                        title: 'File Upload Failed',
+                        message: 'Something went wrong while uploading your file. Nothing was saved.',
+                        actionLabel: 'Try Again',
+                        retry: function () { submitViaFetch(dialog, form); },
+                    });
+                    if (shown) return null;
+                }
+                return res.json().catch(function () { return {}; }).then(function (data) {
+                    window.showToast?.(data.message || 'Something went wrong. Please try again.', 'error');
+                });
+            })
+            .catch(function () {
+                if (!showErrorCard({
+                    type: 'network',
+                    title: 'Network error',
+                    message: 'Check your connection and try again. Your entries are still here.',
+                    actionLabel: 'Retry',
+                    retry: function () { submitViaFetch(dialog, form); },
+                })) {
+                    window.showToast?.('Network error — please try again.', 'error');
+                }
+            })
+            .finally(function () {
+                if (btn) { btn.disabled = false; btn.textContent = label; }
+            });
     }
 
     function firstError(errors) {

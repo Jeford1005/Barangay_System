@@ -112,7 +112,7 @@
                                                 <form method="POST" action="{{ route('certificates.void', $issuance) }}" class="inline-flex"
                                                     data-confirm="Void certificate {{ $issuance->control_number }}? This cannot be undone."
                                                     data-confirm-title="Void certificate"
-                                                    data-confirm-accept="Void">
+                                                    data-confirm-accept="Void" data-confirm-icon="x-circle">
                                                     @csrf
                                                     <button type="submit" class="inline-flex items-center justify-center min-h-11 min-w-9 rounded-md border border-red-200 bg-white text-red-600 hover:bg-red-50" title="Void certificate">
                                                         <x-icon name="x-mark" class="h-4 w-4" />

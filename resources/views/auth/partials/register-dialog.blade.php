@@ -102,7 +102,7 @@
                         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label for="register-phone_number" class="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
-                                <input id="register-phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09171234567" maxlength="15" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*"
+                                <input id="register-phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09XX XXX XXXX" maxlength="15" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*"
                                     class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                                 @error('phone_number', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
@@ -155,13 +155,11 @@
                             <div>
                                 <label for="register-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password *</label>
                                 <div class="relative">
-                                    <input id="register-password" type="password" name="password" required minlength="8" autocomplete="new-password"
-                                        class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 pr-10 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password', 'register') border-red-500! @enderror">
-                                    <button type="button" data-password-toggle="register-password" aria-label="Show password" aria-pressed="false"
-                                        class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded text-slate-500 transition-colors hover:text-slate-700 focus:outline-none">
-                                        <svg class="icon-eye h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                                        <svg class="icon-eye-off hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
-                                    </button>
+                                    {{-- Sign-up shows the password in plain text so a typo
+                                         is caught before submitting; only Confirm hides,
+                                         and it keeps the eye. --}}
+                                    <input id="register-password" type="text" name="password" required minlength="8" autocomplete="new-password"
+                                        class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password', 'register') border-red-500! @enderror">
                                 </div>
                                 @error('password', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>

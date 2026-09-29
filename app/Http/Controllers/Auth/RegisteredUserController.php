@@ -8,6 +8,7 @@ use App\Models\Household;
 use App\Models\Purok;
 use App\Models\ResidentApplication;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +36,7 @@ class RegisteredUserController extends Controller
      * never claims or mutates an existing resident row based on identity
      * matching; staff must explicitly link or create the resident profile.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         // A named error bag keeps registration errors out of the login form's
         // fields when the dialog on the login page posts here.

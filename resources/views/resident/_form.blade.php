@@ -22,7 +22,7 @@
 <fieldset class="border-b border-slate-200 pb-6 last:border-0 last:pb-0">
     <legend class="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Contact & Address</legend>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <x-form.field name="phone_number" label="Phone Number" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$resident->phone_number ?? null" maxlength="15" placeholder="09171234567" />
+        <x-form.field name="phone_number" label="Phone Number" type="tel" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*" :value="$resident->phone_number ?? null" maxlength="15" placeholder="09XX XXX XXXX" />
         <x-form.field name="email" label="Email" type="email" :value="$resident->email ?? null" maxlength="150" />
         <div class="sm:col-span-2 lg:col-span-1">
             <x-form.field name="address" label="Address" :value="$resident->address ?? null" maxlength="255" />
@@ -32,7 +32,7 @@
             @if ($resident?->photo)
                 <img src="{{ route('residents.photo', $resident) }}" alt="Current resident photo" class="mb-2 h-16 w-16 rounded-full object-cover">
             @endif
-            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
+            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
             @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
     </div>

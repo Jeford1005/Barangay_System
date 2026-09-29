@@ -58,6 +58,20 @@ class ResidentPortalTest extends TestCase
             ->assertDontSee('ready to download');
     }
 
+    public function test_contact_form_phone_field_is_numeric_and_format_hinted(): void
+    {
+        [$user] = $this->approvedResident();
+
+        // Mobile keypad is digits-only and the placeholder shows the format
+        // ("09XX XXX XXXX"), never a real-looking number.
+        $this->actingAs($user)
+            ->get('/my?edit=1')
+            ->assertOk()
+            ->assertSee('placeholder="09XX XXX XXXX"', false)
+            ->assertSee('inputmode="numeric"', false)
+            ->assertDontSee('placeholder="09171234567"');
+    }
+
     public function test_rendered_contact_form_uses_the_put_route(): void
     {
         [$user] = $this->approvedResident();

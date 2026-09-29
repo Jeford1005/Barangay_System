@@ -825,3 +825,37 @@
         animation: none;
     }
 }
+
+/* ------------------------------------------------------------------ *
+ * Message-box motion — shared by the confirm and error dialogs.
+ * The icon pops, then header → message → buttons fade up in sequence
+ * (.dialog-stagger carries an inline animation-delay per element).
+ * The CRUD dialog's fetched body uses .dialog-content-in on swap-in.
+ * ------------------------------------------------------------------ */
+@keyframes dialogIconPop {
+    from { opacity: 0; transform: scale(.6); }
+    60%  { opacity: 1; transform: scale(1.1); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes dialogFadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes dialogContentIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.dialog-icon-pop { animation: dialogIconPop .28s cubic-bezier(.34, 1.56, .64, 1) .04s both; }
+.dialog-stagger { animation: dialogFadeUp .2s ease-out both; }
+.dialog-content-in { animation: dialogContentIn .18s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+    .dialog-icon-pop,
+    .dialog-stagger,
+    .dialog-content-in {
+        animation: none;
+    }
+}

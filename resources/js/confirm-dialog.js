@@ -10,9 +10,16 @@
  *         data-confirm="Delete household HH-001?"
  *         data-confirm-title="Delete household"
  *         data-confirm-accept="Delete"
+ *         data-confirm-icon="trash"
  *         data-confirm-tone="danger">...</form>
  *
- *   tone: "danger" (red, default) | "primary" (sky, reversible actions)
+ *   tone:  "danger" (red, default) | "primary" (sky, reversible actions)
+ *   icon:  "trash" | "x-circle" | "x-mark" | "archive-box" |
+ *          "check-circle" | "envelope" | "cog-6-tooth" | "warning"
+ *          (default) — one SVG in the card; the rest stay hidden.
+ *
+ * Copy rule: the header names the object, the message asks the
+ * question, the buttons carry bare verbs ("Cancel" / "Remove").
  *
  * Element hooks inside the dialog markup use the data-confirm-dialog-*
  * namespace, so they can never collide with the form attributes above.
@@ -99,6 +106,23 @@
 
         var icon = q('[data-confirm-dialog-icon]');
         if (icon) icon.className = icon.getAttribute(key) || icon.className;
+
+        // Action-specific icon: data-confirm-icon picks one SVG, the rest
+        // stay hidden. An unknown name falls back to the warning triangle
+        // so the card never renders without one.
+        var wanted = form.getAttribute('data-confirm-icon') || 'warning';
+        var svgs = d.querySelectorAll('[data-confirm-icon-for]');
+        var picked = null;
+        svgs.forEach(function (svg) {
+            var match = svg.getAttribute('data-confirm-icon-for') === wanted;
+            svg.classList.toggle('hidden', !match);
+            if (match) picked = svg;
+        });
+        if (!picked) {
+            svgs.forEach(function (svg) {
+                svg.classList.toggle('hidden', svg.getAttribute('data-confirm-icon-for') !== 'warning');
+            });
+        }
 
         acceptBtn.textContent = form.getAttribute('data-confirm-accept') || 'Confirm';
         acceptBtn.className = acceptBtn.getAttribute(key) || acceptBtn.className;

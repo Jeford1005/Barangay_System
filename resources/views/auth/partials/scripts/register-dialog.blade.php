@@ -90,8 +90,19 @@
             }
 
             // ---------- submit via fetch so the dialog never navigates away ----------
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
+            // Failures open the shared red message box (the same card the app
+            // shell uses) instead of a native alert(); its action re-runs this
+            // exact submission with the fields already typed kept in place.
+            function showErrorCard(options) {
+                if (typeof window.showErrorDialog === 'function') {
+                    window.showErrorDialog(options);
+                    return true;
+                }
+                // Fallback only if the dialog markup is somehow missing.
+                return false;
+            }
+
+            async function submitRegistration() {
                 if (!form.checkValidity()) {
                     form.reportValidity();
                     return;
@@ -121,13 +132,32 @@
                         return;
                     }
 
-                    alert('Something went wrong. Please try again.');
+                    showErrorCard({
+                        type: 'warning',
+                        title: 'Registration failed',
+                        message: res.status === 429
+                            ? 'Too many attempts. Please wait a minute, then try again.'
+                            : 'Something went wrong. Please try again.',
+                        actionLabel: 'Try Again',
+                        retry: submitRegistration,
+                    }) || alert('Something went wrong. Please try again.');
                 } catch (err) {
-                    alert('Network error — please try again.');
+                    showErrorCard({
+                        type: 'network',
+                        title: 'Network error',
+                        message: 'Check your connection and try again. Your details are still here.',
+                        actionLabel: 'Retry',
+                        retry: submitRegistration,
+                    }) || alert('Network error — please try again.');
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalLabel;
                 }
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                submitRegistration();
             });
 
             // Arrived back here after a failed non-JS submission (or with old

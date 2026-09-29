@@ -110,9 +110,13 @@
                             <form method="POST" action="{{ route('admin.approvals.reject', $applicant) }}" class="space-y-2"
                                 data-confirm="Reject this application? The reason will be emailed to the applicant."
                                 data-confirm-title="Reject application"
-                                data-confirm-accept="Reject"
+                                data-confirm-accept="Reject" data-confirm-icon="x-circle"
                                 data-confirm-tone="primary">
                                 @csrf
+                                <button type="submit"
+                                    class="w-full min-h-11 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                    Reject
+                                </button>
                                 <label for="rejection-reason-{{ $applicant->id }}" class="sr-only">Reason for rejecting {{ $applicant->name }}</label>
                                 <textarea id="rejection-reason-{{ $applicant->id }}" name="reason" rows="2" required minlength="5" maxlength="500"
                                     placeholder="Reason (emailed to the applicant)…"
@@ -120,10 +124,6 @@
                                 @error('reason')
                                     <p class="text-xs text-red-600">{{ $message }}</p>
                                 @enderror
-                                <button type="submit"
-                                    class="w-full min-h-11 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                                    Reject
-                                </button>
                             </form>
                         </div>
                     </div>

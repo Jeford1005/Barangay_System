@@ -104,7 +104,7 @@
                         <dd class="mt-1 text-slate-800">{{ $user->residentProfile->address ?? '—' }}</dd>
                     </div>
                 </dl>
-                <form method="POST" action="{{ route('admin.users.resident-unlink', $user) }}" class="mt-5 border-t border-slate-200 pt-4" data-confirm="Unlink this resident profile and suspend the account?" data-confirm-title="Unlink resident profile" data-confirm-accept="Unlink and suspend">
+                <form method="POST" action="{{ route('admin.users.resident-unlink', $user) }}" class="mt-5 border-t border-slate-200 pt-4" data-confirm="Unlink this resident profile and suspend the account?" data-confirm-title="Unlink resident profile" data-confirm-accept="Unlink" data-confirm-icon="x-mark">
                     @csrf
                     <button type="submit" class="min-h-11 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500">Unlink and suspend account</button>
                 </form>
@@ -189,7 +189,7 @@
                 <h3 class="text-sm font-semibold text-slate-900">Suspension</h3>
                 @if ($user->isSuspended())
                     <p class="mt-2 text-sm text-slate-500">This account is suspended and cannot sign in or request a reset code.</p>
-                    <form method="POST" action="{{ route('admin.users.reactivate', $user) }}" class="mt-3" data-confirm="Reactivate this account?" data-confirm-title="Reactivate account" data-confirm-accept="Reactivate" data-confirm-tone="primary">
+                    <form method="POST" action="{{ route('admin.users.reactivate', $user) }}" class="mt-3" data-confirm="Reactivate this account?" data-confirm-title="Reactivate account" data-confirm-accept="Reactivate" data-confirm-icon="check-circle" data-confirm-tone="primary">
                         @csrf
                         <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">Reactivate account</button>
                     </form>
@@ -198,7 +198,7 @@
                 @elseif (! $user->isActive())
                     <p class="mt-2 text-sm text-slate-500">Only active accounts can be suspended.</p>
                 @else
-                    <form method="POST" action="{{ route('admin.users.suspend', $user) }}" class="mt-3 space-y-2" data-confirm="Suspend this account and revoke its sessions?" data-confirm-title="Suspend account" data-confirm-accept="Suspend">
+                    <form method="POST" action="{{ route('admin.users.suspend', $user) }}" class="mt-3 space-y-2" data-confirm="Suspend this account and revoke its sessions?" data-confirm-title="Suspend account" data-confirm-accept="Suspend" data-confirm-icon="x-circle">
                         @csrf
                         <label for="suspension-reason" class="block text-sm font-medium text-slate-700">Reason</label>
                         <textarea id="suspension-reason" name="reason" rows="2" required minlength="5" maxlength="500" placeholder="Reason sent to the account holder" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500">{{ old('reason') }}</textarea>
@@ -218,7 +218,7 @@
                     <p class="mt-2 text-sm text-slate-500">Reset codes are available only for active accounts.</p>
                 @else
                     <p class="mt-2 text-sm text-slate-500">A one-time six-character code will be emailed to this account. The code is never shown here.</p>
-                    <form method="POST" action="{{ route('admin.users.reset', $user) }}" class="mt-3" data-confirm="Send a password reset code to this account?" data-confirm-title="Send reset code" data-confirm-accept="Send code" data-confirm-tone="primary">
+                    <form method="POST" action="{{ route('admin.users.reset', $user) }}" class="mt-3" data-confirm="Send a password reset code to this account?" data-confirm-title="Send reset code" data-confirm-accept="Send code" data-confirm-icon="envelope" data-confirm-tone="primary">
                         @csrf
                         <button type="submit" class="min-h-11 rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Send reset code</button>
                     </form>

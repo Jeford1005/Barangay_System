@@ -105,8 +105,9 @@
                                         <form method="POST" action="{{ route('resident.requests.cancel', $req) }}"
                                             data-confirm="Cancel this request?"
                                             data-confirm-title="Cancel request"
-                                            data-confirm-accept="Cancel request"
-                                            data-confirm-dismiss="Keep request">
+                                            data-confirm-accept="Cancel"
+                                            data-confirm-dismiss="Keep"
+                                            data-confirm-icon="x-mark">
                                             @csrf
                                             <button type="submit" class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Cancel request</button>
                                         </form>

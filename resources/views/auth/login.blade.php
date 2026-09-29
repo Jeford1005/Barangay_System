@@ -232,6 +232,11 @@
     @include('auth.partials.forgot-dialog')
     @include('auth.partials.register-dialog')
 
+    {{-- Red message box: the create-account dialog opens it when a submit
+         fails server-side (throttle, outage) instead of raising a native
+         alert(). Same card as the app shell's <x-error-dialog />. --}}
+    <x-error-dialog />
+
     @include('auth.partials.code-box-helpers')
     @include('auth.partials.scripts.role-switch')
     @include('auth.partials.scripts.forgot-dialog')

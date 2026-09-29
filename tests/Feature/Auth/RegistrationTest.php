@@ -184,4 +184,53 @@ class RegistrationTest extends TestCase
         \Illuminate\Support\Facades\Notification::assertNothingSent();
         $this->assertDatabaseCount('password_reset_tokens', 0);
     }
+
+    public function test_the_create_account_dialog_submits_successfully_with_json(): void
+    {
+        // The login-page dialog posts with Accept: application/json. The
+        // controller used to declare RedirectResponse only, so this path
+        // threw a TypeError and every sign-up attempt came back as a 500.
+        $this->postJson('/register', $this->validPayload())
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->assertDatabaseHas('users', ['email' => 'maria@example.com', 'status' => 'pending']);
+        $this->assertDatabaseHas('resident_applications', ['email' => 'maria@example.com']);
+    }
+
+    public function test_the_dialog_receives_validation_errors_as_json_422(): void
+    {
+        $this->postJson('/register', $this->validPayload(['email' => 'not-an-email']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_sign_up_shows_the_password_in_plain_text_with_one_eye_on_confirmation(): void
+    {
+        // Dialog on the login page: the visitor must see what they typed —
+        // no dots, no eye on Password. Only Confirm hides, and it keeps the toggle.
+        $login = $this->get('/login')->getContent();
+        $this->assertStringContainsString('id="register-password" type="text"', $login);
+        $this->assertStringNotContainsString('data-password-toggle="register-password"', $login);
+        $this->assertStringContainsString('data-password-toggle="register-password_confirmation"', $login);
+
+        // Same rule on the standalone no-script sign-up page.
+        $page = $this->get('/register')->getContent();
+        $this->assertStringContainsString('id="password" type="text"', $page);
+        $this->assertStringNotContainsString('data-password-toggle="password"', $page);
+        $this->assertStringContainsString('data-password-toggle="password_confirmation"', $page);
+    }
+
+    public function test_phone_fields_offer_a_numeric_keypad_and_a_format_placeholder(): void
+    {
+        // Mobile: tapping the field raises the digits-only keyboard, and the
+        // placeholder shows the format instead of a real-looking number.
+        foreach (['/login', '/register'] as $uri) {
+            $html = $this->get($uri)->assertOk()->getContent();
+
+            $this->assertStringContainsString('placeholder="09XX XXX XXXX"', $html, $uri);
+            $this->assertStringContainsString('inputmode="numeric"', $html, $uri);
+            $this->assertStringNotContainsString('placeholder="09171234567"', $html, $uri);
+        }
+    }
 }

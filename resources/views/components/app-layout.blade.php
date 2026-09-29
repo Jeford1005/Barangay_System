@@ -114,6 +114,9 @@
     {{-- Styled replacement for the native confirm() used by CRUD actions. --}}
     <x-confirm-dialog />
 
+    {{-- Red message box for client-side failures (oversize file, upload, network). --}}
+    <x-error-dialog />
+
     <script>
         // ---- Off-canvas drawer (mobile) --------------------------------
         var sidebar = document.getElementById('sidebar');

@@ -63,7 +63,7 @@
 **Primary actor:** Guest · **Trigger:** "Apply for a resident account" on the login page · **Precondition:** none.
 
 **Main success flow**
-1. Guest completes the registration form (name, email, phone, address, password).
+1. Guest completes the registration form (name, email, phone, address, password). The sign-up password stays visible in plain text — only **Confirm password** carries a visibility eye — and mobile-number fields use a digits-only keypad with the `09XX XXX XXXX` placeholder.
 2. System validates input, creates a user account with `user_type = resident`, `approved = false`.
 3. System sends an email verification link; the audit log records `account.registered`.
 4. System informs the guest that approval is pending and emails follow after review.
@@ -72,6 +72,7 @@
 - **A1 — Email already used:** system rejects the duplicate with a field error.
 - **A2 — Weak password:** rejected with the password-rule error.
 - **A3 — Email verification link expired:** user requests a new verification email.
+- **A4 — Dialog failure (network or server error):** the register dialog submits as JSON; a failed save opens the red error-card message box with **Try Again**, which silently resubmits the same form. Validation errors (422) stay inline in the dialog, success returns `{"ok": true}`, and the only native alert left is a defensive fallback for the unlikely case that the dialog markup failed to render.
 
 ---
 
@@ -368,4 +369,4 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (417 tests / 1928 assertions as of September 29, 2026).*
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (428 tests / 1981 assertions as of September 29, 2026).*

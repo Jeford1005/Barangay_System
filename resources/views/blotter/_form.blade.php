@@ -15,7 +15,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
         <x-form.field name="complainant_name" label="Full Name" required :value="$blotter->complainant_name ?? null" maxlength="255" />
         <x-form.field name="complainant_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->complainant_id ?? null" data-resident-autofill="complainant" data-linked-fields="complainant_name,complainant_address,complainant_phone" />
         <x-form.field name="complainant_address" label="Address" :value="$blotter->complainant_address ?? null" maxlength="255" />
-        <x-form.field name="complainant_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->complainant_phone ?? null" maxlength="15" placeholder="09171234567" />
+        <x-form.field name="complainant_phone" label="Phone" type="tel" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->complainant_phone ?? null" maxlength="15" placeholder="09XX XXX XXXX" />
     </div>
 </fieldset>
 
@@ -25,7 +25,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
         <x-form.field name="accused_name" label="Full Name" required :value="$blotter->accused_name ?? null" maxlength="255" />
         <x-form.field name="accused_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$blotter->accused_id ?? null" data-resident-autofill="accused" data-linked-fields="accused_name,accused_address,accused_phone" />
         <x-form.field name="accused_address" label="Address" :value="$blotter->accused_address ?? null" maxlength="255" />
-        <x-form.field name="accused_phone" label="Phone" type="tel" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->accused_phone ?? null" maxlength="15" placeholder="09171234567" />
+        <x-form.field name="accused_phone" label="Phone" type="tel" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*" :value="$blotter->accused_phone ?? null" maxlength="15" placeholder="09XX XXX XXXX" />
     </div>
 </fieldset>
 

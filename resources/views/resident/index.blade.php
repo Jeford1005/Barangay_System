@@ -112,7 +112,7 @@
                                     <div class="inline-flex items-center justify-end gap-2">
                                         <a href="{{ route('residents.edit', $resident->id) }}" data-dialog-open="resident-dialog" data-fetch-url="{{ route('residents.edit', $resident->id) }}" data-fetch-mode="edit" class="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->hasPermission('residents.manage') ? '' : 'hidden' }}">Edit</a>
                                         @if (auth()->user()?->isAdmin() && $isActive)
-                                            <form method="POST" action="{{ route('residents.archive', $resident->id) }}" data-confirm="Archive this resident? Their portal access will be blocked." data-confirm-title="Archive resident" data-confirm-accept="Archive">
+                                            <form method="POST" action="{{ route('residents.archive', $resident->id) }}" data-confirm="Archive this resident? Their portal access will be blocked." data-confirm-title="Archive resident" data-confirm-accept="Archive" data-confirm-icon="archive-box">
                                                 @csrf
                                                 <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-700 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Archive</button>
                                             </form>

@@ -113,7 +113,7 @@
                             <div class="flex items-center gap-3">
                                 <span class="rounded-full px-2.5 py-1 text-xs font-medium {{ ['Pending' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Rejected' => 'bg-red-100 text-red-800', 'Cancelled' => 'bg-slate-100 text-slate-700'][$change->status] }}">{{ $change->status }}</span>
                                 @if ($change->status === 'Pending')
-                                    <form method="POST" action="{{ route('resident.changes.cancel', $change) }}" data-confirm="Cancel this request?" data-confirm-title="Cancel request" data-confirm-accept="Cancel request" data-confirm-dismiss="Keep request">
+                                    <form method="POST" action="{{ route('resident.changes.cancel', $change) }}" data-confirm="Cancel this request?" data-confirm-title="Cancel request" data-confirm-accept="Cancel" data-confirm-dismiss="Keep" data-confirm-icon="x-mark">
                                         @csrf
                                         <button class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-red-700 underline hover:text-red-900" type="submit">Cancel</button>
                                     </form>
@@ -140,7 +140,7 @@
                 <div>
                     <label for="phone_number" class="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
                     <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number', $resident->phone_number) }}"
-                        placeholder="09171234567" maxlength="15" inputmode="tel" data-phone="true" pattern="[0-9+()\- ]*"
+                        placeholder="09XX XXX XXXX" maxlength="15" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*"
                         class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     @error('phone_number') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
@@ -163,7 +163,7 @@
                                 class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
                         </div>
                     @endif
-                    <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
+                    <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
                     @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -207,8 +207,9 @@
                 <form id="remove-photo-form" method="POST" action="{{ route('resident.photo.destroy') }}"
                     data-confirm="Remove your profile photo?"
                     data-confirm-title="Remove photo"
-                    data-confirm-accept="Remove photo"
-                    data-confirm-dismiss="Keep photo">
+                    data-confirm-accept="Remove"
+                    data-confirm-dismiss="Cancel"
+                    data-confirm-icon="trash">
                     @csrf
                     @method('DELETE')
                 </form>
