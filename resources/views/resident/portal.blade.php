@@ -10,9 +10,17 @@
     {{-- What is on file for this resident. Identity and record details only —
          the standing of their requests lives on the Request page, not here. --}}
     <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-            <h2 class="font-semibold text-slate-900">{{ $resident->full_name }}</h2>
-            <p class="text-sm text-slate-500">Resident record</p>
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="font-semibold text-slate-900">{{ $resident->full_name }}</h2>
+                <p class="text-sm text-slate-500">Resident record</p>
+            </div>
+            @unless ($editing)
+                {{-- Record edits are requested, never applied directly, so this
+                     opens the correction form below rather than editing in place. --}}
+                <a href="{{ route('resident.portal', ['edit' => 1]) }}"
+                    class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Edit</a>
+            @endunless
         </div>
         <dl class="grid grid-cols-1 gap-x-6 gap-y-4 p-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -49,9 +57,75 @@
             </div>
         </dl>
         <p class="border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
-            These details are maintained by the barangay office. Visit the office or call to request a correction.
+            These details are maintained by the barangay office. Press Edit to request a change — the record updates once staff approve it.
         </p>
     </div>
+
+    {{-- The correction form used to be its own module; it is now revealed by
+         Edit above and still submits to the same office queue as before. --}}
+    @if ($editing)
+        <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Request a profile correction</h2>
+                    <p class="mt-1 max-w-2xl text-sm text-slate-600">Changes to your official record require barangay review. Your current record stays unchanged until staff approve the request.</p>
+                </div>
+                <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400">Cancel</a>
+            </div>
+
+            {{-- Field errors render inside x-form.field, so only the
+                 form-level message needs a block of its own. --}}
+            @error('changes')
+                <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ $message }}</p>
+            @enderror
+
+            <form method="POST" action="{{ route('resident.changes.store') }}" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                @csrf
+                <x-form.field name="occupation" label="Occupation" :value="old('occupation', $resident->occupation)" maxlength="100" />
+                <x-form.field name="religion" label="Religion" :value="old('religion', $resident->religion)" maxlength="100" />
+                <x-form.field name="residency_status" label="Residency status" :value="old('residency_status', $resident->residency_status)" maxlength="50" />
+                <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" :value="old('purok_id', $resident->purok_id)" optional-hint />
+                <x-form.field name="household_id" label="Household code" type="select" :options="$households" :value="old('household_id', $resident->household_id)" optional-hint />
+                <div class="sm:col-span-2">
+                    <x-form.field name="notes" label="Notes for staff (optional)" type="textarea" :rows="3" maxlength="1000" :value="old('notes')" />
+                </div>
+                <div class="sm:col-span-2 flex justify-end">
+                    <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Submit correction request</button>
+                </div>
+            </form>
+        </section>
+    @endif
+
+    {{-- Listed only when there is something to follow: Profile stays a record
+         page until the resident has actually sent a request. --}}
+    @if ($changes->isNotEmpty())
+        <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-5 py-4"><h2 class="text-lg font-semibold text-slate-900">Correction requests</h2></div>
+            <ul class="divide-y divide-slate-100">
+                @foreach ($changes as $change)
+                    <li class="p-5">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">{{ implode(', ', array_map(fn ($field) => str_replace('_', ' ', $field), array_keys($change->changes))) }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Submitted {{ $change->created_at->format('M j, Y g:i A') }}</p>
+                                @if ($change->review_note)<p class="mt-2 text-sm text-slate-700">Staff note: {{ $change->review_note }}</p>@endif
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="rounded-full px-2.5 py-1 text-xs font-medium {{ ['Pending' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Rejected' => 'bg-red-100 text-red-800', 'Cancelled' => 'bg-slate-100 text-slate-700'][$change->status] }}">{{ $change->status }}</span>
+                                @if ($change->status === 'Pending')
+                                    <form method="POST" action="{{ route('resident.changes.cancel', $change) }}" data-confirm="Cancel this request?" data-confirm-title="Cancel request" data-confirm-accept="Cancel request" data-confirm-dismiss="Keep request">
+                                        @csrf
+                                        <button class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-red-700 underline hover:text-red-900" type="submit">Cancel</button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="px-5 pb-4">{{ $changes->links() }}</div>
+        </section>
+    @endif
 
     {{-- The details this resident controls, and the household they belong to. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

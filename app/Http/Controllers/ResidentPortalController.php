@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ResidentContactUpdateRequest;
 use App\Models\AuditLog;
+use App\Models\Household;
+use App\Models\Purok;
 use App\Models\Resident;
+use App\Models\ResidentRecordChange;
 use App\Notifications\ResidentEmailChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +17,10 @@ use Illuminate\View\View;
 class ResidentPortalController extends Controller
 {
     /**
-     * The resident's own portal home.
+     * The resident's own portal home: the record on file, the contact details
+     * they control themselves, their household, and — since the corrections
+     * module was folded in — the correction form behind `?edit=1` plus any
+     * requests already sent.
      */
     public function index(Request $request): View
     {
@@ -31,9 +37,19 @@ class ResidentPortalController extends Controller
                 ->get(['first_name', 'middle_name', 'last_name', 'suffix', 'is_household_head'])
             : collect();
 
+        // The correction form only renders in edit mode, so its two lookup
+        // queries only run when it is actually on screen.
+        $editing = $request->boolean('edit');
+        $puroks = $editing ? Purok::orderBy('name')->pluck('name', 'id') : collect();
+        $households = $editing ? Household::orderBy('household_code')->pluck('household_code', 'id') : collect();
+
         return view('resident.portal', [
             'resident' => $resident->load(['purok', 'household']),
             'householdMembers' => $householdMembers,
+            'changes' => ResidentRecordChange::where('resident_id', $resident->id)->latest('id')->paginate(10),
+            'editing' => $editing,
+            'puroks' => $puroks,
+            'households' => $households,
         ]);
     }
 

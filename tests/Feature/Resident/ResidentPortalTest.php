@@ -52,6 +52,8 @@ class ResidentPortalTest extends TestCase
             ->assertDontSee('My Profile')
             ->assertDontSee('My Requests')
             ->assertDontSee('Requests &amp; corrections')
+            // The correction form is collapsed until Profile's Edit is pressed.
+            ->assertDontSee('Request a profile correction')
             ->assertDontSee('awaiting review')
             ->assertDontSee('ready to download');
     }

@@ -1,10 +1,6 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Request" subtitle="Request barangay certificates online — we'll email you when they're ready.">
-        <x-slot:actions>
-            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to Profile</a>
-        </x-slot:actions>
-    </x-page-header>
+    <x-page-header title="Request" subtitle="Request barangay certificates online — we'll email you when they're ready." />
 @endsection
 
 @section('content')

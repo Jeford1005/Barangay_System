@@ -357,7 +357,8 @@ Route::middleware(['auth', 'resident'])->group(function () {
         ->middleware('throttle:15,1')
         ->name('resident.requests.cancel');
 
-    Route::get('/my/changes', [ResidentRecordChangeController::class, 'index'])->name('resident.changes');
+    // The correction form renders on the Profile page (?edit=1); only the
+    // submission and cancellation endpoints remain here.
     Route::post('/my/changes', [ResidentRecordChangeController::class, 'store'])->name('resident.changes.store');
     Route::post('/my/changes/{change}/cancel', [ResidentRecordChangeController::class, 'cancel'])->name('resident.changes.cancel');
 

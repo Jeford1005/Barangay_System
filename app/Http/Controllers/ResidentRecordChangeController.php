@@ -17,18 +17,9 @@ use Illuminate\View\View;
 
 class ResidentRecordChangeController extends Controller
 {
-    public function index(Request $request): View
-    {
-        $resident = $this->requireProfile($request);
-        $changes = ResidentRecordChange::with('reviewer')
-            ->where('resident_id', $resident->id)
-            ->latest('id')
-            ->paginate(10);
-        $puroks = Purok::orderBy('name')->pluck('name', 'id');
-        $households = Household::orderBy('household_code')->pluck('household_code', 'id');
-
-        return view('resident.changes', compact('resident', 'changes', 'puroks', 'households'));
-    }
+    // The resident-facing index() lived here. The correction form and the
+    // request list now render on the Profile page (?edit=1), so the portal
+    // controller owns them and only submission and cancellation remain.
 
     public function store(Request $request): RedirectResponse
     {
@@ -74,7 +65,7 @@ class ResidentRecordChangeController extends Controller
             ['resident_id' => $resident->id, 'change_id' => $change->id, 'fields' => array_keys($changes)],
         );
 
-        return redirect()->route('resident.changes')
+        return redirect()->route('resident.portal')
             ->with('success', 'Your correction request was submitted for office review.');
     }
 

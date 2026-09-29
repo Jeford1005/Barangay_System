@@ -263,7 +263,7 @@ class OfficialAccessTest extends TestCase
     {
         $official = User::factory()->official()->create();
 
-        foreach (['/my', '/my/requests', '/my/changes', '/my/blotter', '/my/welfare'] as $url) {
+        foreach (['/my', '/my/requests', '/my/blotter', '/my/welfare', '/my/officials'] as $url) {
             $this->actingAs($official)->get($url)->assertRedirect(route('dashboard'));
         }
     }

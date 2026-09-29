@@ -97,11 +97,6 @@
             <span class="nav-icon"><x-icon name="user-circle" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Profile</span>
         </a>
-        <a href="{{ route('resident.changes') }}" title="Profile Corrections" @if(request()->routeIs('resident.changes*')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.changes*') ? 'nav-row-active' : '' }}">
-            <span class="nav-icon"><x-icon name="pencil-square" class="h-[18px] w-[18px]" /></span>
-            <span class="sidebar-label truncate">Profile Corrections</span>
-        </a>
-
         <p class="nav-section"><span class="nav-section-index">02</span> Requests</p>
 
         <a href="{{ route('resident.requests') }}" title="Request" @if(request()->routeIs('resident.requests')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.requests') ? 'nav-row-active' : '' }}">

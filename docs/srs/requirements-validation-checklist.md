@@ -1,6 +1,6 @@
 # SRS — Requirements Validation Checklist
 
-*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (417 tests / 1921 assertions passing as of September 29, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
+*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (417 tests / 1928 assertions passing as of September 29, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
 
 ## Legend
 
@@ -38,6 +38,7 @@
 | FR24 | Residents shall request welfare assistance from the portal; the request enters the office's welfare queue as `Requested` with the resident linked as beneficiary | High | `ResidentWelfareController` (`/my/welfare`) | `ResidentReportingTest` (submitted request, queue reach, validation, own-requests-only) | ✅ |
 | FR25 | Barangay officials shall review and decide the three approval queues (welfare assistance, certificate requests, record corrections) and record blotter cases, while resident and household records stay read-only and every destructive or configuration action stays administrator-only | High | `User::ROLE_OFFICIAL`, the official branch of `User::hasPermission()`, route gates + controller guards + view gates per `docs/srs/access-control-matrix.md` | `Auth/OfficialAccessTest` (sign-in and permission set, 11 modules readable, 8 administrator-only modules denied, three decisions executed, clerical entry denied, 5 destructive actions denied, role assignment, resident portal denied) plus `audit:official` render pass | ✅ |
 | FR26 | Residents shall see a read-only directory of the barangay officials currently serving — name, position, office and term — with no actions on it | Medium | `ResidentOfficialsController` (`/my/officials`), `Official::active()`, `resident.officials` sidebar entry under a `03 Barangay` section | `ResidentOfficialsTest` (listing, serving-only filter, position order, empty state, office users redirected, guests sent to login) | ✅ |
+| FR27 | Residents shall request a correction to their own record — occupation, religion, residency status, purok, household — from an **Edit** button on the Profile page; the request queues as `Pending`, the record itself changes only on office approval, and a pending request can be cancelled from the same page | Medium | `ResidentPortalController@index` (`?edit=1` reveals the form on `/my`), `ResidentRecordChangeController` (`resident.changes.store`, `resident.changes.cancel`), Profile `Edit` button and `Correction requests` list | `ResidentRecordChangeTest` (form collapsed by default and revealed by `?edit=1`, submit → `Pending` while the record stays untouched, listed on Profile, cancel, own-requests-only, approval applies only allowed fields) | ✅ |
 
 ## 2. Nonfunctional Requirements
 

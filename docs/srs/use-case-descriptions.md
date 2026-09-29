@@ -36,6 +36,7 @@
 | UC18 | Report Incident | Resident | Implemented |
 | UC19 | Request welfare assistance | Resident | Implemented |
 | UC20 | View officials directory | Resident | Implemented |
+| UC21 | Request a profile correction | Resident | Implemented |
 
 ---
 
@@ -350,4 +351,21 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (417 tests / 1921 assertions as of September 29, 2026).*
+## UC21 — Request a profile correction
+
+**Primary actor:** Resident · **Trigger:** **Edit** on the Profile page's record card · **Precondition:** approved account linked to an active resident profile.
+
+**Main success flow**
+1. Resident opens `/my` and presses **Edit**; the correction form appears on the same page (`/my?edit=1`) prefilled with the current record.
+2. Resident changes any of the editable details (occupation, religion, residency status, purok, household), adds an optional note, and submits.
+3. System queues the request as `Pending` and records `resident.change_requested`; the record on file is untouched.
+4. The request is listed under "Correction requests" on the Profile page with its status and stays cancellable while pending; the office approves or rejects it from the correction queue (FR25).
+
+**Alternate flows**
+- **A1 — Nothing selected:** submission is refused with "Select at least one detail to request a correction."
+- **A2 — Cancel:** the resident cancels their own pending request from the Profile page; it becomes `Cancelled`.
+- **A3 — Rejected:** the office's review note is shown on the Profile page as a staff note and the record stays unchanged.
+
+---
+
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (417 tests / 1928 assertions as of September 29, 2026).*

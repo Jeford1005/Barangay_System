@@ -18,8 +18,15 @@ class ResidentRecordChangeTest extends TestCase
         $user = User::factory()->resident()->create();
         $resident = Resident::factory()->create(['user_id' => $user->id, 'occupation' => 'Student']);
 
+        // The form lives on Profile and is only revealed by Edit (?edit=1).
         $this->actingAs($user)
-            ->get('/my/changes')
+            ->get('/my')
+            ->assertOk()
+            ->assertSee('Edit')
+            ->assertDontSee('Request a profile correction');
+
+        $this->actingAs($user)
+            ->get('/my?edit=1')
             ->assertOk()
             ->assertSee('Request a profile correction');
 
@@ -28,12 +35,19 @@ class ResidentRecordChangeTest extends TestCase
                 'occupation' => 'Teacher',
                 'notes' => 'Updated employment record.',
             ])
-            ->assertRedirect('/my/changes')
+            ->assertRedirect('/my')
             ->assertSessionHas('success');
 
         $change = ResidentRecordChange::firstOrFail();
         $this->assertSame('Pending', $change->status);
         $this->assertSame('Student', $resident->fresh()->occupation);
+
+        // The request now appears on Profile, where it can be cancelled.
+        $this->actingAs($user)
+            ->get('/my')
+            ->assertOk()
+            ->assertSee('Correction requests')
+            ->assertSee('Pending');
 
         $this->actingAs($user)
             ->post(route('resident.changes.cancel', $change))
