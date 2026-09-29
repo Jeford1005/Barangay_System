@@ -16,6 +16,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResidentBlotterController;
 use App\Http\Controllers\ResidentCertificateRequestController;
 use App\Http\Controllers\ResidentController;
+use App\Http\Controllers\ResidentOfficialsController;
 use App\Http\Controllers\ResidentPhotoController;
 use App\Http\Controllers\ResidentPortalController;
 use App\Http\Controllers\ResidentRecordChangeController;
@@ -354,6 +355,10 @@ Route::middleware(['auth', 'resident'])->group(function () {
     Route::get('/my/changes', [ResidentRecordChangeController::class, 'index'])->name('resident.changes');
     Route::post('/my/changes', [ResidentRecordChangeController::class, 'store'])->name('resident.changes.store');
     Route::post('/my/changes/{change}/cancel', [ResidentRecordChangeController::class, 'cancel'])->name('resident.changes.cancel');
+
+    // Read-only directory of the officials serving the barangay, drawn from
+    // the same reference table the certificate signatures come from.
+    Route::get('/my/officials', [ResidentOfficialsController::class, 'index'])->name('resident.officials');
 
     // Incident reports and assistance requests. Both write straight into the
     // office's own blotter and welfare queues instead of a parallel one, so

@@ -16,18 +16,18 @@
 
 | # | Use Case | Primary Actor | Status |
 |---|---|---|---|
-| UC1 | Sign in | Guest, Administrator, Staff, Resident | Implemented |
+| UC1 | Sign in | Guest, Administrator, Official, Staff, Resident | Implemented |
 | UC2 | Register resident account | Guest | Implemented |
 | UC3 | Approve / reject account | Admin | Implemented |
 | UC4 | Reset password with email code | Guest | Implemented |
 | UC5 | Manage puroks | Administrator | Implemented |
 | UC6 | Manage households | Administrator, Staff | Implemented |
 | UC7 | Manage resident records | Administrator, Staff | Implemented |
-| UC8 | Record blotter case | Administrator, Staff | Implemented |
-| UC9 | Update blotter disposition | Administrator, Staff | Implemented |
-| UC10 | Print blotter case sheet | Administrator, Staff | Implemented |
+| UC8 | Record blotter case | Administrator, Official, Staff | Implemented |
+| UC9 | Update blotter disposition | Administrator, Official, Staff | Implemented |
+| UC10 | Print blotter case sheet | Administrator, Official, Staff | Implemented |
 | UC11 | Record welfare assistance request | Administrator, Staff (intake only) | Implemented |
-| UC12 | Approve and release welfare assistance | Administrator | Implemented |
+| UC12 | Approve and release welfare assistance | Administrator, Official | Implemented |
 | UC13 | Print resident directory | Administrator, Staff | Implemented |
 | UC14 | View audit log / print extract | Admin | Implemented |
 | UC15 | Check mail health / send test email | Admin | Implemented |
@@ -35,18 +35,19 @@
 | UC17 | Update own contact info | Resident | Implemented |
 | UC18 | Report Incident | Resident | Implemented |
 | UC19 | Request welfare assistance | Resident | Implemented |
+| UC20 | View officials directory | Resident | Implemented |
 
 ---
 
 ## UC1 — Sign in
 
-**Primary actor:** Guest, Administrator, Staff, Resident · **Trigger:** user opens `/login` · **Precondition:** account exists and is approved with verified email.
+**Primary actor:** Guest, Administrator, Official, Staff, Resident · **Trigger:** user opens `/login` · **Precondition:** account exists and is approved with verified email.
 
 **Main success flow**
-1. Guest opens the login page and picks the account-type tab (Administrator, Staff, or Resident).
+1. Guest opens the login page and picks the account-type tab: **Admin/Staff**, which covers administrators, officials and staff, or **Resident**.
 2. Guest enters email and password and submits.
 3. System validates credentials, regenerates the session, and records the sign-in session.
-4. System redirects: administrator/staff → dashboard; resident → resident portal.
+4. System redirects: administrator/official/staff → dashboard; resident → resident portal.
 
 **Alternate flows**
 - **A1 — Unverified email:** system refuses sign-in and asks the user to verify their email first.
@@ -334,4 +335,19 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (392 tests / 1770 assertions as of September 29, 2026).*
+## UC20 — View officials directory
+
+**Primary actor:** Resident · **Trigger:** "Officials" in the portal sidebar · **Precondition:** approved account; `officials` rows marked `Active` exist (an empty list is shown as an empty state, not an error).
+
+**Main success flow**
+1. Resident opens `/my/officials`.
+2. System lists the serving officials ordered by position, each card showing name, position, office, and term dates.
+3. Nothing can be done from the page: it is read-only reference data, so there are no create, edit, or delete controls to gate.
+
+**Alternate flows**
+- **A1 — No active officials:** the page renders with "No barangay officials are listed yet."
+- **A2 — Office account or guest:** office users are bounced to the dashboard by the `resident` middleware; guests are sent to login.
+
+---
+
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (411 tests / 1899 assertions as of September 29, 2026).*

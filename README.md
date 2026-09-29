@@ -113,7 +113,7 @@ Fresh installations create the sample Staff account with the limited `staff` rol
 - **Administrator** — full access, including users, roles, settings, backups, audit logs, certificate catalog, archive, and irreversible actions.
 - **Official** — reviews and decides: reads every operational module, records blotter cases, and settles welfare, certificate request, and correction decisions. Resident and household records are read-only, certificates are never issued by this role, and no destructive action is available.
 - **Staff** — day-to-day resident, household, blotter, welfare intake, certificate issuance, reports, and analytics work. Puroks are read-only, approvals remain restricted to officials and administrators, and destructive actions remain protected.
-- **Resident** — self-service access to their own account, requests, certificates, and correction requests.
+- **Resident** — self-service access to their own account: certificate requests, correction requests, incident reports, assistance requests, and a read-only directory of the barangay officials.
 
 ## Project Structure
 

@@ -140,5 +140,5 @@ live page.
 | Permissions, sign-in, queue decisions, denied routes | `tests/Feature/Auth/OfficialAccessTest.php` (13 tests) |
 | Staff still cannot decide or delete | `tests/Feature/Auth/StaffAccessTest.php` |
 | Rendered controls, sidebar, and both bounces | `npm run audit:official` → `check-official-ui.mjs` |
-| Whole office + resident surface, both viewports | `npm run audit:app` (33 + 5 pages), `npm run audit:targets`, `npm run audit:responsive` |
+| Whole office + resident surface, both viewports | `npm run audit:app` (33 + 6 pages), `npm run audit:targets`, `npm run audit:responsive` |
 | Schema accepts the fourth value on SQLite, MySQL, and Postgres | `database/migrations/2026_09_29_000002_add_official_role_to_users_table.php` |

@@ -116,5 +116,12 @@
             <span class="nav-icon"><x-icon name="shield-check" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Request Assistance</span>
         </a>
+
+        <p class="nav-section"><span class="nav-section-index">03</span> Barangay</p>
+
+        <a href="{{ route('resident.officials') }}" title="Officials" @if(request()->routeIs('resident.officials')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.officials') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="building-office-2" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Officials</span>
+        </a>
     @endif
 @endauth
