@@ -4,6 +4,10 @@
     $isAdmin = $user?->isAdmin() ?? false;
     $isOfficeUser = $user?->isOfficeUser() ?? false;
     $isFragment = request()->boolean('fragment');
+    // Every settings section lives under Settings in this sidebar — none has
+    // an entry of its own — so the row must light up wherever the dialog is
+    // parked, not only on maintenance.
+    $onSettingsSection = request()->routeIs('admin.settings.*', 'admin.users.*', 'admin.approvals.*', 'admin.mail.*', 'admin.audit-logs.*');
     $pendingApprovals = $isAdmin && ! $isFragment ? App\Models\User::where('status', 'pending')->where('user_type', 'resident')->count() : 0;
     $pendingCertRequests = $isOfficeUser && ! $isFragment ? App\Models\CertificateRequest::pending()->count() : 0;
     $pendingResidentChanges = $isOfficeUser && ! $isFragment ? App\Models\ResidentRecordChange::where('status', 'Pending')->count() : 0;
@@ -82,7 +86,7 @@
 
             <p class="nav-section"><span class="nav-section-index">03</span> Administration</p>
 
-            <a href="{{ route('admin.settings.index') }}" title="Settings" @if(request()->routeIs('admin.settings.*')) aria-current="page" @endif class="nav-row {{ request()->routeIs('admin.settings.*') ? 'nav-row-active' : '' }}">
+            <a href="{{ route('admin.settings.index') }}" title="Settings" data-settings-open @if($onSettingsSection) aria-current="page" @endif class="nav-row {{ $onSettingsSection ? 'nav-row-active' : '' }}">
                 <span class="nav-icon"><x-icon name="cog-6-tooth" class="h-[18px] w-[18px]" /></span>
                 <span class="sidebar-label truncate">Settings</span>
                 @if ($pendingBadge)

@@ -11,13 +11,13 @@
             <form method="GET" action="{{ route('admin.certificate-requests.index') }}">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label for="certificate-request-status" class="sr-only">Filter certificate requests by status</label>
-                    <select id="certificate-request-status" name="status"
+                    <select id="certificate-request-status" name="status" onchange="this.form.submit()"
                         class="w-full min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56">
                         @foreach (['' => 'Pending + reviewed', 'Pending' => 'Pending', 'Approved' => 'Approved', 'Rejected' => 'Rejected', 'Cancelled' => 'Cancelled'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+                    <noscript><button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
                     <div class="no-print flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-3 sm:ml-auto sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
                         <a href="{{ route('certificates.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Issued certificates →</a>
                     </div>

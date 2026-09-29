@@ -34,17 +34,15 @@
                     class="w-full min-h-11 px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                 >
                 <label for="audit-event" class="sr-only">Filter audit logs by event</label>
-                <select id="audit-event" name="event" class="w-full min-h-11 px-3 py-2 border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                <select id="audit-event" name="event" onchange="this.form.submit()" class="w-full min-h-11 px-3 py-2 border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                     <option value="">All events</option>
                     @foreach ($events as $event)
                         <option value="{{ $event }}" @selected(request('event') === $event)>{{ App\Models\AuditLog::make(['event' => $event])->event_label }}</option>
                     @endforeach
                 </select>
                 <div class="flex gap-2">
-                    <button type="submit" class="inline-flex flex-1 items-center justify-center min-h-11 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        Filter
-                    </button>
-                    <a href="{{ route('admin.audit-logs.index') }}" class="min-h-11 px-4 py-2 border border-slate-300 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-50 inline-flex items-center justify-center">
+                    <noscript><button type="submit" class="inline-flex flex-1 items-center justify-center min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
+                    <a href="{{ route('admin.audit-logs.index') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                         Reset
                     </a>
                 </div>

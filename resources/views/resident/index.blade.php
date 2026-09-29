@@ -14,7 +14,7 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-purok" class="sr-only">Filter by purok</label>
-                    <select id="resident-purok" name="purok_id" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-purok" name="purok_id" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All puroks</option>
                         @foreach ($puroks as $id => $name)
                             <option value="{{ $id }}" @selected(request('purok_id') == $id)>{{ $name }}</option>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-household" class="sr-only">Filter by household</label>
-                    <select id="resident-household" name="household_id" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-household" name="household_id" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All households</option>
                         @foreach ($households as $id => $code)
                             <option value="{{ $id }}" @selected(request('household_id') == $id)>{{ $code }}</option>
@@ -32,13 +32,13 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-status" class="sr-only">Filter by status</label>
-                    <select id="resident-status" name="status" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All Status</option>
                         <option value="Active" @selected(request('status') === 'Active')>Active</option>
                         <option value="Archived" @selected(request('status') === 'Archived')>Archived</option>
                     </select>
                 </div>
-                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+                <noscript><button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
                 <div class="flex min-w-0 items-center justify-end gap-2">
                     @if (auth()->user()?->isAdmin())
                      <a href="{{ route('admin.exports.residents', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">

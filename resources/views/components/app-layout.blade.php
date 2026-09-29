@@ -4,6 +4,13 @@
     // the head, sidebar, and scripts from any page, so require the same
     // XHR header the dialog script already sends.
     $isFragment = request()->boolean('fragment') && request()->ajax();
+
+    // Embed mode renders the same authorized content without the app chrome so
+    // the settings dialog can frame it (?embed=1, same-origin — X-Frame-Options
+    // is SAMEORIGIN). It is cosmetic only: head, scripts, toasts, dialogs and
+    // every middleware stay exactly as they are, so no gate can be widened by
+    // framing a URL the visitor could not already open.
+    $isEmbed = request()->boolean('embed') && ! $isFragment;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -38,6 +45,7 @@
     </a>
 
     <div class="flex h-full">
+        @unless ($isEmbed)
         {{-- Sidebar: icon rail on desktop (minimizable), off-canvas drawer on mobile --}}
         <aside id="sidebar"
             class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 transition-all duration-200 ease-in-out bg-slate-900 text-white flex flex-col"
@@ -80,9 +88,10 @@
 
         {{-- Mobile drawer backdrop --}}
         <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 lg:hidden" onclick="toggleSidebar(false)"></div>
+        @endunless
 
         {{-- Content column: its own height is locked to the viewport; it never scrolls. --}}
-        <div id="app-content" class="flex-1 flex flex-col lg:ml-64 min-w-0 h-full transition-[margin] duration-200 ease-in-out">
+        <div id="app-content" class="flex-1 flex flex-col {{ $isEmbed ? '' : 'lg:ml-64' }} min-w-0 h-full transition-[margin] duration-200 ease-in-out">
 
             @hasSection('page_header')
                 {{-- Pinned title bar: flex sibling above the scroll region — cannot scroll.
@@ -116,6 +125,12 @@
 
     {{-- Red message box for client-side failures (oversize file, upload, network). --}}
     <x-error-dialog />
+
+    @unless ($isEmbed)
+    {{-- Settings pop-up: ships only where its trigger does — the admin sidebar link. --}}
+    @if (auth()->user()?->isAdmin())
+        <x-settings-dialog />
+    @endif
 
     <script>
         // ---- Off-canvas drawer (mobile) --------------------------------
@@ -277,6 +292,7 @@
             else apply(false);
         })();
     </script>
+    @endunless
     @endif
 </body>
 </html>

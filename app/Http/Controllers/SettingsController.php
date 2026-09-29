@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Jobs\CreateDatabaseBackup;
 use App\Models\AuditLog;
 use App\Models\BackupRun;
-use App\Models\User;
 use App\Services\BackupService;
 use App\Services\SystemHealthService;
 use Illuminate\Http\RedirectResponse;
@@ -17,11 +16,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SettingsController extends Controller
 {
-    public function index(): View
+    /**
+     * Settings has no hub page: the sidebar link and any bookmarked
+     * /admin/settings land on the first section instead of a screen that
+     * only restated the section list. The query string (notably the dialog's
+     * ?embed=1) travels with the redirect so the frame keeps rendering
+     * without the app chrome.
+     */
+    public function index(): RedirectResponse
     {
-        return view('admin.settings.index', [
-            'pendingApprovals' => User::where('user_type', 'resident')->where('status', 'pending')->count(),
-        ]);
+        return redirect()->route('admin.users.index', request()->query());
     }
 
     public function maintenance(BackupService $backups, SystemHealthService $health): View

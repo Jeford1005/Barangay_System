@@ -24,7 +24,7 @@
             </div>
             <div class="w-full">
                 <label for="user-role" class="sr-only">Filter by role</label>
-                <select id="user-role" name="role" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <select id="user-role" name="role" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <option value="">All roles</option>
                     <option value="admin" @selected($role === 'admin')>Administrator</option>
                     <option value="staff" @selected($role === 'staff')>Staff</option>
@@ -34,7 +34,7 @@
             </div>
             <div class="w-full">
                 <label for="user-status" class="sr-only">Filter by status</label>
-                <select id="user-status" name="status" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <select id="user-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <option value="">All Status</option>
                     <option value="pending" @selected($status === 'pending')>Pending</option>
                     <option value="approved" @selected($status === 'approved')>Approved</option>
@@ -42,10 +42,10 @@
                     <option value="suspended" @selected($status === 'suspended')>Suspended</option>
                 </select>
             </div>
-            <div class="flex shrink-0 gap-2">
-                <button type="submit" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+            <noscript><button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
+            <div class="flex shrink-0 items-center gap-2">
                 @if ($search !== '' || $role !== '' || $status !== '')
-                    <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                    <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                 @endif
             </div>
             </div>

@@ -43,6 +43,10 @@ class SettingsTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/settings')
+            ->assertRedirect(route('admin.users.index'));
+
+        $this->actingAs($admin)
+            ->get('/admin/users')
             ->assertOk()
             ->assertSee('User Accounts')
             ->assertSee('Account Approvals')
@@ -57,6 +61,57 @@ class SettingsTest extends TestCase
             ->assertSee('Cache probe')
             ->assertSee('Pending migrations')
             ->assertSee('System requirements');
+    }
+
+    public function test_settings_ships_as_a_dialog_with_the_sidebar_trigger(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('data-settings-open', false)
+            ->assertSee('id="settings-dialog"', false)
+            ->assertSee('data-settings-frame', false);
+    }
+
+    public function test_embed_mode_renders_settings_content_without_app_chrome(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        // The hub redirect carries ?embed=1 along, so the frame never
+        // lands on a full-chrome page.
+        $this->actingAs($admin)
+            ->get('/admin/settings?embed=1')
+            ->assertRedirect(route('admin.users.index', ['embed' => '1']));
+
+        $this->actingAs($admin)
+            ->get('/admin/users?embed=1')
+            ->assertOk()
+            ->assertSee('User Accounts')
+            ->assertDontSee('id="sidebar"', false)
+            ->assertDontSee('id="sidebar-toggle"', false) // no dead hamburger
+            ->assertDontSee('aria-label="Settings sections"', false) // the dialog owns the nav
+            ->assertSee('id="confirm-dialog"', false); // dialogs keep working inside the frame
+    }
+
+    public function test_embed_mode_keeps_the_settings_access_rules(): void
+    {
+        $this->get('/admin/settings?embed=1')->assertRedirect('/login');
+
+        $official = User::factory()->official()->create();
+
+        $this->actingAs($official)
+            ->get('/admin/settings?embed=1')
+            ->assertRedirect(route('dashboard'));
+
+        // The dialog ships only where its trigger does, so officials never
+        // see the settings URLs at all (OfficialAccessTest pins the same).
+        $this->actingAs($official)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertDontSee('/admin/settings', false)
+            ->assertDontSee('id="settings-dialog"', false);
     }
 
     public function test_admin_can_clear_application_caches(): void
