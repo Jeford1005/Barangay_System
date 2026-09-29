@@ -115,4 +115,48 @@ class ResidentPortalController extends Controller
 
         return back()->with('success', 'Contact details updated.');
     }
+
+    /**
+     * Remove the resident's own profile photo.
+     *
+     * This is the one path that clears the column: the contact form decides
+     * with `hasFile()`, so for it a photo can only ever be replaced. It is a
+     * standalone DELETE rather than a flag on that form on purpose - the
+     * resident's phone, address and email must not have to validate for a
+     * photo removal to go through.
+     */
+    public function destroyPhoto(Request $request)
+    {
+        $user = $request->user();
+        $resident = $user?->residentProfile;
+
+        abort_if(! $resident, 404);
+        abort_if($resident->status !== 'Active', 403, 'Archived resident profiles cannot be updated.');
+
+        $photo = $resident->photo;
+
+        if (blank($photo)) {
+            return back()->with('success', 'There is no profile photo to remove.');
+        }
+
+        // Clear the column first: a file that fails to delete leaves an
+        // orphan, while a saved path pointing at nothing is a broken image.
+        $resident->update(['photo' => null]);
+
+        // Photos taken before the move to the private disk still live on the
+        // public disk, so try both.
+        Storage::disk('local')->delete($photo);
+        Storage::disk('public')->delete($photo);
+
+        AuditLog::record(
+            'resident.photo_removed',
+            $user->id,
+            $user->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['resident_id' => $resident->id],
+        );
+
+        return back()->with('success', 'Profile photo removed.');
+    }
 }

@@ -107,6 +107,84 @@ class ResidentPortalTest extends TestCase
         $this->actingAs($user)->get(route('resident.photo'))->assertOk();
     }
 
+    public function test_resident_can_remove_their_profile_photo(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        [$user, $resident] = $this->approvedResident();
+        $resident->update(['photo' => 'residents/old.jpg']);
+        Storage::disk('local')->put('residents/old.jpg', 'bytes');
+
+        $this->actingAs($user)
+            ->delete(route('resident.photo.destroy'))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Profile photo removed.');
+
+        // Column cleared first, then the file, and the action is accountable.
+        $this->assertNull($resident->fresh()->photo);
+        Storage::disk('local')->assertMissing('residents/old.jpg');
+        $this->assertDatabaseHas('audit_logs', ['event' => 'resident.photo_removed']);
+    }
+
+    public function test_removal_is_offered_only_when_a_photo_exists(): void
+    {
+        [$user, $resident] = $this->approvedResident();
+
+        // Without a photo there is nothing to remove, and nothing is rendered.
+        $this->actingAs($user)
+            ->get('/my')
+            ->assertOk()
+            ->assertDontSee('form="remove-photo-form"', false);
+
+        // The guard caches the profile relation on this shared user instance
+        // during that first request, so drop it to see what a real next
+        // request would see.
+        $resident->update(['photo' => 'residents/old.jpg']);
+        $user->unsetRelation('residentProfile');
+
+        $this->actingAs($user)
+            ->get('/my')
+            ->assertOk()
+            // The Remove button joins its own form instead of the contact form,
+            // so removing never depends on the contact fields validating.
+            ->assertSee('form="remove-photo-form"', false)
+            ->assertSee(route('resident.photo.destroy'), false);
+    }
+
+    public function test_removal_without_a_photo_is_a_no_op(): void
+    {
+        [$user] = $this->approvedResident();
+
+        $this->actingAs($user)
+            ->delete(route('resident.photo.destroy'))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'There is no profile photo to remove.');
+    }
+
+    public function test_archived_resident_cannot_remove_their_photo(): void
+    {
+        [$user, $resident] = $this->approvedResident();
+        $resident->update(['status' => 'Archived', 'photo' => 'residents/old.jpg']);
+
+        $this->actingAs($user)->delete(route('resident.photo.destroy'))->assertForbidden();
+
+        $this->assertNotNull($resident->fresh()->photo);
+    }
+
+    public function test_office_users_cannot_remove_a_resident_photo(): void
+    {
+        foreach (['admin', 'staff', 'official'] as $role) {
+            $this->actingAs(User::factory()->create(['user_type' => $role, 'status' => 'approved']))
+                ->delete(route('resident.photo.destroy'))
+                ->assertRedirect(route('dashboard'));
+        }
+    }
+
+    public function test_guests_cannot_remove_a_photo(): void
+    {
+        $this->delete(route('resident.photo.destroy'))->assertRedirect(route('login'));
+    }
+
     public function test_resident_can_change_login_email_with_current_password(): void
     {
         [$user, $resident] = $this->approvedResident();

@@ -79,7 +79,15 @@
                 <div>
                     <label for="photo" class="mb-1.5 block text-sm font-medium text-slate-700">Profile photo (optional)</label>
                     @if ($resident->photo)
-                        <img src="{{ route('resident.photo') }}" alt="Current profile photo" class="mb-2 h-16 w-16 rounded-full object-cover">
+                        {{-- The button sits with the photo it removes but belongs to
+                             #remove-photo-form below (HTML `form` attribute), so it
+                             confirms and submits on its own instead of saving the
+                             contact fields along with it. --}}
+                        <div class="mb-2 flex items-center gap-3">
+                            <img src="{{ route('resident.photo') }}" alt="Current profile photo" class="h-16 w-16 rounded-full object-cover">
+                            <button type="submit" form="remove-photo-form"
+                                class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+                        </div>
                     @endif
                     <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
                     @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -116,6 +124,21 @@
                     Save Changes
                 </button>
             </form>
+
+            {{-- Forms cannot nest, so the removal posts from here while the Remove
+                 button above joins this form through the `form` attribute. Only
+                 CSRF and the method override travel with it: removing a photo must
+                 not depend on the phone, address and email validating. --}}
+            @if ($resident->photo)
+                <form id="remove-photo-form" method="POST" action="{{ route('resident.photo.destroy') }}"
+                    data-confirm="Remove your profile photo?"
+                    data-confirm-title="Remove photo"
+                    data-confirm-accept="Remove photo"
+                    data-confirm-dismiss="Keep photo">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
         </div>
 
         {{-- Household: who else is on the same record. --}}

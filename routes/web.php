@@ -342,6 +342,11 @@ Route::middleware(['auth', 'resident'])->group(function () {
     // resolves the profile from the signed-in account.
     Route::get('/my/photo', [ResidentPhotoController::class, 'mine'])->name('resident.photo');
 
+    // The contact form can only replace a photo (it keys on hasFile), so
+    // clearing one is a separate action with its own confirmation.
+    Route::delete('/my/photo', [ResidentPortalController::class, 'destroyPhoto'])
+        ->name('resident.photo.destroy');
+
     // Online certificate requests
     Route::get('/my/requests', [ResidentCertificateRequestController::class, 'index'])->name('resident.requests');
     Route::get('/my/requests/{certificateRequest}/certificate', [ResidentCertificateRequestController::class, 'certificate'])->name('resident.requests.certificate');
