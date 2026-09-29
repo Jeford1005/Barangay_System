@@ -198,7 +198,7 @@ php artisan migrate --force
 ```
 
 **Do not run `php artisan db:seed` in production.** `DatabaseSeeder` creates
-`admin@barangay.local` and `staff@barangay.local` with the password `password`, plus
+`admin@barangay.local`, `staff@barangay.local`, and `official@barangay.local` with the password `password`, plus
 sample puroks and households. Those are development credentials — seeding them on a
 public host hands anyone the admin account.
 

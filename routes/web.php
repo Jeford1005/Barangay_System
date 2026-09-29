@@ -310,10 +310,10 @@ Route::middleware(['auth'])->group(function () {
                 ->middleware('permission:welfare.intake')
                 ->name('store');
             Route::get('/{welfare}/edit', [WelfareController::class, 'edit'])
-                ->middleware('admin')
+                ->middleware('permission:welfare.approve')
                 ->name('edit');
             Route::put('/{welfare}', [WelfareController::class, 'update'])
-                ->middleware('admin')
+                ->middleware('permission:welfare.approve')
                 ->name('update');
             Route::delete('/{welfare}', [WelfareController::class, 'destroy'])
                 ->middleware('admin')
@@ -321,14 +321,14 @@ Route::middleware(['auth'])->group(function () {
         });
 });
 
-// Resident profile correction review (staff may view; administrators decide)
+// Resident profile correction review (staff may view; officials decide)
 Route::middleware(['auth', 'permission:resident-changes.view'])->prefix('admin/resident-changes')->name('admin.resident-changes.')->group(function () {
     Route::get('/', [ResidentRecordChangeController::class, 'indexForAdmin'])->name('index');
     Route::post('/{change}/approve', [ResidentRecordChangeController::class, 'approve'])
-        ->middleware('admin')
+        ->middleware('permission:resident-changes.decide')
         ->name('approve');
     Route::post('/{change}/reject', [ResidentRecordChangeController::class, 'reject'])
-        ->middleware('admin')
+        ->middleware('permission:resident-changes.decide')
         ->name('reject');
 });
 
@@ -369,14 +369,14 @@ Route::middleware(['auth', 'resident'])->group(function () {
         ->name('resident.welfare.store');
 });
 
-// Office queue for online certificate requests (staff may view; administrators decide)
+// Office queue for online certificate requests (staff may view; officials decide)
 Route::middleware(['auth', 'permission:certificate-requests.view'])->prefix('admin/certificate-requests')->name('admin.certificate-requests.')->group(function () {
     Route::get('/', [CertificateRequestAdminController::class, 'index'])->name('index');
     Route::post('/{certificateRequest}/approve', [CertificateRequestAdminController::class, 'approve'])
-        ->middleware('admin')
+        ->middleware('permission:certificate-requests.decide')
         ->name('approve');
     Route::post('/{certificateRequest}/reject', [CertificateRequestAdminController::class, 'reject'])
-        ->middleware('admin')
+        ->middleware('permission:certificate-requests.decide')
         ->name('reject');
 });
 

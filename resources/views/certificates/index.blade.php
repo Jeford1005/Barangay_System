@@ -39,10 +39,12 @@
                         @if (auth()->user()?->isAdmin())
                          <a href="{{ route('admin.exports.certificates', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
                          @endif
+                        @if (auth()->user()?->hasPermission('certificates.issue'))
                          <x-primary-action :href="route('certificates.create')" compact data-dialog-open="certificate-dialog">
                             <x-icon name="plus" class="h-4 w-4" />
                             Issue Certificate
                         </x-primary-action>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -52,9 +54,11 @@
                 <div class="text-center py-8 text-slate-500">
                     <x-icon name="document-text" class="mx-auto mb-4 h-12 w-12 text-slate-200" />
                     <p class="mt-2">No certificates issued yet</p>
+                    @if (auth()->user()?->hasPermission('certificates.issue'))
                     <x-primary-action :href="route('certificates.create')" data-dialog-open="certificate-dialog" class="no-print mt-2">
                         Issue your first certificate
                     </x-primary-action>
+                    @endif
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -100,7 +104,7 @@
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="inline-flex items-center gap-1">
-                                            <a href="{{ route('certificates.print', $issuance) }}" class="inline-flex items-center justify-center min-h-11 min-w-9 rounded-md border border-sky-200 bg-white text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600" title="Print certificate">
+                                            <a href="{{ route('certificates.print', $issuance) }}" class="inline-flex items-center justify-center min-h-11 min-w-9 rounded-md border border-sky-200 bg-white text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->hasPermission('certificates.issue') ? '' : 'hidden' }}" title="Print certificate">
                                                 <x-icon name="printer" class="h-4 w-4" />
                                                 <span class="sr-only">Print {{ e($issuance->control_number) }}</span>
                                             </a>

@@ -82,7 +82,7 @@ class WelfareController extends Controller
 
     public function edit(Welfare $welfare)
     {
-        abort_unless(Auth::user()?->isAdmin(), 403);
+        abort_unless(Auth::user()?->hasPermission('welfare.approve'), 403);
 
         return view('welfare.edit', array_merge(
             ['welfare' => $welfare],
@@ -92,7 +92,7 @@ class WelfareController extends Controller
 
     public function update(Request $request, Welfare $welfare)
     {
-        abort_unless(Auth::user()?->isAdmin(), 403);
+        abort_unless(Auth::user()?->hasPermission('welfare.approve'), 403);
 
         $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request, $welfare));
 

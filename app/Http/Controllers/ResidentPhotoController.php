@@ -26,7 +26,10 @@ class ResidentPhotoController extends Controller
 
         abort_unless($user, 403);
         abort_unless(
-            $user->isAdmin() || $user->isStaff() || $resident->user_id === $user->id,
+            // Officials hold the same read access as staff, and a resident may
+            // always open their own photo; the ownership check below covers
+            // the resident role, which has no module permission at all.
+            $user->hasPermission('residents.view') || $resident->user_id === $user->id,
             403,
         );
 

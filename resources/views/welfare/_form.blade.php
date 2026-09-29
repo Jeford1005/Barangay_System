@@ -27,11 +27,11 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
             <x-form.field name="program_description" label="Program Description" type="textarea" :rows="3" maxlength="2000" :value="$welfare->program_description ?? null" />
         </div>
         <x-form.field name="requested_amount" label="Requested Amount (₱)" type="number" required :value="$welfare->requested_amount ?? null" step="0.01" min="0" max="99999999.99" placeholder="1000.00" />
-        @if (auth()->user()?->isAdmin())
+        @if (auth()->user()?->hasPermission('welfare.approve'))
          <x-form.field name="approved_amount" label="Approved Amount (₱)" type="number" :value="$welfare->approved_amount ?? null" step="0.01" min="0" max="99999999.99" placeholder="1000.00" optional-hint />
          @endif
         <x-form.field name="request_date" label="Request Date" type="date" required :value="$welfare?->request_date?->toDateString() ?? now()->toDateString()" :max="now()->toDateString()" />
-        @if (auth()->user()?->isAdmin())
+        @if (auth()->user()?->hasPermission('welfare.approve'))
          <x-form.field name="status" label="Status" type="select" required :options="['Requested', 'Under Review', 'Approved', 'Denied', 'Released']" :value="$welfare->status ?? 'Requested'" />
         <x-form.field name="approval_date" label="Approval Date" type="date" :value="$welfare?->approval_date?->toDateString() ?? null" :max="now()->toDateString()" optional-hint />
         <x-form.field name="release_date" label="Release Date" type="date" :value="$welfare?->release_date?->toDateString() ?? null" :max="now()->toDateString()" optional-hint />
@@ -39,7 +39,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
          @else
              <input type="hidden" name="status" value="Requested">
              <input type="hidden" name="approved_amount" value="0">
-             <p class="text-xs text-slate-500 sm:col-span-2">Approval, release, and denial decisions are reserved for administrators.</p>
+             <p class="text-xs text-slate-500 sm:col-span-2">Approval, release, and denial decisions are reserved for administrators and barangay officials.</p>
          @endif
         <div class="sm:col-span-2">
             <x-form.field name="remarks" label="Remarks" type="textarea" :rows="2" maxlength="2000" :value="$welfare->remarks ?? null" />

@@ -45,7 +45,7 @@ class LoginRequest extends FormRequest
     {
         return $this->input('user_type') === 'resident'
             ? ['resident']
-            : ['admin', 'staff'];
+            : ['admin', 'staff', 'official'];
     }
 
     /**

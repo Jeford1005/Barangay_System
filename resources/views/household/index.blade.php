@@ -26,10 +26,12 @@
                          @if (request()->filled('search') || request()->filled('purok_id'))
                             <a href="{{ route('households.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                         @endif
+                        @if (auth()->user()?->hasPermission('households.manage'))
                         <x-primary-action :href="route('households.create')" compact data-dialog-open="household-dialog">
                             <x-icon name="plus" class="h-4 w-4" />
                             Add Household
                         </x-primary-action>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -40,9 +42,11 @@
                 <div class="text-center py-8 text-slate-500">
                     <x-icon name="households" class="mx-auto mb-4 h-12 w-12 text-slate-200" />
                     <p class="mt-2">No households found</p>
+                    @if (auth()->user()?->hasPermission('households.manage'))
                     <x-primary-action :href="route('households.create')" data-dialog-open="household-dialog" class="no-print mt-2">
                         Add your first household
                     </x-primary-action>
+                    @endif
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -80,16 +84,16 @@
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
                                         <span class="inline-flex items-center justify-end gap-1 min-h-11">
                                             <a href="{{ route('households.edit', $household->id) }}" data-dialog-open="household-dialog" data-fetch-url="{{ route('households.edit', $household->id) }}" data-fetch-mode="edit"
-                                                class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
+                                                class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 {{ auth()->user()?->hasPermission('households.manage') ? '' : 'hidden' }}">
                                                 Edit
                                             </a>
-                                            <form action="{{ route('households.destroy', $household->id) }}" method="POST" class="inline {{ auth()->user()?->isStaff() ? 'hidden' : '' }}"
+                                            <form action="{{ route('households.destroy', $household->id) }}" method="POST" class="inline {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}"
                                                 data-confirm="Delete household {{ $household->household_code }}?"
                                                 data-confirm-title="Delete household"
                                                 data-confirm-accept="Delete">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}">
                                                     Delete
                                                 </button>
                                             </form>

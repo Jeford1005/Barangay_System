@@ -58,7 +58,7 @@ class DataQualityAuditCommand extends Command
     ];
 
     private const ENUM_FIELDS = [
-        ['table' => 'users', 'column' => 'user_type', 'allowed' => ['admin', 'staff', 'resident']],
+        ['table' => 'users', 'column' => 'user_type', 'allowed' => ['admin', 'staff', 'official', 'resident']],
         ['table' => 'users', 'column' => 'status', 'allowed' => ['pending', 'approved', 'rejected']],
         ['table' => 'residents', 'column' => 'sex', 'allowed' => ['Male', 'Female', 'Other']],
         ['table' => 'residents', 'column' => 'civil_status', 'allowed' => ['Single', 'Married', 'Divorced', 'Widowed', 'Separated']],

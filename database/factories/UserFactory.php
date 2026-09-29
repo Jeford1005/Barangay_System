@@ -62,6 +62,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function official(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_type' => 'official',
+        ]);
+    }
+
     public function pending(): static
     {
         return $this->state(fn (array $attributes) => [

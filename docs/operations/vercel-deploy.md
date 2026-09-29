@@ -114,7 +114,7 @@ are already baked into the image.
 
 > **The container seeds on every boot.** `docker/entrypoint.sh` runs
 > `db:seed --force` once migrations finish, so a fresh database is populated
-> with `admin@barangay.local`, `staff@barangay.local` and
+> with `admin@barangay.local`, `staff@barangay.local`, `official@barangay.local` and
 > `resident@barangay.local`, all with the password `password`. That is
 > deliberate for a demo or stakeholder walkthrough.
 >

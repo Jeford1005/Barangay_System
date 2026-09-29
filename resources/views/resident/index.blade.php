@@ -48,10 +48,12 @@
                      @if (request()->filled('search') || request()->filled('purok_id') || request()->filled('household_id') || request()->filled('status'))
                         <a href="{{ route('residents.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                     @endif
+                    @if (auth()->user()?->hasPermission('residents.manage'))
                     <x-primary-action :href="route('residents.create')" compact data-dialog-open="resident-dialog">
                         <x-icon name="plus" class="h-4 w-4" />
                         Add Resident
                     </x-primary-action>
+                    @endif
                 </div>
             </div>
         </form>
@@ -63,9 +65,11 @@
                 <x-icon name="residents" class="mx-auto h-10 w-10 text-slate-300" />
                 <h2 class="mt-3 text-sm font-semibold text-slate-900">No residents found</h2>
                 <p class="mt-1 text-sm text-slate-500">Try clearing the filters or add the first resident record.</p>
+                @if (auth()->user()?->hasPermission('residents.manage'))
                 <x-primary-action :href="route('residents.create')" data-dialog-open="resident-dialog" class="no-print mt-5">
                     <x-icon name="plus" class="h-4 w-4" /> Add Resident
                 </x-primary-action>
+                @endif
             </div>
         @else
             <div class="overflow-x-auto">
@@ -106,7 +110,7 @@
                                 </td>
                                 <td class="no-print whitespace-nowrap px-4 py-3 text-right">
                                     <div class="inline-flex items-center justify-end gap-2">
-                                        <a href="{{ route('residents.edit', $resident->id) }}" data-dialog-open="resident-dialog" data-fetch-url="{{ route('residents.edit', $resident->id) }}" data-fetch-mode="edit" class="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Edit</a>
+                                        <a href="{{ route('residents.edit', $resident->id) }}" data-dialog-open="resident-dialog" data-fetch-url="{{ route('residents.edit', $resident->id) }}" data-fetch-mode="edit" class="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->hasPermission('residents.manage') ? '' : 'hidden' }}">Edit</a>
                                         @if (auth()->user()?->isAdmin() && $isActive)
                                             <form method="POST" action="{{ route('residents.archive', $resident->id) }}" data-confirm="Archive this resident? Their portal access will be blocked." data-confirm-title="Archive resident" data-confirm-accept="Archive">
                                                 @csrf

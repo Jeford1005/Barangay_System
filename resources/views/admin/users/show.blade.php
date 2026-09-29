@@ -177,6 +177,7 @@
                         <select id="account-role" name="user_type" class="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                             <option value="admin" @selected($user->user_type === 'admin')>Administrator</option>
                             <option value="staff" @selected($user->user_type === 'staff')>Staff</option>
+                            <option value="official" @selected($user->user_type === 'official')>Official</option>
                             <option value="resident" @selected($user->user_type === 'resident')>Resident</option>
                         </select>
                         <button type="submit" class="min-h-11 rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Update role</button>

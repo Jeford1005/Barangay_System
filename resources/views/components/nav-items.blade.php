@@ -2,8 +2,7 @@
 @php
     $user = auth()->user();
     $isAdmin = $user?->isAdmin() ?? false;
-    $isStaff = $user?->isStaff() ?? false;
-    $isOfficeUser = $isAdmin || $isStaff;
+    $isOfficeUser = $user?->isOfficeUser() ?? false;
     $isFragment = request()->boolean('fragment');
     $pendingApprovals = $isAdmin && ! $isFragment ? App\Models\User::where('status', 'pending')->where('user_type', 'resident')->count() : 0;
     $pendingCertRequests = $isOfficeUser && ! $isFragment ? App\Models\CertificateRequest::pending()->count() : 0;

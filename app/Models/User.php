@@ -14,6 +14,8 @@ class User extends Authenticatable
 
     public const ROLE_STAFF = 'staff';
 
+    public const ROLE_OFFICIAL = 'official';
+
     public const ROLE_RESIDENT = 'resident';
 
     /** @use HasFactory<UserFactory> */
@@ -115,9 +117,14 @@ class User extends Authenticatable
         return $this->user_type === self::ROLE_STAFF;
     }
 
+    public function isOfficial(): bool
+    {
+        return $this->user_type === self::ROLE_OFFICIAL;
+    }
+
     public function isOfficeUser(): bool
     {
-        return $this->isAdmin() || $this->isStaff();
+        return $this->isAdmin() || $this->isStaff() || $this->isOfficial();
     }
 
     public function roleLabel(): string
@@ -125,22 +132,47 @@ class User extends Authenticatable
         return match ($this->user_type) {
             self::ROLE_ADMIN => 'Administrator',
             self::ROLE_STAFF => 'Staff',
+            self::ROLE_OFFICIAL => 'Official',
             self::ROLE_RESIDENT => 'Resident',
             default => ucfirst((string) $this->user_type),
         };
     }
 
     /**
-     * Central permission map for the initial fixed roles.
+     * Central permission map for the fixed roles.
      *
-     * Administrators intentionally receive every permission. Staff receive
-     * only day-to-day operational permissions; administrator controls are
-     * not listed here.
+     * Administrators intentionally receive every permission. Officials review
+     * and decide: they read every operational module, record blotter cases and
+     * settle the three approval queues, but never enter clerical records and
+     * never delete anything. Staff receive only day-to-day operational
+     * permissions - including intake and issuing, but no decisions. Both
+     * administrator-only controls are therefore reached only through `admin`.
      */
     public function hasPermission(string $permission): bool
     {
         if ($this->isAdmin()) {
             return true;
+        }
+
+        if ($this->isOfficial()) {
+            return in_array($permission, [
+                'operations.access',
+                'dashboard.view',
+                'residents.view',
+                'households.view',
+                'puroks.view',
+                'blotter.view',
+                'blotter.manage',
+                'welfare.view',
+                'welfare.approve',
+                'certificates.view',
+                'certificate-requests.view',
+                'certificate-requests.decide',
+                'resident-changes.view',
+                'resident-changes.decide',
+                'reports.view',
+                'analytics.view',
+            ], true);
         }
 
         return $this->isStaff() && in_array($permission, [

@@ -107,7 +107,7 @@ class ResidentRecordChangeController extends Controller
 
     public function approve(Request $request, ResidentRecordChange $change, HouseholdResidentSync $sync): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($request->user()?->hasPermission('resident-changes.decide'), 403);
 
         $validated = $request->validate(['review_note' => ['nullable', 'string', 'max:1000']]);
 
@@ -171,7 +171,7 @@ class ResidentRecordChangeController extends Controller
 
     public function reject(Request $request, ResidentRecordChange $change): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($request->user()?->hasPermission('resident-changes.decide'), 403);
 
         $validated = $request->validate(['review_note' => ['required', 'string', 'max:1000']]);
 

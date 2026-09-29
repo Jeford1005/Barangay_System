@@ -57,7 +57,7 @@
                                 @if ($change->status === 'Pending')
                                     <form method="POST" action="{{ route('resident.changes.cancel', $change) }}" data-confirm="Cancel this request?" data-confirm-title="Cancel request" data-confirm-accept="Cancel request" data-confirm-dismiss="Keep request">
                                         @csrf
-                                        <button class="text-xs font-semibold text-red-700 underline hover:text-red-900" type="submit">Cancel</button>
+                                        <button class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-red-700 underline hover:text-red-900" type="submit">Cancel</button>
                                     </form>
                                 @endif
                             </div>

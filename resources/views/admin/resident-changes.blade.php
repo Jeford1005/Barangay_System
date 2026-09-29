@@ -51,7 +51,7 @@
                         <td class="px-4 py-3 text-sm">
                             <span class="rounded-full px-2.5 py-1 text-xs font-medium {{ ['Pending' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Rejected' => 'bg-red-100 text-red-800', 'Cancelled' => 'bg-slate-100 text-slate-700'][$change->status] }}">{{ $change->status }}</span>
                             @if ($change->review_note)<p class="mt-2 max-w-xs text-xs text-slate-600">{{ $change->review_note }}</p>@endif
-                            @if (auth()->user()?->isAdmin() && $change->status === 'Pending')
+                            @if (auth()->user()?->hasPermission('resident-changes.decide') && $change->status === 'Pending')
                                 <div class="mt-3 flex max-w-xs flex-col gap-2">
                                     <form method="POST" action="{{ route('admin.resident-changes.approve', $change) }}" class="flex gap-2">
                                         @csrf

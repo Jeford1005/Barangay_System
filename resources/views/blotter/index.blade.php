@@ -104,13 +104,13 @@
                                             <a href="{{ route('blotter.print', $blotter) }}" target="_blank" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400" title="Print official case sheet">
                                                 Print
                                             </a>
-                                            <form action="{{ route('blotter.destroy', $blotter->id) }}" method="POST" class="inline {{ auth()->user()?->isStaff() ? 'hidden' : '' }}"
+                                            <form action="{{ route('blotter.destroy', $blotter->id) }}" method="POST" class="inline {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}"
                                                 data-confirm="Delete case {{ $blotter->case_number }}?"
                                                 data-confirm-title="Delete case"
                                                 data-confirm-accept="Delete">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}">
                                                     Delete
                                                 </button>
                                             </form>

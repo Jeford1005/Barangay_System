@@ -31,7 +31,7 @@ class CertificateRequestAdminController extends Controller
 
     public function approve(Request $request, CertificateRequest $certificateRequest)
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($request->user()?->hasPermission('certificate-requests.decide'), 403);
 
         $validated = $request->validate([
             // The clerk may adjust the counter fee (e.g. waive for indigents).
@@ -109,7 +109,7 @@ class CertificateRequestAdminController extends Controller
 
     public function reject(Request $request, CertificateRequest $certificateRequest)
     {
-        abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($request->user()?->hasPermission('certificate-requests.decide'), 403);
 
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',

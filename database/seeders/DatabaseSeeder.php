@@ -54,6 +54,20 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        // Barangay officials sign in on the same office tab as staff. They
+        // review and decide the approval queues and record blotter cases, but
+        // they never enter clerical records and never delete anything.
+        User::firstOrCreate(
+            ['email' => 'official@barangay.local'],
+            [
+                'name' => 'Official User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'user_type' => 'official',
+                'status' => 'approved',
+            ],
+        );
+
         // Create sample puroks
         $puroks = [
             ['name' => 'Purok 1', 'code' => 'P1', 'created_by' => $admin->id],

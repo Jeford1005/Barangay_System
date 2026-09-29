@@ -112,7 +112,7 @@
                                             data-confirm-accept="Cancel request"
                                             data-confirm-dismiss="Keep request">
                                             @csrf
-                                            <button type="submit" class="text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 underline focus:outline-none focus:ring-2 focus:ring-red-500">Cancel request</button>
+                                            <button type="submit" class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Cancel request</button>
                                         </form>
                                     @endif
                                 </div>

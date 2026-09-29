@@ -3,6 +3,17 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* Tailwind emits `.hidden{display:none}` ahead of `.inline` and `.inline-flex`,
+   and all three are single-class selectors, so an element carrying
+   `inline-flex … hidden` keeps rendering - the later rule wins the tie.
+   Row actions and delete forms are gated by adding or removing `hidden`, so
+   without this the gate is decorative: staff could see Delete as clearly as
+   an official can now. Dialogs and skeletons toggle the same class and are
+   unaffected beyond becoming reliable. */
+.hidden {
+    display: none !important;
+}
+
 @theme {
     /* Inter is what every page actually loads (fonts.bunny.net) and what the
        interface has been rendering with. The token previously named Instrument

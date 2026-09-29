@@ -37,7 +37,7 @@ class UserAccountController extends Controller
             });
         }
 
-        if (in_array($role, ['admin', 'staff', 'resident'], true)) {
+        if (in_array($role, ['admin', 'staff', 'official', 'resident'], true)) {
             $query->where('user_type', $role);
         }
 
@@ -294,7 +294,7 @@ class UserAccountController extends Controller
         abort_unless($request->user()?->isAdmin(), 403);
 
         $validated = $request->validate([
-            'user_type' => ['required', Rule::in(['admin', 'staff', 'resident'])],
+            'user_type' => ['required', Rule::in(['admin', 'staff', 'official', 'resident'])],
         ]);
 
         $newRole = $validated['user_type'];

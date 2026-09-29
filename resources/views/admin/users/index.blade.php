@@ -28,6 +28,7 @@
                     <option value="">All roles</option>
                     <option value="admin" @selected($role === 'admin')>Administrator</option>
                     <option value="staff" @selected($role === 'staff')>Staff</option>
+                    <option value="official" @selected($role === 'official')>Official</option>
                     <option value="resident" @selected($role === 'resident')>Resident</option>
                 </select>
             </div>

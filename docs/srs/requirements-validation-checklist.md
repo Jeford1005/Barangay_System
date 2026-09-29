@@ -1,6 +1,6 @@
 # SRS — Requirements Validation Checklist
 
-*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (392 tests / 1770 assertions passing as of September 29, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
+*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (405 tests / 1876 assertions passing as of September 29, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
 
 ## Legend
 
@@ -12,7 +12,7 @@
 
 | # | Requirement | Priority | Implementation | Validation evidence | Status |
 |---|---|---|---|---|---|
-| FR1 | The system shall authenticate users with email and password, distinguishing administrator, staff, and resident accounts | High | `AuthenticatedSessionController`, role-specific login tabs | `Auth/LoginTest`, `Auth/StaffAccessTest`, `Auth/RegistrationTest` | ✅ |
+| FR1 | The system shall authenticate users with email and password, distinguishing administrator, official, staff, and resident accounts | High | `AuthenticatedSessionController`, role-specific login tabs (resident / office), `LoginRequest::candidateRoles()` | `Auth/LoginTest`, `Auth/StaffAccessTest`, `Auth/OfficialAccessTest`, `Auth/RegistrationTest` | ✅ |
 | FR2 | The system shall allow visitors to apply for resident accounts that remain unapproved until reviewed | High | `RegisteredUserController` (`approved = false`) | `Auth/RegistrationTest` | ✅ |
 | FR3 | The system shall let admins approve or reject applications and notify the applicant by email either way | High | `AccountApprovalController`, `AccountApproved/Rejected` mail | `Feature/Admin/AccountApprovalTest` | ✅ |
 | FR4 | The system shall reset a password using a 6-digit code emailed to the account holder, valid 15 minutes, single-use, one active code at a time | High | `PasswordResetCodeController`, `ResetPasswordCodeNotification` | `Feature/Auth/PasswordResetTest` | ✅ |
@@ -36,12 +36,13 @@
 | FR22 | Welfare disbursement report with per-program totals | Medium | — | — | ⬜ (planned next) |
 | FR23 | Residents shall report an incident from the portal; the report enters the office's own blotter queue as an Open case, identified as resident-reported | High | `ResidentBlotterController` (`/my/blotter`), `blotter.reported_by_resident` flag | `ResidentReportingTest` (filed case, queue reach, validation, own-reports-only) | ✅ |
 | FR24 | Residents shall request welfare assistance from the portal; the request enters the office's welfare queue as `Requested` with the resident linked as beneficiary | High | `ResidentWelfareController` (`/my/welfare`) | `ResidentReportingTest` (submitted request, queue reach, validation, own-requests-only) | ✅ |
+| FR25 | Barangay officials shall review and decide the three approval queues (welfare assistance, certificate requests, record corrections) and record blotter cases, while resident and household records stay read-only and every destructive or configuration action stays administrator-only | High | `User::ROLE_OFFICIAL`, the official branch of `User::hasPermission()`, route gates + controller guards + view gates per `docs/srs/access-control-matrix.md` | `Auth/OfficialAccessTest` (sign-in and permission set, 11 modules readable, 8 administrator-only modules denied, three decisions executed, clerical entry denied, 5 destructive actions denied, role assignment, resident portal denied) plus `audit:official` render pass | ✅ |
 
 ## 2. Nonfunctional Requirements
 
 | # | Requirement | Target | Implementation | Validation evidence | Status |
 |---|---|---|---|---|---|
-| NFR1 | **Security — role-based access.** Guests, residents, and staff must not reach administrator-only modules; staff access is limited to approved operational permissions | 100% coverage of role/permission routes | `EnsureUserIsAdmin`, `EnsureUserHasPermission`, and resident middleware | CRUD suites plus `Auth/StaffAccessTest` positive/negative coverage | ✅ |
+| NFR1 | **Security — role-based access.** Guests, residents, and staff must not reach administrator-only modules; officials review and decide without entering clerical records; staff access is limited to approved operational permissions | 100% coverage of role/permission routes | `EnsureUserIsAdmin`, `EnsureUserHasPermission`, and resident middleware, plus the controller guards and view gates in `docs/srs/access-control-matrix.md` | CRUD suites plus `Auth/StaffAccessTest` and `Auth/OfficialAccessTest` positive/negative coverage | ✅ |
 | NFR2 | **Security — credential handling.** Passwords hashed; reset codes stored hashed, expiring, single-use | bcrypt/argon2 + hashed TTL codes | Laravel hashing + `password_reset_tokens` | `PasswordResetTest` (expiry, single-use, replacement) | ✅ |
 | NFR3 | **Security — account recovery feedback.** A reset request must never advance an unknown, pending, rejected, or suspended address to the code screen; the visitor is told why and held on step 1 | no code issued, no advance, without an eligible account | `PasswordResetCodeController::refusalReason()` + `refuse()`; cooldown starts only once a code is actually issued | `PasswordResetTest` (unknown address, mistyped address, rejected/suspended, JSON 422) and the `RegistrationTest` pending case | ✅ |
 | NFR4 | **Accountability.** Every sensitive action traceable to a user, IP, device, and timestamp; never breaks the request it observes | no unlogged sensitive actions; audit failure must not 500 | `AuditLog::record()` swallows+reports exceptions | `AuditLogTest` order/permission tests | ✅ |
@@ -51,14 +52,14 @@
 | NFR8 | **Reliability — data integrity.** Validation server-side on every form; workflow rules enforced; referential integrity with safe unlinking (`set null`) | no invalid state persisted | form requests/validators, FK constraints | validation assertions in every CRUD suite | ✅ |
 | NFR9 | **Correctness under concurrency.** Case numbers unique under simultaneous submissions | zero duplicates | `lockForUpdate` inside the creation transaction | `BlotterCrudTest` sequence tests | ✅ |
 | NFR10 | **Maintainability.** Shared components for repeated UI; no byte-identical copies of logic | single source of truth | `x-form.field`, `x-form.actions` (color prop), `x-table.actions`, `x-print-button`, `nav-items`, `_form` partials | dedup audit (~1,600 duplicate lines removed); suites green against components | ✅ |
-| NFR11 | **Testability.** Automated regression suite covering CRUD, auth, workflows, print artifacts | suite green | 392 tests / 1770 assertions passing | `php artisan test` (2026-09-29) | ✅ |
+| NFR11 | **Testability.** Automated regression suite covering CRUD, auth, workflows, print artifacts | suite green | 405 tests / 1876 assertions passing | `php artisan test` (2026-09-29) | ✅ |
 | NFR12 | **Portability.** Runs on PHP 8.2 + SQLite (dev) and MySQL (production-ready via config) | env-driven | `.env` database config, migrations portable | suite runs on SQLite; MySQL documented in run doc | ✅ |
 | NFR13 | **Performance.** Index pages paginate; dashboard counters aggregated, not per-row | ≤ 25 rows/page | pagination + aggregate queries | visible in controllers; manual response-time check | ✅ |
 | NFR14 | **Print quality.** Printed documents use official-form layouts with letterhead, certification, and signatures where accountability requires them | barangay-ready paper output | case sheet, directory, audit extract, list printouts | live print-output verification + content-pinning tests | ✅ |
 
 ## 3. Validation methods used
 
-1. **Automated feature testing** — every FR above maps to at least one PHPUnit feature test (392 tests / 1770 assertions green).
+1. **Automated feature testing** — every FR above maps to at least one PHPUnit feature test (405 tests / 1876 assertions green).
 2. **Code review against requirements** — each FR traced to a controller/route; traceability note in `use-case-descriptions.md`.
 3. **Programmatic UI audits** — DOM-level contrast math (WCAG ratios from the actual Tailwind v4 palette), overflow scans, computed-style measurements (tap targets, print-hidden elements). Reproducible with `npm run audit:responsive` (13 viewports × 4 auth pages), `npm run audit:targets` (auth tap targets) and `npm run audit:app` (33 office pages + 5 resident-portal pages × 2 viewports), each run against a local `php artisan serve`.
 4. **Live end-to-end walkthroughs** — real browser flows for login, password reset (with clipboard auto-fill), approvals, blotter intake → case sheet, welfare intake → approval, and print output inspection.

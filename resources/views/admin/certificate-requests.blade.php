@@ -69,14 +69,14 @@
                                         @endif
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 text-right text-sm font-medium whitespace-normal">
-                                        @if (auth()->user()?->isAdmin() && $req->status === 'Pending')
+                                        @if (auth()->user()?->hasPermission('certificate-requests.decide') && $req->status === 'Pending')
                                             <div class="inline-flex items-center gap-1">
                                                 <form method="POST" action="{{ route('admin.certificate-requests.approve', $req) }}" class="inline-flex items-center gap-1"
                                                     onsubmit="if(this.fee && this.fee.value === '') this.fee.disabled = true;">
                                                     @csrf
                                                     <label for="certificate-fee-{{ $req->id }}" class="sr-only">Optional fee for {{ $req->document?->title }}</label>
                                                     <input id="certificate-fee-{{ $req->id }}" type="number" name="fee" value="{{ old('fee') }}" placeholder="{{ number_format((float) $req->document?->fee ?? 0, 2) }}" min="0" max="9999" step="0.01" inputmode="decimal"
-                                                        class="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
+                                                        class="w-28 min-h-11 rounded-md border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
                                                     <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                                                         Approve
                                                     </button>
@@ -92,7 +92,7 @@
                                                             @error('rejection_reason')
                                                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                                             @enderror
-                                                            <button type="submit" class="mt-2 w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                                                            <button type="submit" class="mt-2 min-h-11 w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
                                                                 Reject & notify
                                                             </button>
                                                         </form>
