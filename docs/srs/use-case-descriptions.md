@@ -33,6 +33,8 @@
 | UC15 | Check mail health / send test email | Admin | Implemented |
 | UC16 | View own record (portal) | Resident | Implemented |
 | UC17 | Update own contact info | Resident | Implemented |
+| UC18 | Report an incident | Resident | Implemented |
+| UC19 | Request welfare assistance | Resident | Implemented |
 
 ---
 
@@ -302,4 +304,34 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (374 tests / 1686 assertions as of September 29, 2026).*
+## UC18 — Report an incident
+
+**Primary actor:** Resident · **Trigger:** "Report an Incident" in the portal sidebar · **Precondition:** approved account linked to an active resident profile.
+
+**Main success flow**
+1. Resident opens `/my/blotter` and enters the complaint type, incident date, the person or party involved, and a narrative of what happened.
+2. System validates the entry, issues the next `BLTR-YYYY-####` case number, and creates an `Open` case with the resident set as the complainant and `reported_by_resident` set.
+3. The case shows up in the office's normal `/blotter` queue marked *Resident-reported*, and the resident sees it under "My reports" with its live status and any office note.
+
+**Alternate flows**
+- **A1 — Missing field or future-dated incident:** rejected with inline errors; no case is created.
+- **A2 — No linked profile or archived record:** the portal returns 403/404 and tells the resident to contact the barangay office.
+
+---
+
+## UC19 — Request welfare assistance
+
+**Primary actor:** Resident · **Trigger:** "Request Assistance" in the portal sidebar · **Precondition:** approved account linked to an active resident profile.
+
+**Main success flow**
+1. Resident opens `/my/welfare` and chooses the assistance type, the program or assistance needed, and the amount, with an optional reason.
+2. System records the request as `Requested`, linked to the resident as beneficiary and dated today.
+3. The request appears in the office's normal `/welfare` queue; approval and release remain office-only actions.
+
+**Alternate flows**
+- **A1 — Missing field or a non-numeric amount:** rejected with inline errors; nothing is persisted.
+- **A2 — No linked profile or archived record:** the portal returns 403/404 and tells the resident to contact the barangay office.
+
+---
+
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (391 tests / 1761 assertions as of September 29, 2026).*

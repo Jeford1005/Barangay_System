@@ -92,7 +92,7 @@
             </a>
         @endif
     @else
-        <p class="nav-section"><span class="nav-section-index">01</span> My barangay</p>
+        <p class="nav-section"><span class="nav-section-index">01</span> Profile</p>
 
         <a href="{{ route('resident.portal') }}" title="My Profile" @if(request()->routeIs('resident.portal')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.portal') ? 'nav-row-active' : '' }}">
             <span class="nav-icon"><x-icon name="user-circle" class="h-[18px] w-[18px]" /></span>
@@ -102,9 +102,20 @@
             <span class="nav-icon"><x-icon name="pencil-square" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Profile Corrections</span>
         </a>
+
+        <p class="nav-section"><span class="nav-section-index">02</span> Requests</p>
+
         <a href="{{ route('resident.requests') }}" title="My Requests" @if(request()->routeIs('resident.requests')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.requests') ? 'nav-row-active' : '' }}">
             <span class="nav-icon"><x-icon name="document-text" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">My Requests</span>
+        </a>
+        <a href="{{ route('resident.blotter') }}" title="Report an Incident" @if(request()->routeIs('resident.blotter')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.blotter') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="clipboard-document-list" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Report an Incident</span>
+        </a>
+        <a href="{{ route('resident.welfare') }}" title="Request Assistance" @if(request()->routeIs('resident.welfare')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.welfare') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="shield-check" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Request Assistance</span>
         </a>
     @endif
 @endauth

@@ -28,6 +28,7 @@ class Blotter extends Model
         'complaint_time',
         'alleged_offense',
         'status',
+        'reported_by_resident',
         'disposition',
         'disposition_date',
         'arrest_made',
@@ -47,6 +48,7 @@ class Blotter extends Model
         'complaint_date' => 'date',
         'disposition_date' => 'date',
         'complaint_time' => 'datetime:H:i',
+        'reported_by_resident' => 'boolean',
     ];
 
     public function complainant()

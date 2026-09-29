@@ -66,6 +66,9 @@
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="font-medium text-slate-900">{{ e($blotter->case_number) }}</span>
+                                        @if ($blotter->reported_by_resident)
+                                            <span class="no-print ml-1 inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">Resident-reported</span>
+                                        @endif
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($blotter->complainant_name) }}</span>

@@ -50,7 +50,7 @@ const OFFICE_PAGES = [
 // AUDIT_ROLE=resident and a resident login to scan it instead of the office pages.
 // Only real GET pages: /my/photo is an image endpoint that 404s until a photo is
 // uploaded, and /my/contact is PUT-only, so neither is a page to walk.
-const RESIDENT_PAGES = ['/my', '/my/requests', '/my/changes'];
+const RESIDENT_PAGES = ['/my', '/my/requests', '/my/changes', '/my/blotter', '/my/welfare'];
 
 const PAGES = process.env.AUDIT_ROLE === 'resident' ? RESIDENT_PAGES : OFFICE_PAGES;
 

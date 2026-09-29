@@ -13,11 +13,13 @@ use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\MailHealthController;
 use App\Http\Controllers\PurokController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ResidentBlotterController;
 use App\Http\Controllers\ResidentCertificateRequestController;
 use App\Http\Controllers\ResidentController;
 use App\Http\Controllers\ResidentPhotoController;
 use App\Http\Controllers\ResidentPortalController;
 use App\Http\Controllers\ResidentRecordChangeController;
+use App\Http\Controllers\ResidentWelfareController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\WelfareController;
@@ -352,6 +354,19 @@ Route::middleware(['auth', 'resident'])->group(function () {
     Route::get('/my/changes', [ResidentRecordChangeController::class, 'index'])->name('resident.changes');
     Route::post('/my/changes', [ResidentRecordChangeController::class, 'store'])->name('resident.changes.store');
     Route::post('/my/changes/{change}/cancel', [ResidentRecordChangeController::class, 'cancel'])->name('resident.changes.cancel');
+
+    // Incident reports and assistance requests. Both write straight into the
+    // office's own blotter and welfare queues instead of a parallel one, so
+    // there is a single queue per module for staff to work through.
+    Route::get('/my/blotter', [ResidentBlotterController::class, 'index'])->name('resident.blotter');
+    Route::post('/my/blotter', [ResidentBlotterController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('resident.blotter.store');
+
+    Route::get('/my/welfare', [ResidentWelfareController::class, 'index'])->name('resident.welfare');
+    Route::post('/my/welfare', [ResidentWelfareController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('resident.welfare.store');
 });
 
 // Office queue for online certificate requests (staff may view; administrators decide)

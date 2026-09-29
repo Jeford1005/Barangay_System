@@ -1,15 +1,15 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Request a profile correction" subtitle="Ask the barangay office to review a change to your resident record." />
+    <x-page-header title="Request a profile correction" subtitle="Ask the barangay office to review a change to your resident record.">
+        <x-slot:actions>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to my profile</a>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6">
-    <div>
-        <a href="{{ route('resident.portal') }}" class="inline-flex min-h-6 items-center text-sm text-sky-700 hover:text-sky-900">← Back to my profile</a>
-        <h1 class="mt-3 text-2xl font-bold text-slate-900">Request a profile correction</h1>
-        <p class="mt-1 max-w-2xl text-sm text-slate-600">Changes to official profile details require barangay staff review. Your current record stays unchanged until a staff member approves the request.</p>
-    </div>
+    <p class="max-w-2xl text-sm text-slate-600">Changes to official profile details require barangay staff review. Your current record stays unchanged until a staff member approves the request.</p>
 
     @if (session('success'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('success') }}</div>
