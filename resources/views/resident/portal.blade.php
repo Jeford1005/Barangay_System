@@ -7,41 +7,8 @@
 
 <div class="max-w-5xl mx-auto space-y-6">
 
-    {{-- Overview: what this resident has asked for, what is waiting on the
-         office, and what they can already collect. Same shape as the office
-         dashboard, scoped to what a resident is actually allowed to do. --}}
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <a href="{{ route('resident.requests') }}" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Certificate requests</p>
-                <x-icon name="document-text" class="h-6 w-6 text-sky-600" />
-            </div>
-            <p class="mt-2 text-3xl font-bold text-slate-900">{{ $requestTotal }}</p>
-        </a>
-        <a href="{{ route('resident.requests') }}" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Awaiting review</p>
-                <x-icon name="clock" class="h-6 w-6 text-sky-600" />
-            </div>
-            <p class="mt-2 text-3xl font-bold {{ $requestPending > 0 ? 'text-amber-600' : 'text-slate-900' }}">{{ $requestPending }}</p>
-        </a>
-        <a href="{{ route('resident.requests') }}" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Ready to download</p>
-                <x-icon name="arrow-down-tray" class="h-6 w-6 text-sky-600" />
-            </div>
-            <p class="mt-2 text-3xl font-bold {{ $requestApproved > 0 ? 'text-emerald-600' : 'text-slate-900' }}">{{ $requestApproved }}</p>
-        </a>
-        <a href="{{ route('resident.changes') }}" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Corrections pending</p>
-                <x-icon name="pencil-square" class="h-6 w-6 text-sky-600" />
-            </div>
-            <p class="mt-2 text-3xl font-bold {{ $changePending > 0 ? 'text-amber-600' : 'text-slate-900' }}">{{ $changePending }}</p>
-        </a>
-    </div>
-
-    {{-- Read-only record + the one action worth surfacing beside it. --}}
+    {{-- What is on file for this resident, beside the standing of everything
+         they have asked the office for. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
@@ -83,19 +50,39 @@
                 </div>
             </dl>
             <p class="border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
-                Corrections to the record above can only be made by the barangay office — please visit or call.
+                These details are maintained by the barangay office. Visit the office or call to request a correction.
             </p>
         </div>
 
-        {{-- Certificate requests shortcut --}}
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        {{-- Written out rather than counted up: what is open right now, and the
+             one action that starts a new request. --}}
+        <div class="self-start rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h2 class="font-semibold text-slate-900">Need a barangay certificate?</h2>
-                <p class="text-sm text-slate-500">Clearance · Residency · Indigency</p>
+                <h2 class="font-semibold text-slate-900">Requests &amp; corrections</h2>
+                <p class="text-sm text-slate-500">What you have sent to the office</p>
             </div>
-            <div class="p-6">
-                <p class="text-sm text-slate-600">Request online and collect it at the office — no need to travel twice.</p>
-                <a href="{{ route('resident.requests') }}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+            <dl class="divide-y divide-slate-200 text-sm">
+                <div class="px-6 py-4">
+                    <dt class="text-slate-500">Certificate requests</dt>
+                    <dd class="mt-1 text-slate-800">
+                        @if ($requestTotal === 0)
+                            None yet.
+                        @else
+                            {{ $requestTotal }} on record
+                            @if ($requestPending > 0) · {{ $requestPending }} awaiting review @endif
+                            @if ($requestApproved > 0) · {{ $requestApproved }} ready to download @endif
+                        @endif
+                    </dd>
+                </div>
+                <div class="px-6 py-4">
+                    <dt class="text-slate-500">Profile corrections</dt>
+                    <dd class="mt-1 text-slate-800">
+                        {{ $changePending > 0 ? $changePending . ' awaiting review' : 'None in progress.' }}
+                    </dd>
+                </div>
+            </dl>
+            <div class="border-t border-slate-200 p-6">
+                <a href="{{ route('resident.requests') }}" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
                     <x-icon name="document-text" class="h-4 w-4" />
                     Request a certificate
                 </a>
@@ -103,12 +90,12 @@
         </div>
     </div>
 
-    {{-- Editable contact + the household they belong to. --}}
+    {{-- The details this resident controls, and the household they belong to. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                 <h2 class="font-semibold text-slate-900">Contact details</h2>
-                <p class="text-sm text-slate-500">Keep these current</p>
+                <p class="text-sm text-slate-500">Update these yourself: profile photo, phone number and address.</p>
             </div>
             <form method="POST" action="{{ route('resident.contact.update') }}" class="space-y-4 p-6">
                 @csrf
@@ -134,9 +121,12 @@
                     <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
                     @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
+
+                {{-- Account sign-in is a separate concern from the contact details
+                     above, so it is kept under its own heading and never mixed in. --}}
                 <div class="border-t border-slate-200 pt-4">
-                    <h3 class="text-sm font-semibold text-slate-800">Change login email (optional)</h3>
-                    <p class="mt-1 text-xs text-slate-500">Confirm your current password. The new address will be used for sign-in and emailed notifications.</p>
+                    <h3 class="text-sm font-semibold text-slate-800">Sign-in email (optional)</h3>
+                    <p class="mt-1 text-xs text-slate-500">You sign in as {{ auth()->user()->email }}. Leave the fields below blank to keep it; a change requires your current password.</p>
                     <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">New email</label>
@@ -170,7 +160,7 @@
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                 <h2 class="font-semibold text-slate-900">Household members</h2>
                 <p class="text-sm text-slate-500">
-                    {{ $resident->household?->household_code ?? '—' }} · {{ $householdMembers->count() + 1 }} on record
+                    {{ $resident->household?->household_code ?? '—' }} · {{ $householdMembers->count() + 1 }} on record · you are {{ $resident->is_household_head ? 'the household head' : 'a member' }}
                 </p>
             </div>
             @if ($householdMembers->isEmpty())
@@ -191,6 +181,7 @@
             @endif
         </div>
     </div>
+
 </div>
 
 @endsection
