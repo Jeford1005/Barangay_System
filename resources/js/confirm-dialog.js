@@ -70,6 +70,10 @@
         if (typeof form.requestSubmit === 'function') {
             bypassForm = form;
             form.requestSubmit(); // fires submit again; the guard below lets it through
+            // If validation or another listener blocked the submit event, drop
+            // the bypass — otherwise the *next* submit of this form would skip
+            // the dialog and delete silently.
+            if (bypassForm === form) bypassForm = null;
         } else {
             form.submit(); // legacy path: skips the submit event entirely
             bypassForm = null;
@@ -144,6 +148,10 @@
         if (panel && !panel.contains(target)) close();
     });
 
+    // Capture phase: crud-dialogs registers its own Escape/Tab handler on
+    // document in the bubble phase, and listeners run in registration order
+    // (it is imported first). Capturing lets stopPropagation() below actually
+    // keep an open CRUD dialog from closing underneath the confirmation.
     document.addEventListener('keydown', function (event) {
         var d = node();
         if (!d || d.classList.contains('hidden')) return;
@@ -169,5 +177,5 @@
             event.preventDefault();
             first.focus();
         }
-    });
+    }, true);
 })();
