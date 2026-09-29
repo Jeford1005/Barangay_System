@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ResidentContactUpdateRequest;
 use App\Models\AuditLog;
-use App\Models\CertificateRequest;
 use App\Models\Resident;
-use App\Models\ResidentRecordChange;
 use App\Notifications\ResidentEmailChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,13 +23,6 @@ class ResidentPortalController extends Controller
         abort_if(! $resident, 404, 'No resident profile is linked to this account. Please contact the barangay office.');
         abort_if($resident->status !== 'Active', 403, 'This resident record is archived. Please contact the barangay office.');
 
-        // One grouped query instead of three separate counts, reading the same
-        // statuses the requests page renders so the two views cannot drift.
-        $requestStatuses = CertificateRequest::where('resident_id', $resident->id)
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
-
         $householdMembers = $resident->household_id
             ? Resident::where('household_id', $resident->household_id)
                 ->whereKeyNot($resident->id)
@@ -42,10 +33,6 @@ class ResidentPortalController extends Controller
 
         return view('resident.portal', [
             'resident' => $resident->load(['purok', 'household']),
-            'requestTotal' => (int) $requestStatuses->sum(),
-            'requestPending' => (int) $requestStatuses->get('Pending', 0),
-            'requestApproved' => (int) $requestStatuses->get('Approved', 0),
-            'changePending' => ResidentRecordChange::where('resident_id', $resident->id)->where('status', 'Pending')->count(),
             'householdMembers' => $householdMembers,
         ]);
     }

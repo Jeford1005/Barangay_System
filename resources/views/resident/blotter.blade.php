@@ -1,8 +1,8 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="Report an incident" subtitle="File a report with the barangay office and follow it here.">
+    <x-page-header title="Report Incident" subtitle="File a report with the barangay office and follow it here.">
         <x-slot:actions>
-            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to my profile</a>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to Profile</a>
         </x-slot:actions>
     </x-page-header>
 @endsection
@@ -41,7 +41,7 @@
 
     <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-5 py-4">
-            <h2 class="text-lg font-semibold text-slate-900">My reports</h2>
+            <h2 class="text-lg font-semibold text-slate-900">Reports</h2>
         </div>
         @if ($cases->isEmpty())
             <p class="p-6 text-sm text-slate-500">You have not filed any reports.</p>

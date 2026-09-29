@@ -1,8 +1,8 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="My Certificate Requests" subtitle="Request barangay certificates online — we'll email you when they're ready.">
+    <x-page-header title="Request" subtitle="Request barangay certificates online — we'll email you when they're ready.">
         <x-slot:actions>
-            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to my profile</a>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to Profile</a>
         </x-slot:actions>
     </x-page-header>
 @endsection
@@ -75,7 +75,7 @@
         {{-- Requests list --}}
         <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h2 class="font-semibold text-slate-900">My requests</h2>
+                <h2 class="font-semibold text-slate-900">Certificate requests</h2>
             </div>
 
             @if ($requests->isEmpty())

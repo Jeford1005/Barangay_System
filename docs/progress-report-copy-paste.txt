@@ -205,7 +205,7 @@ Reporting Period: September 1, 2026 to September 22, 2026
 2. Built five admin modules - residents, households, puroks, blotter, social welfare - with role-based middleware gating.
 3. Implemented accountability: audit logging (user, IP, timestamp) for password resets and record changes, plus a searchable audit-log page.
 4. Produced printable outputs: official blotter case sheet with letterhead and signature blocks; resident directory grouped by purok with counts; certification extract of the audit log.
-5. Grew the automated test suite to 391 tests / 1761 assertions, all passing, with a regression test for every defect found.
+5. Grew the automated test suite to 392 tests / 1770 assertions, all passing, with a regression test for every defect found.
 6. Completed accessibility (WCAG AA contrast, keyboard navigation, focus management), mobile responsiveness, and removed ~1,600 lines of duplicated code.
 
 ---------------------------------------------------------------------

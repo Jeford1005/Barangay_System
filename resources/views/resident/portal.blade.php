@@ -1,93 +1,56 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="My Profile" subtitle="Your resident record on file with the barangay office." />
+    <x-page-header title="Profile" subtitle="Your resident record on file with the barangay office." />
 @endsection
 
 @section('content')
 
 <div class="max-w-5xl mx-auto space-y-6">
 
-    {{-- What is on file for this resident, beside the standing of everything
-         they have asked the office for. --}}
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h2 class="font-semibold text-slate-900">{{ $resident->full_name }}</h2>
-                <p class="text-sm text-slate-500">Resident record</p>
-            </div>
-            <dl class="grid grid-cols-1 gap-x-6 gap-y-4 p-6 text-sm sm:grid-cols-2">
-                <div>
-                    <dt class="text-slate-500">Birth date</dt>
-                    <dd class="text-slate-800">{{ optional($resident->birth_date)->format('M j, Y') ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Sex</dt>
-                    <dd class="text-slate-800">{{ $resident->sex ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Civil status</dt>
-                    <dd class="text-slate-800">{{ $resident->civil_status ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Nationality</dt>
-                    <dd class="text-slate-800">{{ $resident->nationality ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Occupation</dt>
-                    <dd class="text-slate-800">{{ $resident->occupation ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Purok</dt>
-                    <dd class="text-slate-800">{{ $resident->purok?->name ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Household</dt>
-                    <dd class="text-slate-800">{{ $resident->household?->household_code ?? '—' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-slate-500">Residency status</dt>
-                    <dd class="text-slate-800">{{ $resident->residency_status ?? '—' }}</dd>
-                </div>
-            </dl>
-            <p class="border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
-                These details are maintained by the barangay office. Visit the office or call to request a correction.
-            </p>
+    {{-- What is on file for this resident. Identity and record details only —
+         the standing of their requests lives on the Request page, not here. --}}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-900">{{ $resident->full_name }}</h2>
+            <p class="text-sm text-slate-500">Resident record</p>
         </div>
-
-        {{-- Written out rather than counted up: what is open right now, and the
-             one action that starts a new request. --}}
-        <div class="self-start rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
-                <h2 class="font-semibold text-slate-900">Requests &amp; corrections</h2>
-                <p class="text-sm text-slate-500">What you have sent to the office</p>
+        <dl class="grid grid-cols-1 gap-x-6 gap-y-4 p-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <dt class="text-slate-500">Birth date</dt>
+                <dd class="text-slate-800">{{ optional($resident->birth_date)->format('M j, Y') ?? '—' }}</dd>
             </div>
-            <dl class="divide-y divide-slate-200 text-sm">
-                <div class="px-6 py-4">
-                    <dt class="text-slate-500">Certificate requests</dt>
-                    <dd class="mt-1 text-slate-800">
-                        @if ($requestTotal === 0)
-                            None yet.
-                        @else
-                            {{ $requestTotal }} on record
-                            @if ($requestPending > 0) · {{ $requestPending }} awaiting review @endif
-                            @if ($requestApproved > 0) · {{ $requestApproved }} ready to download @endif
-                        @endif
-                    </dd>
-                </div>
-                <div class="px-6 py-4">
-                    <dt class="text-slate-500">Profile corrections</dt>
-                    <dd class="mt-1 text-slate-800">
-                        {{ $changePending > 0 ? $changePending . ' awaiting review' : 'None in progress.' }}
-                    </dd>
-                </div>
-            </dl>
-            <div class="border-t border-slate-200 p-6">
-                <a href="{{ route('resident.requests') }}" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
-                    <x-icon name="document-text" class="h-4 w-4" />
-                    Request a certificate
-                </a>
+            <div>
+                <dt class="text-slate-500">Sex</dt>
+                <dd class="text-slate-800">{{ $resident->sex ?? '—' }}</dd>
             </div>
-        </div>
+            <div>
+                <dt class="text-slate-500">Civil status</dt>
+                <dd class="text-slate-800">{{ $resident->civil_status ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Nationality</dt>
+                <dd class="text-slate-800">{{ $resident->nationality ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Occupation</dt>
+                <dd class="text-slate-800">{{ $resident->occupation ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Purok</dt>
+                <dd class="text-slate-800">{{ $resident->purok?->name ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Household</dt>
+                <dd class="text-slate-800">{{ $resident->household?->household_code ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Residency status</dt>
+                <dd class="text-slate-800">{{ $resident->residency_status ?? '—' }}</dd>
+            </div>
+        </dl>
+        <p class="border-t border-slate-200 bg-slate-50 px-6 py-3 text-xs text-slate-500">
+            These details are maintained by the barangay office. Visit the office or call to request a correction.
+        </p>
     </div>
 
     {{-- The details this resident controls, and the household they belong to. --}}

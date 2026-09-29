@@ -61,9 +61,9 @@ class ResidentReportingTest extends TestCase
         $this->actingAs($user)
             ->get('/my/blotter')
             ->assertOk()
-            ->assertSee('Report an incident')
+            ->assertSee('Report Incident')
             ->assertSee('New report')
-            ->assertSee('My reports');
+            ->assertSee('Reports');
     }
 
     public function test_resident_can_file_an_incident_report(): void
@@ -183,7 +183,7 @@ class ResidentReportingTest extends TestCase
             ->assertOk()
             ->assertSee('Request assistance')
             ->assertSee('New assistance request')
-            ->assertSee('My requests');
+            ->assertSee('Assistance requests');
     }
 
     public function test_resident_can_submit_an_assistance_request(): void

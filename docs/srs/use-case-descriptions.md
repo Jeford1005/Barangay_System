@@ -33,7 +33,7 @@
 | UC15 | Check mail health / send test email | Admin | Implemented |
 | UC16 | View own record (portal) | Resident | Implemented |
 | UC17 | Update own contact info | Resident | Implemented |
-| UC18 | Report an incident | Resident | Implemented |
+| UC18 | Report Incident | Resident | Implemented |
 | UC19 | Request welfare assistance | Resident | Implemented |
 
 ---
@@ -304,14 +304,14 @@
 
 ---
 
-## UC18 — Report an incident
+## UC18 — Report Incident
 
-**Primary actor:** Resident · **Trigger:** "Report an Incident" in the portal sidebar · **Precondition:** approved account linked to an active resident profile.
+**Primary actor:** Resident · **Trigger:** "Report Incident" in the portal sidebar · **Precondition:** approved account linked to an active resident profile.
 
 **Main success flow**
 1. Resident opens `/my/blotter` and enters the complaint type, incident date, the person or party involved, and a narrative of what happened.
 2. System validates the entry, issues the next `BLTR-YYYY-####` case number, and creates an `Open` case with the resident set as the complainant and `reported_by_resident` set.
-3. The case shows up in the office's normal `/blotter` queue marked *Resident-reported*, and the resident sees it under "My reports" with its live status and any office note.
+3. The case shows up in the office's normal `/blotter` queue marked *Resident-reported*, and the resident sees it under "Reports" with its live status and any office note.
 
 **Alternate flows**
 - **A1 — Missing field or future-dated incident:** rejected with inline errors; no case is created.
@@ -334,4 +334,4 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (391 tests / 1761 assertions as of September 29, 2026).*
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (392 tests / 1770 assertions as of September 29, 2026).*

@@ -39,6 +39,23 @@ class ResidentPortalTest extends TestCase
             ->assertSee('Old address');
     }
 
+    public function test_profile_page_carries_only_user_information(): void
+    {
+        [$user] = $this->approvedResident();
+
+        $this->actingAs($user)
+            ->get('/my')
+            ->assertOk()
+            ->assertSee('Resident record')
+            ->assertSee('Contact details')
+            ->assertSee('Household members')
+            ->assertDontSee('My Profile')
+            ->assertDontSee('My Requests')
+            ->assertDontSee('Requests &amp; corrections')
+            ->assertDontSee('awaiting review')
+            ->assertDontSee('ready to download');
+    }
+
     public function test_rendered_contact_form_uses_the_put_route(): void
     {
         [$user] = $this->approvedResident();

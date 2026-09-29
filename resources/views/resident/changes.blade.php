@@ -2,7 +2,7 @@
 @section('page_header')
     <x-page-header title="Request a profile correction" subtitle="Ask the barangay office to review a change to your resident record.">
         <x-slot:actions>
-            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to my profile</a>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to Profile</a>
         </x-slot:actions>
     </x-page-header>
 @endsection
@@ -39,7 +39,7 @@
     </section>
 
     <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div class="border-b border-slate-200 px-5 py-4"><h2 class="text-lg font-semibold text-slate-900">My requests</h2></div>
+        <div class="border-b border-slate-200 px-5 py-4"><h2 class="text-lg font-semibold text-slate-900">Profile corrections</h2></div>
         @if ($changes->isEmpty())
             <p class="p-6 text-sm text-slate-500">You have no correction requests.</p>
         @else
