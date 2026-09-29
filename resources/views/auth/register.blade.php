@@ -17,7 +17,7 @@
     @endif
 @include('components.bare-url')
 </head>
-<body class="min-h-screen bg-slate-200 text-slate-900 antialiased">
+<body class="min-h-dvh bg-slate-200 text-slate-900 antialiased">
     {{-- The seal, oversized and held at a whisper — the same backdrop the
          sign-in page opens on, so every unauthenticated route reads as one
          system. Fixed, so it stays put when a long form scrolls. --}}
@@ -26,7 +26,7 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-3 sm:px-6">
+    <main class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="mx-auto w-full max-w-2xl">
             <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
                 <div class="flex items-center gap-3 border-b border-slate-200 px-6 py-5">
@@ -192,7 +192,7 @@
                         </div>
 
                         <button type="submit"
-                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
                             Submit Application
                         </button>
                     </form>

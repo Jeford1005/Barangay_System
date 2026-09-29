@@ -10,10 +10,10 @@
 
     <div class="module-toolbar-sticky rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <form method="GET" class="flex flex-col gap-2 sm:flex-row">
-            <div class="min-w-0 flex-1"><label for="document-search" class="sr-only">Search document catalog</label><input id="document-search" name="search" value="{{ $search }}" maxlength="100" placeholder="Search code, title, or category" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-sky-600 focus:ring-sky-600"></div>
-            <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" class="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">All statuses</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
-            <button class="min-h-10 rounded-lg border border-slate-300 px-4 text-sm font-medium hover:bg-slate-50" type="submit">Filter</button>
-            <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-10 items-center whitespace-nowrap rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">New document type</a>
+            <div class="min-w-0 flex-1"><label for="document-search" class="sr-only">Search document catalog</label><input id="document-search" name="search" value="{{ $search }}" maxlength="100" placeholder="Search code, title, or category" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-sky-600 focus:ring-sky-600"></div>
+            <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" class="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">All statuses</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
+            <button class="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-medium hover:bg-slate-50" type="submit">Filter</button>
+            <a href="{{ route('admin.certificate-types.create') }}" class="inline-flex min-h-11 items-center whitespace-nowrap rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">New document type</a>
         </form>
     </div>
 
@@ -30,7 +30,7 @@
                         <td class="px-4 py-3 text-slate-700">{{ (float) $document->fee > 0 ? '₱'.number_format((float) $document->fee, 2) : 'Free' }}</td>
                         <td class="px-4 py-3"><span class="rounded-full px-2 py-1 text-xs font-medium {{ $document->status === 'Active' ? 'bg-emerald-100 text-emerald-800' : ($document->status === 'Draft' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">{{ $document->status }}</span></td>
                         <td class="px-4 py-3 text-slate-600">{{ $document->issuances_count }}</td>
-                        <td class="no-print px-4 py-3 text-right"><a href="{{ route('admin.certificate-types.edit', $document) }}" class="font-semibold text-slate-600 underline hover:text-slate-900">Edit</a></td>
+                        <td class="no-print px-4 py-3 text-right"><a href="{{ route('admin.certificate-types.edit', $document) }}" class="inline-flex min-h-6 items-center font-semibold text-slate-600 underline hover:text-slate-900">Edit</a></td>
                     </tr>
                 @empty<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No document types match these filters.</td></tr>@endforelse
                 </tbody>

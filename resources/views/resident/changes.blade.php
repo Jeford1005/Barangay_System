@@ -6,7 +6,7 @@
 @section('content')
 <div class="mx-auto max-w-4xl space-y-6">
     <div>
-        <a href="{{ route('resident.portal') }}" class="text-sm text-sky-700 hover:text-sky-900">← Back to my profile</a>
+        <a href="{{ route('resident.portal') }}" class="inline-flex min-h-6 items-center text-sm text-sky-700 hover:text-sky-900">← Back to my profile</a>
         <h1 class="mt-3 text-2xl font-bold text-slate-900">Request a profile correction</h1>
         <p class="mt-1 max-w-2xl text-sm text-slate-600">Changes to official profile details require barangay staff review. Your current record stays unchanged until a staff member approves the request.</p>
     </div>

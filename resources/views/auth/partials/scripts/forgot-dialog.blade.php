@@ -120,15 +120,49 @@
             setCooldown(cooldown);
 
             // ---------- helpers ----------
+            // An inline error explains what just happened; it is not a state the
+            // visitor has to act on later, so it retires on its own. 4.5s is the
+            // toast duration, and the timer pauses on hover so nobody loses a
+            // message they had started reading.
+            const ERROR_DURATION = 4500;
+
+            function scheduleDismiss(node) {
+                if (node.dismissTimer) clearTimeout(node.dismissTimer);
+
+                node.dismissTimer = setTimeout(() => {
+                    node.dismissTimer = null;
+                    node.textContent = '';
+                    node.classList.add('hidden');
+                }, ERROR_DURATION);
+            }
+
             function showError(id, message) {
                 const node = el(id);
+                node.dismissPaused = false;
                 node.textContent = message;
                 node.classList.remove('hidden');
+                scheduleDismiss(node);
+
+                node.onmouseenter = () => {
+                    if (!node.dismissTimer) return;
+                    clearTimeout(node.dismissTimer);
+                    node.dismissTimer = null;
+                    node.dismissPaused = true;
+                };
+                node.onmouseleave = () => {
+                    if (node.dismissPaused) {
+                        node.dismissPaused = false;
+                        scheduleDismiss(node);
+                    }
+                };
             }
 
             function clearErrors() {
                 ['forgot-email-error', 'forgot-code-error', 'forgot-password-error'].forEach((id) => {
                     const node = el(id);
+                    if (node.dismissTimer) clearTimeout(node.dismissTimer);
+                    node.dismissTimer = null;
+                    node.dismissPaused = false;
                     node.textContent = '';
                     node.classList.add('hidden');
                 });

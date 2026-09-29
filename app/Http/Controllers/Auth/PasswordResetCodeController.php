@@ -58,8 +58,8 @@ class PasswordResetCodeController extends Controller
         ]);
 
         if ($remaining = $this->cooldownRemaining()) {
-            // Deliberately identical for known and unknown emails: a "wait"
-            // message must not confirm that an account exists.
+            // The wait message stays generic: it is a rate-limit notice, not a
+            // verdict on the address.
             $message = "Please wait {$remaining} seconds before requesting another code.";
 
             if ($request->expectsJson()) {
@@ -76,31 +76,33 @@ class PasswordResetCodeController extends Controller
                 ->with('cooldown_seconds', $remaining);
         }
 
-        // Only active accounts may reset. Pending, rejected, suspended, and
-        // unknown addresses all receive the same generic response.
-        $user = User::where('email', $request->input('email'))
-            ->where('status', 'approved')
-            ->whereNull('suspended_at')
-            ->first();
+        $user = User::where('email', $request->input('email'))->first();
 
-        if ($user) {
-            $this->resetCodes->issue($user);
-
-            AuditLog::record(
-                'password_reset.code_requested',
-                $user->id,
-                $user->email,
-                $request->ip(),
-                $request->userAgent(),
-            );
+        // Anything that cannot actually receive a code is refused here, on step
+        // 1, with the reason. Sending it on to the code screen anyway would
+        // strand the visitor in front of a "code sent" panel for an email that
+        // never produced one — they would wait for a message that was never
+        // coming and have no way to tell what went wrong.
+        if ($reason = $this->refusalReason($user)) {
+            return $this->refuse($request, $reason);
         }
 
-        // Start the cooldown regardless of whether the account exists.
+        $this->resetCodes->issue($user);
+
+        AuditLog::record(
+            'password_reset.code_requested',
+            $user->id,
+            $user->email,
+            $request->ip(),
+            $request->userAgent(),
+        );
+
+        // The cooldown starts only once a code has really gone out, so a
+        // mistyped address costs nothing to correct.
         $request->session()->put('password_reset.sent_at', now()->timestamp);
 
-        $message = 'If that email address exists in our records, a 6-character reset code has been sent to it.';
+        $message = 'A 6-character reset code has been sent to your email address.';
 
-        // Identical response for known and unknown emails — prevents account enumeration.
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => $message,
@@ -114,6 +116,48 @@ class PasswordResetCodeController extends Controller
             ->route('password.reset', ['email' => $request->input('email')])
             ->with('status', $message)
             ->with('cooldown_seconds', self::RESEND_COOLDOWN_SECONDS);
+    }
+
+    /**
+     * Why this address may not be sent a code, or null when it may.
+     *
+     * The pending / rejected / suspended wording is LoginRequest's own, so a
+     * visitor hears the same reason from both doors instead of a clear
+     * explanation at sign-in and a dead end here.
+     */
+    private function refusalReason(?User $user): ?string
+    {
+        if (! $user) {
+            return "We couldn't find an account with that email address. Check the spelling, or register for an account.";
+        }
+
+        if ($user->isSuspended()) {
+            return 'This account has been suspended. Please contact the barangay office.';
+        }
+
+        if (! $user->isApproved()) {
+            return $user->isPending()
+                ? 'Your account is still awaiting approval from the barangay office. We will email you once it is approved.'
+                : 'This account was not approved. Please contact the barangay office for assistance.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Hold the visitor on the email step, keeping their address in the field so
+     * a typo can simply be corrected rather than retyped.
+     */
+    private function refuse(Request $request, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        return redirect()
+            ->route('password.request')
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => $message]);
     }
 
     /**

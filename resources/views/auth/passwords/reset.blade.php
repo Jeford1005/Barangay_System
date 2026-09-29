@@ -18,7 +18,7 @@
     @endif
 @include('components.bare-url')
 </head>
-<body class="min-h-screen bg-slate-200 text-slate-900 antialiased">
+<body class="min-h-dvh bg-slate-200 text-slate-900 antialiased">
     {{-- The seal, oversized and held at a whisper — the same backdrop the
          sign-in page opens on, so every unauthenticated route reads as one
          system. Fixed, so it stays put when the form scrolls. --}}
@@ -27,7 +27,7 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-3 sm:px-6">
+    <main class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="mx-auto w-full max-w-md">
             {{-- Card --}}
             <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
@@ -80,7 +80,7 @@
                                 <button
                                     type="button"
                                     id="paste-code-btn"
-                                    class="hidden text-sm font-medium text-sky-700 hover:text-sky-800"
+                                    class="hidden flex min-h-11 items-center text-sm font-medium text-sky-700 hover:text-sky-800"
                                 >
                                     Paste code
                                 </button>
@@ -165,7 +165,7 @@
 
                         <button
                             type="submit"
-                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
                         >
                             Reset Password
                         </button>
@@ -181,7 +181,7 @@
                                     type="submit"
                                     id="resend-btn"
                                     @if ($cooldownSeconds > 0) disabled aria-disabled="true" @endif
-                                    class="font-medium {{ $cooldownSeconds > 0 ? 'text-slate-500' : 'text-sky-700 hover:text-sky-800' }}"
+                                    class="inline-flex min-h-11 items-center font-medium {{ $cooldownSeconds > 0 ? 'text-slate-500' : 'text-sky-700 hover:text-sky-800' }}"
                                 >
                                     @if ($cooldownSeconds > 0)
                                         Resend available in {{ $cooldownSeconds }}s
@@ -191,12 +191,12 @@
                                 </button>
                             </form>
                         @else
-                            <a href="{{ route('password.request') }}" class="font-medium text-sky-700 hover:text-sky-800">
+                            <a href="{{ route('password.request') }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:text-sky-800">
                                 Enter your email
                             </a>
                         @endif
                         &middot;
-                        <a href="{{ route('login') }}" class="font-medium text-sky-700 hover:text-sky-800">
+                        <a href="{{ route('login') }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:text-sky-800">
                             Back to sign in
                         </a>
                     </div>

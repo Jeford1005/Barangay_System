@@ -23,6 +23,19 @@
             background: #fff;
             padding: 16mm 14mm;
             box-shadow: 0 1px 4px rgba(0,0,0,.25);
+            /* The column widths further down are locked in pt so the printed
+               form lines up: the roster alone sets 296pt (~395px) of fixed
+               columns, which cannot shrink and is wider than a phone. Scroll
+               inside the sheet instead of letting the page scroll sideways -
+               NFR7 asks for no page-level horizontal overflow at 375-614px. */
+            overflow-x: auto;
+        }
+
+        /* A 14mm margin is a third of a 375px screen, so lay the sheet almost
+           edge-to-edge on a phone. Larger screens and print are untouched. */
+        @media screen and (max-width: 640px) {
+            body { padding: 8px; }
+            .sheet { padding: 10px; }
         }
 
         /* ---------- Letterhead (shared official-form pattern) ---------- */
@@ -168,7 +181,7 @@
 
         @media print {
             body { background: #fff; padding: 0; }
-            .sheet { box-shadow: none; padding: 0; max-width: none; }
+            .sheet { box-shadow: none; padding: 0; max-width: none; overflow: visible; }
             .toolbar { display: none !important; }
             .printed-note .pagenum::after { content: 'Page ' counter(page); }
             section, .signatures { break-inside: auto; }

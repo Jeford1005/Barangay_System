@@ -10,11 +10,11 @@
             <div class="module-toolbar module-toolbar--resident">
                 <div class="min-w-0">
                     <label for="resident-search" class="sr-only">Search residents</label>
-                    <input id="resident-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search by name" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <input id="resident-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search by name" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
                 <div class="min-w-0">
                     <label for="resident-purok" class="sr-only">Filter by purok</label>
-                    <select id="resident-purok" name="purok_id" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-purok" name="purok_id" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All puroks</option>
                         @foreach ($puroks as $id => $name)
                             <option value="{{ $id }}" @selected(request('purok_id') == $id)>{{ $name }}</option>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-household" class="sr-only">Filter by household</label>
-                    <select id="resident-household" name="household_id" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-household" name="household_id" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All households</option>
                         @foreach ($households as $id => $code)
                             <option value="{{ $id }}" @selected(request('household_id') == $id)>{{ $code }}</option>
@@ -32,21 +32,21 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-status" class="sr-only">Filter by status</label>
-                    <select id="resident-status" name="status" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="resident-status" name="status" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All Status</option>
                         <option value="Active" @selected(request('status') === 'Active')>Active</option>
                         <option value="Archived" @selected(request('status') === 'Archived')>Archived</option>
                     </select>
                 </div>
-                <button type="submit" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
                 <div class="flex min-w-0 items-center justify-end gap-2">
                     @if (auth()->user()?->isAdmin())
-                     <a href="{{ route('admin.exports.residents', request()->query()) }}" class="inline-flex min-h-10 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                     <a href="{{ route('admin.exports.residents', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                          <x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export
                      </a>
                      @endif
                      @if (request()->filled('search') || request()->filled('purok_id') || request()->filled('household_id') || request()->filled('status'))
-                        <a href="{{ route('residents.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                        <a href="{{ route('residents.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                     @endif
                     <x-primary-action :href="route('residents.create')" compact data-dialog-open="resident-dialog">
                         <x-icon name="plus" class="h-4 w-4" />
@@ -106,16 +106,16 @@
                                 </td>
                                 <td class="no-print whitespace-nowrap px-4 py-3 text-right">
                                     <div class="inline-flex items-center justify-end gap-2">
-                                        <a href="{{ route('residents.edit', $resident->id) }}" data-dialog-open="resident-dialog" data-fetch-url="{{ route('residents.edit', $resident->id) }}" data-fetch-mode="edit" class="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Edit</a>
+                                        <a href="{{ route('residents.edit', $resident->id) }}" data-dialog-open="resident-dialog" data-fetch-url="{{ route('residents.edit', $resident->id) }}" data-fetch-mode="edit" class="inline-flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Edit</a>
                                         @if (auth()->user()?->isAdmin() && $isActive)
                                             <form method="POST" action="{{ route('residents.archive', $resident->id) }}" data-confirm="Archive this resident? Their portal access will be blocked." data-confirm-title="Archive resident" data-confirm-accept="Archive">
                                                 @csrf
-                                                <button type="submit" class="inline-flex min-h-9 items-center rounded-md border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-700 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Archive</button>
+                                                <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-700 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Archive</button>
                                             </form>
                                         @elseif (auth()->user()?->isAdmin())
                                             <form method="POST" action="{{ route('residents.restore', $resident->id) }}">
                                                 @csrf
-                                                <button type="submit" class="inline-flex min-h-9 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Restore</button>
+                                                <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Restore</button>
                                             </form>
                                         @endif
                                     </div>

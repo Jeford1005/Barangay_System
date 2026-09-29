@@ -11,10 +11,10 @@
             <form method="GET" action="{{ route('puroks.index') }}" class="p-3">
                 <div class="module-toolbar module-toolbar--one">
                     <label for="purok-search" class="sr-only">Search puroks</label>
-                    <input id="purok-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search purok name or code" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <input id="purok-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search purok name or code" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <div class="flex min-w-0 items-center justify-end gap-2">
                         @if (request()->filled('search'))
-                            <a href="{{ route('puroks.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                            <a href="{{ route('puroks.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                         @endif
                         @if (auth()->user()?->isAdmin())
                             <x-primary-action :href="route('puroks.create')" compact data-dialog-open="purok-dialog">

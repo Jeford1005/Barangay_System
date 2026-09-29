@@ -25,7 +25,7 @@
                         type="button"
                         id="forgot-close"
                         aria-label="Close dialog"
-                        class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        class="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
                     >
                         <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                     </button>
@@ -48,13 +48,13 @@
                                 placeholder="you@example.com"
                                 class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600"
                             >
-                            <p id="forgot-email-error" class="mt-1.5 hidden text-sm text-red-600"></p>
+                            <p id="forgot-email-error" class="mt-1.5 hidden text-sm text-red-600" role="alert"></p>
                         </div>
 
                         <button
                             type="submit"
                             id="forgot-send-btn"
-                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             Send Reset Code
                         </button>
@@ -97,7 +97,7 @@
                                 @endfor
                             </div>
                             <input type="hidden" id="forgot-code" value="">
-                            <p id="forgot-code-error" class="mt-1.5 hidden text-sm text-red-600"></p>
+                            <p id="forgot-code-error" class="mt-1.5 hidden text-sm text-red-600" role="alert"></p>
                         </div>
 
                         <div>
@@ -122,7 +122,7 @@
                                     <svg class="icon-eye-off hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
                                 </button>
                             </div>
-                            <p id="forgot-password-error" class="mt-1.5 hidden text-sm text-red-600"></p>
+                            <p id="forgot-password-error" class="mt-1.5 hidden text-sm text-red-600" role="alert"></p>
                         </div>
 
                         <div>

@@ -118,8 +118,8 @@
 
 .sidebar-toggle {
     display: inline-flex;
-    height: 2rem;
-    width: 2rem;
+    height: 2.75rem;
+    width: 2.75rem;
     flex: none;
     align-items: center;
     justify-content: center;
@@ -168,7 +168,7 @@
 .nav-row {
     position: relative;
     display: flex;
-    min-height: 2.625rem;
+    min-height: 2.75rem;
     align-items: center;
     gap: 0.75rem;
     border-radius: 0.5rem;

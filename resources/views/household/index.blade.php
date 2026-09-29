@@ -11,9 +11,9 @@
             <form method="GET" action="{{ route('households.index') }}" class="p-3">
                 <div class="module-toolbar module-toolbar--two">
                     <label for="household-search" class="sr-only">Search households</label>
-                    <input id="household-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search code, street, or barangay" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <input id="household-search" name="search" type="search" maxlength="100" value="{{ request('search') }}" placeholder="Search code, street, or barangay" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <label for="household-purok" class="sr-only">Filter by purok</label>
-                    <select id="household-purok" name="purok_id" onchange="this.form.submit()" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <select id="household-purok" name="purok_id" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         <option value="">All puroks</option>
                         @foreach ($puroks as $id => $name)
                             <option value="{{ $id }}" @selected(request('purok_id') == $id)>{{ $name }}</option>
@@ -21,10 +21,10 @@
                     </select>
                     <div class="flex min-w-0 items-center justify-end gap-2">
                         @if (auth()->user()?->isAdmin())
-                         <a href="{{ route('admin.exports.households', request()->query()) }}" class="inline-flex min-h-10 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
+                         <a href="{{ route('admin.exports.households', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
                          @endif
                          @if (request()->filled('search') || request()->filled('purok_id'))
-                            <a href="{{ route('households.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                            <a href="{{ route('households.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                         @endif
                         <x-primary-action :href="route('households.create')" compact data-dialog-open="household-dialog">
                             <x-icon name="plus" class="h-4 w-4" />

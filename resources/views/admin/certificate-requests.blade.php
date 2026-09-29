@@ -12,14 +12,14 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label for="certificate-request-status" class="sr-only">Filter certificate requests by status</label>
                     <select id="certificate-request-status" name="status"
-                        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56">
+                        class="w-full min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56">
                         @foreach (['' => 'Pending + reviewed', 'Pending' => 'Pending', 'Approved' => 'Approved', 'Rejected' => 'Rejected', 'Cancelled' => 'Cancelled'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <button type="submit" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+                    <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
                     <div class="no-print flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-3 sm:ml-auto sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-                        <a href="{{ route('certificates.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Issued certificates →</a>
+                        <a href="{{ route('certificates.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Issued certificates →</a>
                     </div>
                 </div>
             </form>
@@ -77,12 +77,12 @@
                                                     <label for="certificate-fee-{{ $req->id }}" class="sr-only">Optional fee for {{ $req->document?->title }}</label>
                                                     <input id="certificate-fee-{{ $req->id }}" type="number" name="fee" value="{{ old('fee') }}" placeholder="{{ number_format((float) $req->document?->fee ?? 0, 2) }}" min="0" max="9999" step="0.01" inputmode="decimal"
                                                         class="w-28 rounded-md border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
-                                                    <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                                    <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                                                         Approve
                                                     </button>
                                                 </form>
                                                 <details class="relative inline-block text-left">
-                                                    <summary class="inline-flex items-center justify-center min-h-9 cursor-pointer rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 list-none">Reject…</summary>
+                                                    <summary class="inline-flex items-center justify-center min-h-11 cursor-pointer rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 list-none">Reject…</summary>
                                                     <div class="relative z-10 mt-2 w-72 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-lg">
                                                         <form method="POST" action="{{ route('admin.certificate-requests.reject', $req) }}">
                                                             @csrf
@@ -100,7 +100,7 @@
                                                 </details>
                                             </div>
                                         @elseif ($req->status === 'Approved' && $req->issuance)
-                                            <a href="{{ route('certificates.print', $req->issuance) }}" class="inline-flex items-center justify-center min-h-9 rounded-md border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                            <a href="{{ route('certificates.print', $req->issuance) }}" class="inline-flex items-center justify-center min-h-11 rounded-md border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                                                 Reprint
                                             </a>
                                         @else

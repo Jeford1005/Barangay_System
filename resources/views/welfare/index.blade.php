@@ -15,11 +15,11 @@
                     <div class="min-w-0">
                         <label for="welfare-search" class="sr-only">Search welfare requests</label>
                         <input id="welfare-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search beneficiary or program"
-                            class="min-h-10 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                            class="min-h-11 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                     </div>
                     <div class="min-w-0">
                         <label for="welfare-type" class="sr-only">Filter welfare requests by assistance type</label>
-                        <select id="welfare-type" name="assistance_type" onchange="this.form.submit()" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                        <select id="welfare-type" name="assistance_type" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                             <option value="">All types</option>
                             @foreach (['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other'] as $type)
                                 <option value="{{ $type }}" @selected(request('assistance_type') === $type)>{{ $type }}</option>
@@ -28,7 +28,7 @@
                     </div>
                     <div class="min-w-0">
                         <label for="welfare-status" class="sr-only">Filter welfare requests by status</label>
-                        <select id="welfare-status" name="status" onchange="this.form.submit()" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                        <select id="welfare-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                             <option value="">All Status</option>
                             @foreach (['Requested', 'Under Review', 'Approved', 'Denied', 'Released'] as $status)
                                 <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>
@@ -37,7 +37,7 @@
                     </div>
                     <div class="flex min-w-0 items-center justify-end gap-2">
                         @if (auth()->user()?->isAdmin())
-                         <a href="{{ route('admin.exports.welfare', request()->query()) }}" class="inline-flex min-h-10 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
+                         <a href="{{ route('admin.exports.welfare', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
                          @endif
                          <x-primary-action :href="route('welfare.create')" compact data-dialog-open="welfare-dialog">
                             <x-icon name="plus" class="h-4 w-4" />

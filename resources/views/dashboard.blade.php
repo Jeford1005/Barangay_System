@@ -102,7 +102,7 @@
                 </li>
             </ul>
             <div class="border-t border-slate-200 px-6 py-3">
-                <a href="{{ route('analytics.index') }}" class="inline-flex items-center gap-1.5 rounded text-sm font-medium text-sky-700 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                <a href="{{ route('analytics.index') }}" class="inline-flex min-h-6 items-center gap-1.5 rounded text-sm font-medium text-sky-700 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
                     <x-icon name="chart-bar" class="h-4 w-4" />
                     View full analytics
                 </a>

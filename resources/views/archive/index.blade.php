@@ -12,7 +12,7 @@
             <div class="flex flex-wrap gap-2 mb-4">
                 @foreach ($types as $key => $meta)
                     <a href="{{ route('archive.type', $key) }}" @if($type === $key) aria-current="page" @endif
-                        class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">
+                        class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">
                         {{ $meta['label'] }}
                         <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold {{ $type === $key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600' }}">{{ $counts[$key] }}</span>
                     </a>
@@ -23,13 +23,13 @@
             <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-col gap-2 sm:flex-row">
                 <label for="archive-search" class="sr-only">Search archived {{ strtolower($types[$type]['label']) }}</label>
                 <input id="archive-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search archived {{ strtolower($types[$type]['label']) }}…"
-                    class="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
-                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    class="flex-1 min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                     <x-icon name="funnel" class="mr-2 h-4 w-4 text-slate-500" />
                     Search
                 </button>
                 @if (request('search'))
-                    <a href="{{ route('archive.type', $type) }}" class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Clear</a>
+                    <a href="{{ route('archive.type', $type) }}" class="inline-flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Clear</a>
                 @endif
             </form>
 
@@ -79,7 +79,7 @@
                                         <div class="inline-flex items-center gap-1">
                                             <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}">
                                                 @csrf
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600" title="Restore this record">
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600" title="Restore this record">
                                                     Restore
                                                 </button>
                                             </form>
@@ -89,7 +89,7 @@
                                                 data-confirm-accept="Delete forever">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50" title="Delete permanently">
+                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50" title="Delete permanently">
                                                     Delete forever
                                                 </button>
                                             </form>

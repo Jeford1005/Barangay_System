@@ -104,9 +104,64 @@ class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
+        $response = $this->post('/forgot-password', ['email' => 'nobody@example.com']);
+
+        // Held on step 1 with the reason, never advanced to a code screen that
+        // would wait for an email nothing sent.
+        $response->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
+
+        $this->assertStringContainsString(
+            "couldn't find an account",
+            session('errors')->first('email'),
+        );
+
+        // The reason is genuinely rendered on the page they land on, not just
+        // flashed into the session.
+        $this->get(route('password.request'))
+            ->assertOk()
+            ->assertSee("couldn't find an account");
+
+        Notification::assertNothingSent();
+        $this->assertDatabaseCount('password_reset_tokens', 0);
+    }
+
+    public function test_a_mistyped_address_does_not_start_the_cooldown(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['user_type' => 'admin']);
+
         $this->post('/forgot-password', ['email' => 'nobody@example.com'])
-            ->assertRedirect(route('password.reset', ['email' => 'nobody@example.com']))
-            ->assertSessionHas('status'); // same message either way — prevents account enumeration
+            ->assertRedirect(route('password.request'));
+
+        // The corrected address works straight away — a typo must not cost a
+        // 60-second wait, because no code was issued for the wrong one.
+        $this->post('/forgot-password', ['email' => $user->email])
+            ->assertRedirect(route('password.reset', ['email' => $user->email]));
+
+        Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
+    }
+
+    public function test_unusable_accounts_are_told_why_and_not_advanced(): void
+    {
+        Notification::fake();
+
+        $rejected = User::factory()->create(['user_type' => 'resident', 'status' => 'rejected']);
+
+        $suspended = User::factory()->create(['user_type' => 'resident']);
+        $suspended->suspended_at = now();
+        $suspended->save();
+
+        $this->post('/forgot-password', ['email' => $rejected->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
+        $this->assertStringContainsString('not approved', session('errors')->first('email'));
+
+        $this->post('/forgot-password', ['email' => $suspended->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
+        $this->assertStringContainsString('suspended', session('errors')->first('email'));
 
         Notification::assertNothingSent();
         $this->assertDatabaseCount('password_reset_tokens', 0);
@@ -337,18 +392,21 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPasswordCodeNotification::class);
     }
 
-    public function test_json_code_request_is_enumeration_safe(): void
+    public function test_json_code_request_refuses_unknown_emails(): void
     {
         Notification::fake();
 
         $user = User::factory()->create(['user_type' => 'admin']);
 
-        $known = $this->postJson('/forgot-password', ['email' => $user->email])->assertOk()->json('message');
+        $this->postJson('/forgot-password', ['email' => $user->email])->assertOk();
         $this->travel(61)->seconds();
 
-        $unknown = $this->postJson('/forgot-password', ['email' => 'nobody@example.com'])->assertOk()->json('message');
+        // The login dialog reads this as an error and stays on its email step
+        // instead of opening the code boxes for an address that sent nothing.
+        $this->postJson('/forgot-password', ['email' => 'nobody@example.com'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', fn (string $message) => str_contains($message, "couldn't find an account"));
 
-        $this->assertSame($known, $unknown);
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
     }
 

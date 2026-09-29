@@ -2,7 +2,7 @@
 @section('page_header')
     <x-page-header title="My Certificate Requests" subtitle="Request barangay certificates online — we'll email you when they're ready.">
         <x-slot:actions>
-            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to My Profile</a>
+            <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-500 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to My Profile</a>
         </x-slot:actions>
     </x-page-header>
 @endsection
@@ -50,7 +50,7 @@
                     @error('copies') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <button type="submit"
-                    class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                    class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
                     Submit Request
                 </button>
                 <p class="text-xs text-slate-500">One pending request per certificate type. The fee, if any, is paid when you claim the certificate at the barangay hall.</p>

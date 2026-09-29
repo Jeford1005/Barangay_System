@@ -315,6 +315,14 @@ requires either creating the pending account regardless and resolving the
 duplicate during approval, or accepting a generic message that leaves the user
 without actionable feedback. That is a product decision.
 
+**Resolved 2026-09-29 — the product decision went to actionable feedback.**
+Password reset now states plainly that an address has no usable account and
+holds the visitor on step 1 instead of advancing them to a code screen, so the
+registration form's duplicate-email message no longer contradicts it: both
+doors behave the same way. NFR3 in `requirements-validation-checklist.md` and
+use-case UC4's alternate flow A3 were rewritten to match, the data-flow rule
+was updated, and the tests asserting the old generic response were replaced.
+
 **Query cost.** `nav-items` runs three `COUNT(*)` queries on every page render;
 `ArchiveController::index` runs four more; `AnalyticsController` loads every
 active resident and then does per-purok filtering in PHP with no caching.

@@ -18,7 +18,7 @@
     @endif
 @include('components.bare-url')
 </head>
-<body class="min-h-screen bg-slate-200 text-slate-900 antialiased">
+<body class="min-h-dvh bg-slate-200 text-slate-900 antialiased">
     {{-- The seal, oversized and held at a whisper — the same backdrop the
          sign-in page opens on, so every unauthenticated route reads as one
          system. Fixed, so it stays put when the form scrolls. --}}
@@ -27,7 +27,7 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    <main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-3 sm:px-6">
+    <main class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="mx-auto w-full max-w-md">
             {{-- Card --}}
             <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
@@ -77,7 +77,7 @@
                                 class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('email') border-red-500! @enderror"
                             >
                             @error('email')
-                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                                <p id="email-error" class="mt-1.5 text-sm text-red-600" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
 
@@ -85,7 +85,7 @@
                             type="submit"
                             id="send-code-btn"
                             @if ($cooldownSeconds > 0) disabled aria-disabled="true" @endif
-                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             @if ($cooldownSeconds > 0)
                                 Wait {{ $cooldownSeconds }}s to resend
@@ -129,6 +129,31 @@
 
                     btn.textContent = `Wait ${remaining}s to resend`;
                 }, 1000);
+            })();
+        </script>
+    @endif
+
+    @if ($errors->has('email'))
+        <script>
+            (function () {
+                // Same 4.5s retirement as the login page's reset dialog: the
+                // message explains what just happened, so it should not sit on
+                // the card forever. The field returns to neutral with it — a red
+                // border outliving the reason for it reads as a mystery.
+                const node = document.getElementById('email-error');
+                if (!node) return;
+
+                const input = document.getElementById('email');
+                let timer = setTimeout(retire, 4500);
+
+                function retire() {
+                    clearTimeout(timer);
+                    node.remove();
+                    if (input) input.classList.remove('border-red-500!');
+                }
+
+                node.addEventListener('mouseenter', () => clearTimeout(timer));
+                node.addEventListener('mouseleave', () => { timer = setTimeout(retire, 4500); });
             })();
         </script>
     @endif

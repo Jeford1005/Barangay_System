@@ -2,7 +2,7 @@
 @section('page_header')
     <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory">
         <x-slot:actions>
-            <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-10 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
                 Account Approvals
                 @if ($pendingCount)
                     <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">{{ $pendingCount }}</span>
@@ -20,11 +20,11 @@
             <div class="module-toolbar-filters module-toolbar-filters--admin min-w-0 flex-1">
             <div class="min-w-0 flex-1">
                 <label for="user-search" class="sr-only">Search accounts</label>
-                <input id="user-search" name="search" type="search" maxlength="100" value="{{ $search }}" placeholder="Search by name or email" class="min-h-10 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <input id="user-search" name="search" type="search" maxlength="100" value="{{ $search }}" placeholder="Search by name or email" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
             </div>
             <div class="w-full">
                 <label for="user-role" class="sr-only">Filter by role</label>
-                <select id="user-role" name="role" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <select id="user-role" name="role" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <option value="">All roles</option>
                     <option value="admin" @selected($role === 'admin')>Administrator</option>
                     <option value="staff" @selected($role === 'staff')>Staff</option>
@@ -33,7 +33,7 @@
             </div>
             <div class="w-full">
                 <label for="user-status" class="sr-only">Filter by status</label>
-                <select id="user-status" name="status" class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <select id="user-status" name="status" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <option value="">All Status</option>
                     <option value="pending" @selected($status === 'pending')>Pending</option>
                     <option value="approved" @selected($status === 'approved')>Approved</option>
@@ -42,9 +42,9 @@
                 </select>
             </div>
             <div class="flex shrink-0 gap-2">
-                <button type="submit" class="inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
+                <button type="submit" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button>
                 @if ($search !== '' || $role !== '' || $status !== '')
-                    <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                    <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
                 @endif
             </div>
             </div>
@@ -86,7 +86,7 @@
                             @endphp
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">
-                                    <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-sky-700 hover:underline">{{ $user->name }}</a>
+                                    <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:underline">{{ $user->name }}</a>
                                     <span class="block text-xs text-slate-500">{{ $user->email }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-slate-700">{{ $user->roleLabel() }}</td>
@@ -97,9 +97,9 @@
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $user->created_at?->format('M j, Y') }}</td>
                                 <td class="no-print px-4 py-3 text-right">
                                     @if ($user->status === 'pending' && $user->user_type === 'resident')
-                                        <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-9 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Review</a>
+                                        <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-11 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Review</a>
                                     @else
-                                        <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-9 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">View</a>
+                                        <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-11 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">View</a>
                                     @endif
                                 </td>
                             </tr>

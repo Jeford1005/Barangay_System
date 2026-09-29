@@ -24,6 +24,18 @@
             background: #fff;
             padding: 18mm 16mm;
             box-shadow: 0 1px 4px rgba(0,0,0,.25);
+            /* Fixed pt widths are tuned for A4 and cannot shrink below their
+               content. Scroll inside the sheet rather than letting the page
+               scroll sideways - NFR7 asks for no page-level horizontal
+               overflow at 375-614px. */
+            overflow-x: auto;
+        }
+
+        /* A 16mm margin is a third of a 375px screen, so lay the sheet almost
+           edge-to-edge on a phone. Larger screens and print are untouched. */
+        @media screen and (max-width: 640px) {
+            body { padding: 8px; }
+            .sheet { padding: 10px; }
         }
 
         /* ---------- Letterhead ---------- */
@@ -159,7 +171,7 @@
 
         @media print {
             body { background: #fff; padding: 0; }
-            .sheet { box-shadow: none; padding: 0; max-width: none; }
+            .sheet { box-shadow: none; padding: 0; max-width: none; overflow: visible; }
             .toolbar { display: none !important; }
             .printed-note .pagenum::after { content: 'Page ' counter(page); }
             section, .case-meta, .signatures { break-inside: avoid; }

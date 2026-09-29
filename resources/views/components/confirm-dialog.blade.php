@@ -54,16 +54,16 @@
                     <button
                         type="button"
                         data-confirm-dialog-cancel
-                        class="min-h-10 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+                        class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
                         data-confirm-dialog-accept
-                        data-classes-danger="min-h-10 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-red-600 hover:bg-red-700"
-                        data-classes-primary="min-h-10 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-sky-600 hover:bg-sky-700"
-                        class="min-h-10 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-red-600 hover:bg-red-700"
+                        data-classes-danger="min-h-11 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-red-600 hover:bg-red-700"
+                        data-classes-primary="min-h-11 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-sky-600 hover:bg-sky-700"
+                        class="min-h-11 rounded-lg px-4 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 bg-red-600 hover:bg-red-700"
                     >
                         Confirm
                     </button>

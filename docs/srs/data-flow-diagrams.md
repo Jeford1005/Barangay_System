@@ -102,7 +102,7 @@ Data stores:       D1 users          D2 residents      D3 households/puroks
         (1.1 Send Email) ----confirmation----> Mail System
 ```
 
-**Rules enforced inside 1.2–1.3:** one active code per account (new request replaces the old); code expires in 15 minutes; single use; failed attempts audited (`password_reset.failed_code`); generic response prevents account enumeration.
+**Rules enforced inside 1.2–1.3:** one active code per account (new request replaces the old); code expires in 15 minutes; single use; failed attempts audited (`password_reset.failed_code`); an address with no eligible account is refused at 1.1 with the reason and never reaches the code step.
 
 ---
 

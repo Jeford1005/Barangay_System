@@ -102,7 +102,7 @@
 **Alternate flows**
 - **A1 — Wrong/expired code:** system rejects with `password_reset.failed_code` logged; guest may request a new code.
 - **A2 — Resend during cooldown:** blocked until the countdown ends (visible timer).
-- **A3 — Unknown email:** system shows the generic sent-confirmation without revealing whether the account exists (enumeration protection).
+- **A3 — Unknown or unusable account:** system refuses on step 1 with the reason (not found, awaiting approval, not approved, or suspended), issues no code, and never advances to the code screen. The typed address stays in the field so a typo can be corrected, and no resend cooldown starts because nothing was sent.
 - **A4 — Mailer down:** the mail-health page/`php artisan mail:check` surfaces the failure; codes are unavailable until fixed.
 
 ---
@@ -302,4 +302,4 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (171 tests / 673 assertions as of September 22, 2026).*
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (374 tests / 1686 assertions as of September 29, 2026).*

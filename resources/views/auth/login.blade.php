@@ -41,7 +41,7 @@
     <noscript><style>.js-only { display: none !important; }</style></noscript>
 @include('components.bare-url')
 </head>
-<body class="min-h-screen bg-slate-200 text-slate-800 antialiased">
+<body class="min-h-dvh bg-slate-200 text-slate-800 antialiased">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-sky-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
         Skip to sign-in form
     </a>
@@ -54,12 +54,23 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    {{-- py-4 rather than py-10: on a tall window the card is centred and the
+    {{-- py-3 rather than py-10: on a tall window the card is centred and the
          padding never binds, so it costs nothing visually - but on a short
          window it is the difference between the card fitting the fold and the
          page scrolling. Kept deliberately small because every auth screen
-         shares it and the sign-in card has to land under ~600px. --}}
-    <main id="main-content" class="relative z-10 flex min-h-screen items-center justify-center px-4 py-3 sm:px-6">
+         shares it and the sign-in card has to land under ~600px.
+
+         min-h-dvh rather than min-h-screen (=100vh): on a phone 100vh is the
+         *large* viewport, i.e. it counts the strip behind Safari's toolbar as
+         visible. Content sized to 100vh can therefore be taller than the area
+         actually on screen, which leaves the page scrollable into empty space
+         even though the card already fits - the classic "why can I scroll
+         this?" report. dvh tracks what is really on screen, so a card that
+         fits genuinely does not scroll. Same fix on register /
+         forgot-password / reset-password; browsers older than Safari 15.4 /
+         Chrome 108 / Firefox 101 ignore the utility and fall back to content
+         height. --}}
+    <main id="main-content" class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="w-full max-w-md">
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
 
@@ -92,7 +103,7 @@
                                 data-role-tab="{{ $value }}" data-role-can="{{ $role['can'] }}"
                                 aria-selected="{{ $selectedRole === $value ? 'true' : 'false' }}"
                                 tabindex="{{ $selectedRole === $value ? '0' : '-1' }}"
-                                class="js-only -mb-px border-b-2 border-transparent pb-2.5 text-[13px] font-semibold text-slate-500 transition-colors hover:text-slate-800 aria-selected:border-sky-600 aria-selected:text-slate-900 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
+                                class="js-only -mb-px min-h-11 border-b-2 border-transparent pt-3 pb-2.5 text-[13px] font-semibold text-slate-500 transition-colors hover:text-slate-800 aria-selected:border-sky-600 aria-selected:text-slate-900 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
                                 {{ $role['name'] }}
                             </button>
                         @endforeach
@@ -115,7 +126,7 @@
                     <input type="hidden" id="login-user-type" value="{{ $selectedRole }}">
 
                     {{-- No role blurb here. It cost two lines of reserved height
-                         (mt-3 + min-h-10 = 52px) and pushed the card past the
+                         (mt-3 + min-h-11 = 56px) and pushed the card past the
                          fold on short windows; the tabs and the closing line
                          below already carry the choice. role-switch guards on
                          [data-role-summary] with an `if`, so dropping the node
@@ -177,14 +188,20 @@
                                  sits under the field rather than beside the
                                  label. Red is the palette's critical token
                                  (#DC2626 - 4.83:1 on white, so it holds AA),
-                                 which also matches the error line above it. --}}
+                                 which also matches the error line above it.
+
+                                 flex + min-h-11 rather than bare text: NFR6 asks
+                                 for a 44px target and a plain text button
+                                 measured 20px. justify-end holds it hard right
+                                 exactly where text-right did, so only the
+                                 vertical hit area grows. --}}
                             @if (Route::has('password.request'))
-                                <div class="mt-1.5 text-right">
-                                    <button type="button" data-open-forgot class="js-only rounded text-[13px] font-medium text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2">
+                                <div class="mt-1.5 flex justify-end">
+                                    <button type="button" data-open-forgot class="js-only flex min-h-11 items-center rounded text-[13px] font-medium text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2">
                                         Forgot password?
                                     </button>
                                     <noscript>
-                                        <a href="{{ route('password.request') }}" class="rounded text-[13px] font-medium text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2">Forgot password?</a>
+                                        <a href="{{ route('password.request') }}" class="flex min-h-11 items-center rounded text-[13px] font-medium text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2">Forgot password?</a>
                                     </noscript>
                                 </div>
                             @endif

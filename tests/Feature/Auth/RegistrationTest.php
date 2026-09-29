@@ -176,9 +176,10 @@ class RegistrationTest extends TestCase
 
         $user = User::factory()->create(['user_type' => 'resident', 'status' => 'pending']);
 
-        // Identical response to an unknown email — nothing revealed.
+        // Told why, and held on the email step — no code and no code screen.
         $this->post('/forgot-password', ['email' => $user->email])
-            ->assertSessionHas('status');
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
 
         \Illuminate\Support\Facades\Notification::assertNothingSent();
         $this->assertDatabaseCount('password_reset_tokens', 0);

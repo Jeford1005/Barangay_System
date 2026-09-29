@@ -12,17 +12,17 @@
                 <div class="flex-1">
                     <label for="welfare-report-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Requested from</label>
                     <input id="welfare-report-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
+                        class="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
                 <div class="flex-1">
                     <label for="welfare-report-to" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Requested to</label>
                     <input id="welfare-report-to" type="date" name="to" value="{{ $to?->toDateString() }}" max="{{ now()->toDateString() }}"
-                        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
+                        class="mt-1 min-h-11 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600">
                 </div>
-                <button type="submit" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Filter</button>
-                <a href="{{ route('reports.welfare') }}" class="inline-flex items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Reset</a>
+                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Filter</button>
+                <a href="{{ route('reports.welfare') }}" class="inline-flex min-h-11 items-center justify-center rounded-md border border-transparent px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Reset</a>
                 <a href="{{ route('reports.welfare', array_merge(request()->only(['from', 'to']), ['print' => 1])) }}"
-                     class="inline-flex items-center justify-center rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                     class="inline-flex min-h-11 items-center justify-center rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
                      Print / PDF
                  </a>
             </form>

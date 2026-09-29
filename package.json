@@ -5,7 +5,10 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:browser": "playwright test"
+        "test:browser": "playwright test",
+        "audit:responsive": "node check-responsive.mjs",
+        "audit:targets": "node check-targets.mjs",
+        "audit:app": "node check-app.mjs"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.13.0",

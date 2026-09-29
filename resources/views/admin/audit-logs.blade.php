@@ -34,7 +34,7 @@
                     class="w-full min-h-11 px-3 py-2 border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                 >
                 <label for="audit-event" class="sr-only">Filter audit logs by event</label>
-                <select id="audit-event" name="event" class="w-full px-3 py-2 border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                <select id="audit-event" name="event" class="w-full min-h-11 px-3 py-2 border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                     <option value="">All events</option>
                     @foreach ($events as $event)
                         <option value="{{ $event }}" @selected(request('event') === $event)>{{ App\Models\AuditLog::make(['event' => $event])->event_label }}</option>
