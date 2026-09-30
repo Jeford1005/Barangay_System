@@ -28,7 +28,6 @@ class Blotter extends Model
     protected $table = 'blotter';
 
     protected $fillable = [
-        'case_number',
         'complainant_id',
         'complainant_name',
         'complainant_address',

@@ -14,7 +14,6 @@ class Purok extends Model
         'name',
         'code',
         'created_by',
-        'updated_by',
     ];
 
     protected $casts = [

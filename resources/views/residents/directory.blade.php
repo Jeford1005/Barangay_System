@@ -277,7 +277,7 @@
         <p class="cert">
             I certify that this directory is a true and correct list of the active residents
             of Barangay Bidduang as recorded in the Barangay Management System as of
-            {{ now()->format('F j, Y') }}, totaling {{ $total }} resident{{ $total === 1 ? '' : 's' }}.
+            {{ now()->format('M j, Y') }}, totaling {{ $total }} resident{{ $total === 1 ? '' : 's' }}.
         </p>
 
         <div class="signatures">

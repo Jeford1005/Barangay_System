@@ -86,10 +86,12 @@ class PurokController extends Controller
 
         $validated = $this->validatePurok($request, $purok->id);
 
-        // The puroks table carries no updated_by column yet; record the actor
-        // only where the column exists so the write never breaks.
+        // The puroks table carries no updated_by column yet; the fillable
+        // list stays clean and the actor is recorded explicitly only where
+        // the column exists, so the write never breaks.
+        $updatedBy = null;
         if (Schema::hasColumn('puroks', 'updated_by')) {
-            $validated['updated_by'] = Auth::id();
+            $updatedBy = Auth::id();
         }
 
         DB::beginTransaction();
@@ -98,6 +100,10 @@ class PurokController extends Controller
             // between routing and the write.
             $locked = Purok::whereKey($purok->getKey())->lockForUpdate()->firstOrFail();
             $locked->update($validated);
+            if ($updatedBy !== null) {
+                $locked->updated_by = $updatedBy;
+                $locked->save();
+            }
             DB::commit();
             Cache::forget('auth.purok-options');
 

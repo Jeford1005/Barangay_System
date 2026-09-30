@@ -29,7 +29,7 @@ class AuditLogController extends Controller
 
         if ($request->filled('from')) {
             try {
-                $query->where('occurred_at', '>=', Carbon::parse((string) $request->input('from'))->startOfDay());
+                $query->where('occurred_at', '>=', Carbon::parse((string) $request->input('from'), 'Asia/Manila')->startOfDay());
             } catch (\Throwable) {
                 // An unparseable date is ignored rather than failing the page.
             }
@@ -37,7 +37,7 @@ class AuditLogController extends Controller
 
         if ($request->filled('to')) {
             try {
-                $query->where('occurred_at', '<=', Carbon::parse((string) $request->input('to'))->endOfDay());
+                $query->where('occurred_at', '<=', Carbon::parse((string) $request->input('to'), 'Asia/Manila')->endOfDay());
             } catch (\Throwable) {
                 // An unparseable date is ignored rather than failing the page.
             }

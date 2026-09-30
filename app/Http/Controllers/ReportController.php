@@ -96,14 +96,16 @@ class ReportController extends Controller
             ->count();
 
         if ($request->boolean('print')) {
-            AuditLog::record(
-                'report.printed',
-                auth()->id(),
-                auth()->user()?->email,
-                $request->ip(),
-                $request->userAgent(),
-                ['report' => 'population', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $totals->total],
-            );
+            if (! $this->isPrefetch($request)) {
+                AuditLog::record(
+                    'report.printed',
+                    auth()->id(),
+                    auth()->user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    ['report' => 'population', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $totals->total],
+                );
+            }
 
             return view('reports.population-print', [
                 'rows' => $rows,
@@ -179,7 +181,7 @@ class ReportController extends Controller
         $cursor = $from?->copy()->startOfMonth();
         if ($cursor === null) {
             $earliest = (clone $base)->min('complaint_date');
-            $cursor = $earliest ? Carbon::parse($earliest)->startOfMonth() : now()->startOfMonth();
+            $cursor = $earliest ? Carbon::parse($earliest, 'Asia/Manila')->startOfMonth() : now()->startOfMonth();
         }
         $end = $to?->copy()->endOfMonth() ?? now()->endOfMonth();
         while ($cursor <= $end && count($months) < 24) {
@@ -194,7 +196,7 @@ class ReportController extends Controller
                 ->pluck('c', 'ym');
 
             $cursor = $from?->copy()->startOfMonth()
-                ?? ($earliest ?? null ? Carbon::parse($earliest)->startOfMonth() : now()->startOfMonth());
+                ?? ($earliest ?? null ? Carbon::parse($earliest, 'Asia/Manila')->startOfMonth() : now()->startOfMonth());
             foreach (array_keys($months) as $label) {
                 $months[$label] = (int) ($monthCounts[$cursor->format('Y-m')] ?? 0);
                 $cursor->addMonth();
@@ -211,14 +213,16 @@ class ReportController extends Controller
             ->get();
 
         if ($request->boolean('print')) {
-            AuditLog::record(
-                'report.printed',
-                auth()->id(),
-                auth()->user()?->email,
-                $request->ip(),
-                $request->userAgent(),
-                ['report' => 'blotter', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
-            );
+            if (! $this->isPrefetch($request)) {
+                AuditLog::record(
+                    'report.printed',
+                    auth()->id(),
+                    auth()->user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    ['report' => 'blotter', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
+                );
+            }
 
             return view('reports.blotter-print', [
                 'byType' => $byType,
@@ -322,14 +326,16 @@ class ReportController extends Controller
             ->orderBy('request_date');
 
         if ($request->boolean('print')) {
-            AuditLog::record(
-                'report.printed',
-                auth()->id(),
-                auth()->user()?->email,
-                $request->ip(),
-                $request->userAgent(),
-                ['report' => 'welfare', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
-            );
+            if (! $this->isPrefetch($request)) {
+                AuditLog::record(
+                    'report.printed',
+                    auth()->id(),
+                    auth()->user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    ['report' => 'welfare', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
+                );
+            }
 
             // The printed extract lists the period's beneficiaries; cap the
             // rows so an unbounded period cannot exhaust memory. The totals
@@ -374,8 +380,8 @@ class ReportController extends Controller
             ]);
         }
 
-        $from = $request->filled('from') ? Carbon::parse($validated['from'])->startOfDay() : ($defaultMonths ? now()->subMonths($defaultMonths)->startOfDay() : null);
-        $to = $request->filled('to') ? Carbon::parse($validated['to'])->endOfDay() : ($defaultMonths ? now()->endOfDay() : null);
+        $from = $request->filled('from') ? Carbon::parse($validated['from'], 'Asia/Manila')->startOfDay() : ($defaultMonths ? now()->subMonths($defaultMonths)->startOfDay() : null);
+        $to = $request->filled('to') ? Carbon::parse($validated['to'], 'Asia/Manila')->endOfDay() : ($defaultMonths ? now()->endOfDay() : null);
         $asOf = now();
 
         return [$from, $to, $asOf];
@@ -448,6 +454,12 @@ class ReportController extends Controller
      */
     private function auditScreenView(Request $request, string $report, ?Carbon $from, ?Carbon $to, int $total): void
     {
+        // A speculative prefetch is not a human view: skip the audit but
+        // still serve the screen below.
+        if ($this->isPrefetch($request)) {
+            return;
+        }
+
         AuditLog::record(
             'report.viewed',
             auth()->id(),
@@ -456,5 +468,23 @@ class ReportController extends Controller
             $request->userAgent(),
             ['report' => $report, 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $total],
         );
+    }
+
+    /**
+     * True when the request is a speculative prefetch rather than a human
+     * navigation: Chromium sends `Sec-Purpose: prefetch` (older builds
+     * `Purpose: prefetch`) and Firefox sends `X-Moz: prefetch`.
+     */
+    private function isPrefetch(Request $request): bool
+    {
+        foreach (['Sec-Purpose', 'Purpose', 'X-Moz'] as $header) {
+            $value = (string) $request->header($header, '');
+
+            if ($value !== '' && stripos($value, 'prefetch') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

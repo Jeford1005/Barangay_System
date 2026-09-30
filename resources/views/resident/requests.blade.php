@@ -21,7 +21,7 @@
                         <option value="">Choose…</option>
                         @foreach ($documents as $document)
                             <option value="{{ $document->id }}" data-requirements="{{ $document->requirements }}" @selected(old('document_id') == $document->id)>
-                                {{ $document->title }} (@if ((float) $document->fee > 0)₱{{ number_format((float) $document->fee, 2) }}@else free @endif)
+                                {{ $document->title }} (@if ((float) $document->fee > 0)<x-money :amount="$document->fee" />@else Free @endif)
                             </option>
                         @endforeach
                     </select>

@@ -80,12 +80,13 @@ class CertificateRequestAdminController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            $requestModel->update([
-                'status' => 'Approved',
-                'issuance_id' => $issuance->id,
-                'reviewed_by' => Auth::id(),
-                'reviewed_at' => now(),
-            ]);
+            $requestModel->status = 'Approved';
+            // The issuance link and decision metadata are privileged: set them
+            // explicitly, never through mass assignment.
+            $requestModel->issuance_id = $issuance->id;
+            $requestModel->reviewed_by = Auth::id();
+            $requestModel->reviewed_at = now();
+            $requestModel->save();
 
             AuditLog::record(
                 'certificate.request_approved',
@@ -143,12 +144,11 @@ class CertificateRequestAdminController extends Controller
 
             abort_unless($requestModel->status === 'Pending', 422, 'Only pending requests can be rejected.');
 
-            $requestModel->update([
-                'status' => 'Rejected',
-                'rejection_reason' => $validated['rejection_reason'],
-                'reviewed_by' => Auth::id(),
-                'reviewed_at' => now(),
-            ]);
+            $requestModel->status = 'Rejected';
+            $requestModel->rejection_reason = $validated['rejection_reason'];
+            $requestModel->reviewed_by = Auth::id();
+            $requestModel->reviewed_at = now();
+            $requestModel->save();
 
             AuditLog::record(
                 'certificate.request_rejected',

@@ -7,6 +7,7 @@ use App\Models\Official;
 use App\Models\Purok;
 use App\Models\Resident;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -22,9 +23,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::transaction(function (): void {
-            $this->seed();
-        });
+        // Seeders run outside HTTP validation, so unguard mass assignment:
+        // several models deliberately exclude privileged keys (role, user_id,
+        // head id) from $fillable. Laravel unguards seeders via Model::unguard
+        // in newer versions; do it explicitly for safety.
+        Model::unguard();
+        try {
+            DB::transaction(function (): void {
+                $this->seed();
+            });
+        } finally {
+            Model::reguard();
+        }
     }
 
     private function seed(): void

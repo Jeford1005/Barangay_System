@@ -174,7 +174,7 @@ class ResidentController extends Controller
                 Storage::disk('local')->delete($newPhotoPath);
             }
 
-            return back()->withErrors(['error' => 'Failed to register resident.'])->withInput();
+            return back()->withErrors(['error' => 'Failed to register resident.'])->withInput($request->except(['password', 'password_confirmation', 'photo', '_token']));
         }
     }
 
@@ -207,6 +207,18 @@ class ResidentController extends Controller
         // may correct ordinary profile fields without archiving or restoring.
         if (Auth::user()?->isStaff()) {
             $validated['status'] = $resident->status;
+        }
+
+        // A status change through the edit form is a lifecycle action, not a
+        // field correction: it carries the archive()/restore() side-effects
+        // (portal suspension, session revocation, lifecycle audit) applied in
+        // the transaction below. The status column is never bare-updated.
+        $archiving = ($validated['status'] ?? $resident->status) === 'Archived' && $resident->status !== 'Archived';
+        $restoring = ($validated['status'] ?? $resident->status) === 'Active' && $resident->status === 'Archived';
+
+        if ($archiving) {
+            // Mirrors archive(): an archived profile never keeps its head flag.
+            $validated['is_household_head'] = false;
         }
 
         // A household head must never be moved away silently: the sync layer
@@ -266,6 +278,40 @@ class ResidentController extends Controller
                 );
             }
 
+            // Lifecycle side-effects mirroring archive()/restore(): archiving
+            // through the edit form suspends the linked portal account and
+            // revokes its sessions/tokens, while restoring never silently
+            // reactivates the account.
+            if ($archiving) {
+                if ($resident->user) {
+                    $resident->user->update([
+                        'suspended_at' => now(),
+                        'suspended_by' => Auth::id(),
+                        'suspension_reason' => 'Resident record archived by the barangay office.',
+                    ]);
+                    DB::table('password_reset_tokens')->where('email', $resident->user->email)->delete();
+                    DB::table('sessions')->where('user_id', $resident->user->id)->delete();
+                }
+
+                AuditLog::record(
+                    'resident.archived',
+                    Auth::id(),
+                    Auth::user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    ['resident_id' => $resident->id],
+                );
+            } elseif ($restoring) {
+                AuditLog::record(
+                    'resident.restored',
+                    Auth::id(),
+                    Auth::user()?->email,
+                    $request->ip(),
+                    $request->userAgent(),
+                    ['resident_id' => $resident->id],
+                );
+            }
+
             DB::commit();
 
             if ($newPhotoPath && $oldPhoto && $oldPhoto !== $newPhotoPath) {
@@ -287,7 +333,7 @@ class ResidentController extends Controller
                 Storage::disk('local')->delete($newPhotoPath);
             }
 
-            return back()->withErrors(['error' => 'Failed to update resident.'])->withInput();
+            return back()->withErrors(['error' => 'Failed to update resident.'])->withInput($request->except(['password', 'password_confirmation', 'photo', '_token']));
         }
     }
 

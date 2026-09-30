@@ -57,8 +57,9 @@ class ResidentBlotterController extends Controller
         $user = $request->user();
 
         DB::transaction(function () use ($resident, $user, $request, $validated) {
-            $case = Blotter::create([
-                'case_number' => BlotterController::getNextCaseNumber(),
+            // The case number is server-generated: assign it explicitly, never
+            // through mass assignment.
+            $case = new Blotter([
                 'complainant_id' => $resident->id,
                 'complainant_name' => $resident->full_name,
                 'complainant_address' => $resident->address,
@@ -72,6 +73,8 @@ class ResidentBlotterController extends Controller
                 'created_by' => $user->id,
                 'reported_by_resident' => true,
             ]);
+            $case->case_number = BlotterController::getNextCaseNumber();
+            $case->save();
 
             AuditLog::record(
                 'resident.blotter_report_filed',

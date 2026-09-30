@@ -128,8 +128,8 @@
                         <tbody class="bg-white divide-y divide-slate-200">
                             @foreach ($logs as $log)
                                 <tr class="hover:bg-slate-50">
-                                    <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-500" title="{{ $log->occurred_at->format('Y-m-d H:i:s') }}">
-                                        {{ $log->occurred_at->format('M d, Y H:i') }}
+                                    <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-500" title="{{ $log->occurred_at->format('M j, Y g:i:s A') }}">
+                                        {{ $log->occurred_at->format('M j, Y g:i A') }}
                                     </td>
                                     <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
@@ -163,7 +163,7 @@
             I certify that this is a true and correct extract of the audit log of the
             Barangay Management System, covering the entries shown above
             @if (request()->filled('event') || request()->filled('search') || request()->filled('actor_type') || request()->filled('subject_type') || request()->filled('from') || request()->filled('to'))as filtered by the stated scope @endif
-            as of {{ now()->format('F j, Y') }}.
+            as of {{ now()->format('M j, Y') }}.
         </p>
         <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-2xl">
             <div class="text-center">

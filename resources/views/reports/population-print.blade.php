@@ -1,4 +1,4 @@
-<x-report-print title="Population Report" :subtitle="'Active residents by purok, sex, and age bracket' . ($from ? ' · ' . $from->format('M j, Y') . ' – ' . ($to ? $to->format('M j, Y') : now()->format('M j, Y')) : ($to ? ' · as of ' . $to->format('F j, Y') : ''))" :back-href="route('reports.population', array_merge(request()->only(['from', 'to'])))">
+<x-report-print title="Population Report" :subtitle="'Active residents by purok, sex, and age bracket' . ($from ? ' · ' . $from->format('M j, Y') . ' – ' . ($to ? $to->format('M j, Y') : now()->format('M j, Y')) : ($to ? ' · as of ' . $to->format('M j, Y') : ''))" :back-href="route('reports.population', array_merge(request()->only(['from', 'to'])))">
     <div class="summary">
         <span>Total active residents: <b>{{ $totals->total }}</b></span>
         <span>Male: <b>{{ $totals->male }}</b></span>
@@ -51,9 +51,9 @@
         I certify that this population report is a true and correct summary of the active resident
         records of Barangay Bidduang as recorded in the Barangay Management System
         @if ($from)
-            for the period {{ $from->format('F j, Y') }} – {{ ($to ?? now())->format('F j, Y') }}
+            for the period {{ $from->format('M j, Y') }} – {{ ($to ?? now())->format('M j, Y') }}
         @elseif ($to)
-            as of {{ $to->format('F j, Y') }}
+            as of {{ $to->format('M j, Y') }}
         @endif
         .
     </p>

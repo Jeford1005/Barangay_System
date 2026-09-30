@@ -80,14 +80,19 @@ class SettingsController extends Controller
         // response is built first so the audit entry is recorded only when
         // the download will actually be served — a file vanishing between
         // the lookup and the download must not leave a false audit trail.
+        // A speculative prefetch must not mint a download audit either.
         $path = $backups->path($backup);
-        $response = response()->download($path, basename($path), [
-            'Content-Type' => 'application/octet-stream',
+        $filename = basename($path);
+        $response = response()->download($path, $filename, [
+            'Content-Type' => $this->backupContentType($filename),
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
 
-        $this->recordAudit($request, 'system.backup_downloaded', [
-            'file' => basename($path),
-        ]);
+        if (! $this->isPrefetch($request)) {
+            $this->recordAudit($request, 'system.backup_downloaded', [
+                'file' => $filename,
+            ]);
+        }
 
         return $response;
     }
@@ -170,5 +175,39 @@ class SettingsController extends Controller
             $request->userAgent(),
             array_merge(['source' => 'admin'], $properties),
         );
+    }
+
+    /**
+     * Accurate download type per file extension, so the browser handles
+     * SQL dumps, SQLite copies, and compressed archives correctly instead
+     * of treating everything as opaque bytes.
+     */
+    private function backupContentType(string $filename): string
+    {
+        return match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
+            'sql' => 'application/sql',
+            'sqlite', 'sqlite3', 'db' => 'application/x-sqlite3',
+            'zip' => 'application/zip',
+            'gz', 'tgz' => 'application/gzip',
+            default => 'application/octet-stream',
+        };
+    }
+
+    /**
+     * True when the request is a speculative prefetch rather than a human
+     * navigation: Chromium sends `Sec-Purpose: prefetch` (older builds
+     * `Purpose: prefetch`) and Firefox sends `X-Moz: prefetch`.
+     */
+    private function isPrefetch(Request $request): bool
+    {
+        foreach (['Sec-Purpose', 'Purpose', 'X-Moz'] as $header) {
+            $value = (string) $request->header($header, '');
+
+            if ($value !== '' && stripos($value, 'prefetch') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

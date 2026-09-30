@@ -81,11 +81,14 @@ class AccountApprovalController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            $application?->update([
-                'status' => 'Approved',
-                'reviewed_by' => $actor->id,
-                'reviewed_at' => now(),
-            ]);
+            if ($application) {
+                // Decision metadata is privileged: set it explicitly, never
+                // through mass assignment.
+                $application->status = 'Approved';
+                $application->reviewed_by = $actor->id;
+                $application->reviewed_at = now();
+                $application->save();
+            }
 
             AuditLog::recordWithSubject(
                 'account.approved',
@@ -118,7 +121,7 @@ class AccountApprovalController extends Controller
      */
     public function reject(Request $request, User $user)
     {
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->only('reason'), [
             'reason' => ['required', 'string', 'min:5', 'max:500'],
         ], [
             'reason.required' => 'A reason is required — it is sent to the applicant by email.',
@@ -168,12 +171,13 @@ class AccountApprovalController extends Controller
                 'rejection_reason' => $validated['reason'],
             ]);
 
-            $application?->update([
-                'status' => 'Rejected',
-                'reviewed_by' => $actor->id,
-                'reviewed_at' => now(),
-                'review_note' => $validated['reason'],
-            ]);
+            if ($application) {
+                $application->status = 'Rejected';
+                $application->reviewed_by = $actor->id;
+                $application->reviewed_at = now();
+                $application->review_note = $validated['reason'];
+                $application->save();
+            }
 
             AuditLog::recordWithSubject(
                 'account.rejected',

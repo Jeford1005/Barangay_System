@@ -35,7 +35,7 @@ class ResidentPhotoController extends Controller
 
         abort_if(blank($resident->photo), 404);
 
-        return $this->stream($resident->photo);
+        return $this->stream($request, $resident->photo);
     }
 
     /**
@@ -48,7 +48,7 @@ class ResidentPhotoController extends Controller
         abort_unless($resident, 404);
         abort_if(blank($resident->photo), 404);
 
-        return $this->stream($resident->photo);
+        return $this->stream($request, $resident->photo);
     }
 
     /**
@@ -60,7 +60,7 @@ class ResidentPhotoController extends Controller
      * paths, subdirectories, unexpected extensions — is rejected before any
      * disk is touched.
      */
-    private function stream(string $path): Response
+    private function stream(Request $request, string $path): Response
     {
         $path = ltrim(str_replace('\\', '/', $path), '/');
 
@@ -75,7 +75,43 @@ class ResidentPhotoController extends Controller
 
         foreach ([Storage::disk('local'), Storage::disk('public')] as $disk) {
             if ($disk->exists($path)) {
+                $lastModified = $disk->lastModified($path);
+                $size = $disk->size($path);
+                $etag = '"'.sha1($path.'|'.$lastModified.'|'.$size).'"';
+                $lastModifiedHttp = gmdate('D, d M Y H:i:s \G\M\T', $lastModified);
+
+                // Conditional request: the browser already holds this exact
+                // bytes, so answer 304 with the validators and no body.
+                // If-None-Match takes precedence per RFC 7232 §3.3.
+                $ifNoneMatch = (string) $request->headers->get('If-None-Match', '');
+
+                if ($ifNoneMatch !== '' && ($ifNoneMatch === '*' || str_contains($ifNoneMatch, $etag))) {
+                    return new Response('', 304, [
+                        'ETag' => $etag,
+                        'Last-Modified' => $lastModifiedHttp,
+                        'Cache-Control' => 'private, no-store',
+                        'X-Content-Type-Options' => 'nosniff',
+                    ]);
+                }
+
+                $ifModifiedSince = $request->headers->get('If-Modified-Since');
+
+                if ($ifNoneMatch === '' && is_string($ifModifiedSince) && $ifModifiedSince !== '') {
+                    $since = strtotime($ifModifiedSince);
+
+                    if ($since !== false && $since >= $lastModified) {
+                        return new Response('', 304, [
+                            'ETag' => $etag,
+                            'Last-Modified' => $lastModifiedHttp,
+                            'Cache-Control' => 'private, no-store',
+                            'X-Content-Type-Options' => 'nosniff',
+                        ]);
+                    }
+                }
+
                 $response = new BinaryFileResponse($disk->path($path));
+                $response->setAutoEtag(false);
+                $response->setAutoLastModified(false);
 
                 $mime = $disk->mimeType($path) ?: 'application/octet-stream';
                 $imageMimes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -92,6 +128,8 @@ class ResidentPhotoController extends Controller
                 $response->headers->set('Content-Type', $mime);
                 $response->headers->set('Cache-Control', 'private, no-store');
                 $response->headers->set('X-Content-Type-Options', 'nosniff');
+                $response->headers->set('ETag', $etag);
+                $response->headers->set('Last-Modified', $lastModifiedHttp);
 
                 return $response;
             }

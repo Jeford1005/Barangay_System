@@ -65,9 +65,11 @@ class BlotterController extends Controller
         $validated['created_by'] = Auth::id();
 
         $blotter = DB::transaction(function () use ($request, $validated) {
-            $validated['case_number'] = static::getNextCaseNumber();
-
-            $blotter = Blotter::create($validated);
+            // The case number is server-generated: assign it explicitly, never
+            // through mass assignment.
+            $blotter = new Blotter($validated);
+            $blotter->case_number = static::getNextCaseNumber();
+            $blotter->save();
 
             AuditLog::record(
                 'blotter.created',

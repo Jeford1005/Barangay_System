@@ -105,7 +105,7 @@
                                 </td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->sex }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->civil_status }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->birth_date?->format('M d, Y') ?? '—' }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->birth_date?->format('M j, Y') ?? '—' }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->phone_number ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $resident->purok?->name ?? '—' }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->household?->household_code ?? '—' }}</td>

@@ -29,7 +29,7 @@
                         <td class="px-4 py-3 font-semibold text-slate-900">{{ $document->code }}</td>
                         <td class="px-4 py-3"><p class="font-medium text-slate-900">{{ $document->title }}</p><p class="text-xs text-slate-500">{{ $document->category }}</p></td>
                         <td class="px-4 py-3 text-slate-700">{{ $document->document_type }}</td>
-                        <td class="px-4 py-3 text-slate-700">{{ (float) $document->fee > 0 ? '₱'.number_format((float) $document->fee, 2) : 'Free' }}</td>
+                        <td class="px-4 py-3 text-slate-700"><x-money :amount="$document->fee" free="Free" /></td>
                         <td class="px-4 py-3"><span class="rounded-full px-2 py-1 text-xs font-medium {{ $document->status === 'Active' ? 'bg-emerald-100 text-emerald-800' : ($document->status === 'Draft' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">{{ $document->status }}</span></td>
                         <td class="px-4 py-3 text-slate-600">{{ $document->issuances_count }}</td>
                         <td class="no-print px-4 py-3 text-right">

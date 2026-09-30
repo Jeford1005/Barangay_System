@@ -60,12 +60,17 @@ class WelfareController extends Controller
         $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request));
 
         $validated['status'] = 'Requested';
-        $validated['approved_amount'] = 0;
-        $validated['approval_date'] = null;
-        $validated['release_date'] = null;
+        unset($validated['approved_amount'], $validated['approval_date'], $validated['release_date']);
 
         $welfare = DB::transaction(function () use ($request, $validated) {
             $welfare = Welfare::create($validated);
+
+            // Intake never carries money or decision dates: record the
+            // zeroed state explicitly, never through mass assignment.
+            $welfare->approved_amount = 0;
+            $welfare->approval_date = null;
+            $welfare->release_date = null;
+            $welfare->save();
 
             AuditLog::record(
                 'welfare.created',
@@ -124,7 +129,20 @@ class WelfareController extends Controller
         }
 
         DB::transaction(function () use ($request, $welfare, $validated) {
-            $welfare->update($validated);
+            // Money and decision dates are privileged: fill the ordinary
+            // fields, then assign these explicitly.
+            $money = [
+                'approved_amount' => $validated['approved_amount'] ?? 0,
+                'approval_date' => $validated['approval_date'] ?? null,
+                'release_date' => $validated['release_date'] ?? null,
+            ];
+            unset($validated['approved_amount'], $validated['approval_date'], $validated['release_date']);
+
+            $welfare->fill($validated);
+            $welfare->approved_amount = $money['approved_amount'];
+            $welfare->approval_date = $money['approval_date'];
+            $welfare->release_date = $money['release_date'];
+            $welfare->save();
 
             AuditLog::record(
                 'welfare.updated',

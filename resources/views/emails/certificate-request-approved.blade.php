@@ -44,7 +44,7 @@
                                     <td style="padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #14532d;">
                                         <strong>Control No.:</strong> {{ $request->issuance?->control_number ?? '—' }}<br>
                                         <strong>Copies:</strong> {{ $request->copies }}<br>
-                                        <strong>Fee:</strong> @if ((float) ($request->issuance?->fee ?? 0) > 0) ₱{{ number_format((float) $request->issuance->fee, 2) }} (pay at the counter) @else Free of charge @endif
+                                        <strong>Fee:</strong> @if ((float) ($request->issuance?->fee ?? 0) > 0) <x-money :amount="$request->issuance->fee" /> (pay at the counter) @else Free of charge @endif
                                     </td>
                                 </tr>
                             </table>

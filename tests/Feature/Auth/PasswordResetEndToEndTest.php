@@ -30,8 +30,10 @@ class PasswordResetEndToEndTest extends TestCase
         ]);
 
         // 1. Request a code — the visitor advances to the code screen.
+        // The address travels in the session, never in the URL (no PII in Location).
         $this->post(route('password.email'), ['email' => $user->email])
-            ->assertRedirect(route('password.reset', ['email' => $user->email]));
+            ->assertRedirect(route('password.reset'));
+        $this->assertSame($user->email, session('password_reset.email'));
 
         $code = null;
         Notification::assertSentTo($user, ResetPasswordCodeNotification::class, function ($notification) use (&$code) {

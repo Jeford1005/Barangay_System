@@ -65,13 +65,15 @@ class RegisteredUserController extends Controller
         ]);
 
         $user = DB::transaction(function () use ($validated) {
-            $user = User::create([
+            $user = new User([
                 'name' => trim($validated['first_name'].' '.$validated['last_name']),
                 'email' => $validated['email'],
                 'password' => $validated['password'], // hashed cast
-                'user_type' => 'resident', // forced server-side — never trust the form
                 'status' => 'pending',
             ]);
+            // Role is forced server-side — never trust the form.
+            $user->user_type = 'resident';
+            $user->save();
 
             ResidentApplication::create([
                 'user_id' => $user->id,

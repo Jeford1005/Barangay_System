@@ -40,7 +40,6 @@ class Resident extends Model
         'status',
         'purok_id',
         'household_id',
-        'user_id',
         'created_by',
         'updated_by',
     ];

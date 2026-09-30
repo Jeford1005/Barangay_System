@@ -92,8 +92,13 @@ class PasswordResetCodeController extends Controller
                 ]);
             }
 
+            // The address travels in the session, never in the redirect query:
+            // a ?email= query lands in server logs, proxy logs, and shared
+            // caches, while session storage stays server-side.
+            $request->session()->put('password_reset.email', $email);
+
             return redirect()
-                ->route('password.reset', ['email' => $email])
+                ->route('password.reset')
                 ->with('status', $generic);
         }
 
@@ -170,8 +175,13 @@ class PasswordResetCodeController extends Controller
             ]);
         }
 
+        // The address travels in the session, never in the redirect query:
+        // a ?email= query lands in server logs, proxy logs, and shared
+        // caches, while session storage stays server-side.
+        $request->session()->put('password_reset.email', $request->input('email'));
+
         return redirect()
-            ->route('password.reset', ['email' => $request->input('email')])
+            ->route('password.reset')
             ->with('status', $message)
             ->with('cooldown_seconds', self::RESEND_COOLDOWN_SECONDS);
     }
@@ -223,7 +233,15 @@ class PasswordResetCodeController extends Controller
      */
     public function create(Request $request): View|RedirectResponse
     {
-        $email = trim((string) $request->query('email', old('email', '')));
+        // The address travels in the session (put there by email()), never
+        // in the URL query: ?email= lands in server/proxy logs and shared
+        // caches. The query string remains as a legacy fallback so bookmarked
+        // or in-flight step-2 links keep working; session wins when both
+        // carry a value.
+        $sessionEmail = trim((string) $request->session()->get('password_reset.email', ''));
+        $email = $sessionEmail !== ''
+            ? $sessionEmail
+            : trim((string) $request->query('email', old('email', '')));
 
         if ($email !== '') {
             $hasToken = DB::table('password_reset_tokens')
@@ -350,7 +368,7 @@ class PasswordResetCodeController extends Controller
 
         // Single use: burn the code and clear the cooldown.
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
-        $request->session()->forget('password_reset.sent_at');
+        $request->session()->forget(['password_reset.sent_at', 'password_reset.email']);
         Cache::forget(self::cooldownCacheKey('ip', (string) $request->ip()));
         Cache::forget(self::cooldownCacheKey('user', (string) $user->id));
         RateLimiter::clear('password-reset-fail:'.Str::lower(trim((string) $user->email)));
@@ -430,8 +448,11 @@ class PasswordResetCodeController extends Controller
             ]);
         }
 
+        // The address travels in the session, never in the redirect query.
+        $request->session()->put('password_reset.email', $email);
+
         return redirect()
-            ->route('password.reset', ['email' => $email])
+            ->route('password.reset')
             ->with('status', $message)
             ->with('cooldown_seconds', $remaining);
     }

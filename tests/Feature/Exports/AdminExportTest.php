@@ -62,7 +62,7 @@ class AdminExportTest extends TestCase
 
             $disposition = (string) $response->headers->get('Content-Disposition');
             $this->assertMatchesRegularExpression(
-                '/^attachment; filename="'.preg_quote($filenamePrefix, '/').'-\d{4}-\d{2}-\d{2}\.csv"$/',
+                '/^attachment; filename="'.preg_quote($filenamePrefix, '/').'-\d{4}-\d{2}-\d{2}\.csv"(; filename\*=UTF-8\'\'.+)?$/',
                 $disposition,
             );
 

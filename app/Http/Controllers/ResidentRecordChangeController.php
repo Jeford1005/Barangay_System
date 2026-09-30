@@ -121,13 +121,18 @@ class ResidentRecordChangeController extends Controller
                 ]);
             }
             $previousHouseholdId = $resident->household_id;
-            $changes = array_intersect_key($locked->changes, array_flip([
-                'occupation',
-                'religion',
-                'residency_status',
-                'purok_id',
-                'household_id',
-            ]));
+            // Only user-editable correction fields may ride this path. Each
+            // field is assigned explicitly — never via fill() — so a crafted
+            // payload (status, user_id, …) stored in `changes` can never reach
+            // the resident row through this approval.
+            $requested = is_array($locked->changes) ? $locked->changes : [];
+            $changes = [];
+            foreach (['occupation', 'religion', 'residency_status', 'purok_id', 'household_id'] as $field) {
+                if (array_key_exists($field, $requested)) {
+                    $changes[$field] = $requested[$field];
+                    $resident->{$field} = $requested[$field];
+                }
+            }
 
             if (array_key_exists('purok_id', $changes) && ! Purok::whereKey($changes['purok_id'])->exists()) {
                 throw ValidationException::withMessages(['purok_id' => 'The requested purok is no longer available.']);
@@ -142,7 +147,6 @@ class ResidentRecordChangeController extends Controller
                 }
             }
 
-            $resident->fill($changes);
             $resident->updated_by = $request->user()->id;
             $resident->save();
             $sync->syncResidentAfterSave($resident, $previousHouseholdId);

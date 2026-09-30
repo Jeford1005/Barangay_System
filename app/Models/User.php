@@ -44,7 +44,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'user_type',
         'status',
         'approved_at',
         'reviewed_by',

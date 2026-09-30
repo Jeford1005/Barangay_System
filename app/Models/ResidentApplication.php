@@ -24,9 +24,6 @@ class ResidentApplication extends Model
         'purok_id',
         'household_id',
         'status',
-        'reviewed_by',
-        'reviewed_at',
-        'review_note',
     ];
 
     protected $casts = [

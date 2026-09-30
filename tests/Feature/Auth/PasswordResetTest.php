@@ -108,9 +108,10 @@ class PasswordResetTest extends TestCase
 
         // Same success shape as a real send: the code step opens with a status
         // notice, no validation error, and nothing reveals the address is unknown.
-        $response->assertRedirect(route('password.reset', ['email' => 'nobody@example.com']))
+        $response->assertRedirect(route('password.reset'))
             ->assertSessionHas('status')
             ->assertSessionHasNoErrors();
+        $this->assertSame('nobody@example.com', session('password_reset.email'));
 
         $this->assertStringContainsString(
             'If an account exists',
@@ -130,12 +131,14 @@ class PasswordResetTest extends TestCase
         // The typo gets the same generic success as a real send — and because
         // no code was issued, it starts no cooldown.
         $this->post('/forgot-password', ['email' => 'nobody@example.com'])
-            ->assertRedirect(route('password.reset', ['email' => 'nobody@example.com']));
+            ->assertRedirect(route('password.reset'));
+        $this->assertSame('nobody@example.com', session('password_reset.email'));
 
         // The corrected address works straight away — a typo must not cost a
         // 60-second wait, because no code was issued for the wrong one.
         $this->post('/forgot-password', ['email' => $user->email])
-            ->assertRedirect(route('password.reset', ['email' => $user->email]));
+            ->assertRedirect(route('password.reset'));
+        $this->assertSame($user->email, session('password_reset.email'));
 
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
     }
@@ -193,7 +196,7 @@ class PasswordResetTest extends TestCase
 
         // No second code goes out, and the wait message never confirms the account exists.
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
-        $response->assertRedirect(route('password.reset', ['email' => $user->email]))
+        $response->assertRedirect(route('password.reset'))
             ->assertSessionHas('status', fn (string $status) => str_contains($status, 'Please wait'));
     }
 

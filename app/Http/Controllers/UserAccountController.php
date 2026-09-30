@@ -166,7 +166,7 @@ class UserAccountController extends Controller
                     ]);
                 }
 
-                $resident = Resident::create([
+                $resident = new Resident([
                     'first_name' => $lockedApplication->first_name,
                     'middle_name' => $lockedApplication->middle_name,
                     'last_name' => $lockedApplication->last_name,
@@ -181,15 +181,17 @@ class UserAccountController extends Controller
                     'household_id' => $lockedApplication->household_id,
                     'nationality' => 'Filipino',
                     'status' => 'Active',
-                    'user_id' => $lockedUser->id,
                     'created_by' => $request->user()->id,
                 ]);
+                // The account link is privileged: set it explicitly, never
+                // through mass assignment.
+                $resident->user_id = $lockedUser->id;
+                $resident->save();
 
-                $lockedApplication->update([
-                    'status' => 'Approved',
-                    'reviewed_by' => $request->user()->id,
-                    'reviewed_at' => now(),
-                ]);
+                $lockedApplication->status = 'Approved';
+                $lockedApplication->reviewed_by = $request->user()->id;
+                $lockedApplication->reviewed_at = now();
+                $lockedApplication->save();
 
                 AuditLog::recordWithSubject(
                     'resident.profile_created_from_application',
@@ -221,7 +223,8 @@ class UserAccountController extends Controller
             $resident = $lockedUser->residentProfile;
             abort_if(! $resident, 422, 'This account has no resident profile to unlink.');
 
-            $resident->update(['user_id' => null, 'updated_at' => now()]);
+            $resident->user_id = null;
+            $resident->save();
             $lockedUser->update([
                 'suspended_at' => now(),
                 'suspended_by' => $request->user()->id,
@@ -276,7 +279,8 @@ class UserAccountController extends Controller
                     ]);
                 }
 
-                $resident->update(['user_id' => $lockedUser->id]);
+                $resident->user_id = $lockedUser->id;
+                $resident->save();
 
                 // A (re)link means staff verified the profile, so any
                 // suspension parked by a previous unlink is lifted along with

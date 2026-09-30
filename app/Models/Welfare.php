@@ -22,11 +22,8 @@ class Welfare extends Model
         'program_name',
         'program_description',
         'requested_amount',
-        'approved_amount',
         'status',
         'request_date',
-        'approval_date',
-        'release_date',
         'remarks',
     ];
 

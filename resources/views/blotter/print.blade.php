@@ -240,7 +240,7 @@
             <h2>III. Incident Details</h2>
             <div class="grid grid-3">
                 <span class="field"><span class="lbl">Complaint Type</span>{{ $blotter->complaint_type }}@if (filled($blotter->complaint_subtype)) — {{ $blotter->complaint_subtype }}@endif</span>
-                <span class="field"><span class="lbl">Date of Incident</span>{{ $blotter->complaint_date?->format('F j, Y') ?? '—' }}</span>
+                <span class="field"><span class="lbl">Date of Incident</span>{{ $blotter->complaint_date?->format('M j, Y') ?? '—' }}</span>
                 <span class="field"><span class="lbl">Time</span>@if ($blotter->complaint_time){{ $blotter->complaint_time->format('g:i A') }}@else<span class="empty">Not recorded</span>@endif</span>
             </div>
             <div class="grid" style="margin-top: 5pt;">
@@ -257,7 +257,7 @@
         <section>
             <h2>V. Disposition / Action Taken</h2>
             @if (filled($blotter->disposition))
-                <div class="narrative" style="min-height: 50pt;">{{ $blotter->disposition }}@if ($blotter->disposition_date)&nbsp;&nbsp;—&nbsp;<i>dated {{ $blotter->disposition_date->format('F j, Y') }}</i>@endif</div>
+                <div class="narrative" style="min-height: 50pt;">{{ $blotter->disposition }}@if ($blotter->disposition_date)&nbsp;&nbsp;—&nbsp;<i>dated {{ $blotter->disposition_date->format('M j, Y') }}</i>@endif</div>
             @else
                 <div class="narrative" style="min-height: 50pt;"><span class="empty">Pending — no disposition recorded as of this printing.</span></div>
             @endif

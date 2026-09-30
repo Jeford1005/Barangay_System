@@ -16,7 +16,6 @@ class CertificateRequest extends Model
         'purpose',
         'copies',
         'status',
-        'issuance_id',
         'rejection_reason',
         'reviewed_by',
         'reviewed_at',

@@ -215,19 +215,23 @@ class ExportService
         $headers = self::DATASET_HEADERS[$dataset];
         $actor = $request->user();
 
-        AuditLog::record(
-            "export.{$dataset}",
-            $actor?->id,
-            $actor?->email,
-            $request->ip(),
-            $request->userAgent(),
-            [
-                'format' => 'csv',
-                'type' => $dataset,
-                'resource' => $dataset,
-                'filters' => $this->filtersForAudit($dataset, $request),
-            ],
-        );
+        // A prefetch (speculation-rules / <link rel=prefetch>) must not mint
+        // a download audit: only a human click that actually streams rows.
+        if (! $this->isPrefetch($request)) {
+            AuditLog::record(
+                "export.{$dataset}",
+                $actor?->id,
+                $actor?->email,
+                $request->ip(),
+                $request->userAgent(),
+                [
+                    'format' => 'csv',
+                    'type' => $dataset,
+                    'resource' => $dataset,
+                    'filters' => $this->filtersForAudit($dataset, $request),
+                ],
+            );
+        }
 
         $filename = sprintf(
             '%s-%s.csv',
@@ -837,13 +841,35 @@ class ExportService
     /** @return array<string, string> */
     private function responseHeaders(string $filename): array
     {
+        // `filename` keeps legacy readers working; `filename*` (RFC 5987)
+        // carries the UTF-8 value for names outside ASCII.
+        $disposition = 'attachment; filename="'.$filename.'"; filename*=UTF-8\'\''.rawurlencode($filename);
+
         return [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Content-Disposition' => $disposition,
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
             'Pragma' => 'no-cache',
             'X-Content-Type-Options' => 'nosniff',
             'X-Accel-Buffering' => 'no',
         ];
+    }
+
+    /**
+     * True when the request is a speculative prefetch rather than a human
+     * navigation: Chromium sends `Sec-Purpose: prefetch` (older builds
+     * `Purpose: prefetch`) and Firefox sends `X-Moz: prefetch`.
+     */
+    private function isPrefetch(Request $request): bool
+    {
+        foreach (['Sec-Purpose', 'Purpose', 'X-Moz'] as $header) {
+            $value = (string) $request->headers->get($header, '');
+
+            if ($value !== '' && stripos($value, 'prefetch') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

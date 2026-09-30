@@ -38,9 +38,15 @@ class AddSecurityHeaders
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
 
         // `no-store` keeps account and resident pages out of shared caches and
-        // out of the back/forward cache after sign-out.
-        if ($request->isMethod('GET') && ! $request->expectsJson()) {
-            $response->headers->set('Cache-Control', 'no-store, private');
+        // out of the back/forward cache after sign-out. It applies to every
+        // response kind (GET, POST, JSON): a signed-in JSON payload or a
+        // POST-redirect target must not sit in history or a shared cache.
+        // Versioned build assets already carry an `immutable` directive from
+        // the web server / Vite manifest — leave those untouched.
+        $cacheControl = (string) $response->headers->get('Cache-Control', '');
+
+        if (! str_contains($cacheControl, 'immutable')) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate');
         }
 
         return $response;

@@ -9,6 +9,7 @@ use App\Models\Purok;
 use App\Models\Resident;
 use App\Services\HouseholdResidentSync;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,12 @@ use Illuminate\Validation\ValidationException;
 
 class HouseholdController extends Controller
 {
+    /**
+     * Earliest plausible year a standing structure was built. Mirrors the
+     * min: rule on year_built in validateHousehold(); keep them in sync.
+     */
+    private const MIN_YEAR_BUILT = 1800;
+
     public function index(Request $request)
     {
         $query = Household::with(['purok', 'head']);
@@ -234,7 +241,7 @@ class HouseholdController extends Controller
             // number with an optional area unit.
             'lot_area' => ['nullable', 'string', 'max:50', 'regex:/^\d{1,6}(\.\d{1,2})?\s?(sq\.?\s?m\.?|sqm|m2|m²|sq\.?\s?ft\.?|sqft|ft2|ha|hectares?)?$/i'],
             'floor_area' => ['nullable', 'string', 'max:50', 'regex:/^\d{1,6}(\.\d{1,2})?\s?(sq\.?\s?m\.?|sqm|m2|m²|sq\.?\s?ft\.?|sqft|ft2|ha|hectares?)?$/i'],
-            'year_built' => 'nullable|integer|min:1800|max:'.date('Y'),
+            'year_built' => 'nullable|integer|min:'.self::MIN_YEAR_BUILT.'|max:'.Carbon::now('Asia/Manila')->year,
             'ownership' => 'required|in:Owned,Rented,Leased,Occupied',
             // Capped well below the unsigned-int ceiling so a crafted value
             // cannot inflate member counts toward 4B.
