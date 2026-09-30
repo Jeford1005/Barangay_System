@@ -7,12 +7,15 @@
             const stepDone = document.getElementById('register-step-done');
             const form = document.getElementById('register-form');
             const submitBtn = document.getElementById('register-submit-btn');
+            const stepFooter = document.getElementById('register-step-footer');
 
             let lastFocused = null;
 
             function showStep(step) {
                 [stepForm, stepDone].forEach((s) => s.classList.add('hidden'));
                 step.classList.remove('hidden');
+                // The sticky footer belongs to the form step only.
+                stepFooter.classList.toggle('hidden', step !== stepForm);
             }
 
             function openRegisterModal() {

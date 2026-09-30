@@ -21,7 +21,7 @@
 ])
 
 <div class="no-print shrink-0 bg-white border-b border-slate-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 w-full flex min-h-14 items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 w-full flex min-h-14 flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-start gap-1">
             {{-- Mobile hamburger: opens the sidebar drawer (black header removed).
                  Absent in embed mode — the settings dialog's iframe has no drawer. --}}
@@ -33,7 +33,7 @@
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             @endunless
-            <div class="min-w-0">
+            <div class="flex-1 min-w-[12rem]">
                 <h1 class="break-words text-xl font-bold text-slate-900">{{ $title }}</h1>
                 @if ($subtitle)
                     <p class="mt-0.5 break-words text-sm text-slate-500">{{ $subtitle }}</p>
@@ -48,7 +48,7 @@
             $hasHeaderActions = trim((string) $headerActions) !== '';
         @endphp
         @if ($hasHeaderActions)
-            <div class="flex flex-wrap items-center gap-2 shrink-0">{{ $headerActions }}</div>
+            <div class="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">{{ $headerActions }}</div>
         @endif
     </div>
 </div>

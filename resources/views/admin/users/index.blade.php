@@ -1,14 +1,6 @@
 <x-app-layout>
 @section('page_header')
     <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory">
-        <x-slot:actions>
-            <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline">
-                Account Approvals
-                @if ($pendingCount)
-                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">{{ $pendingCount }}</span>
-                @endif
-            </a>
-        </x-slot:actions>
     </x-page-header>
 @endsection
 

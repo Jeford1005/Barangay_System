@@ -116,6 +116,13 @@
         var f = frameNode();
         if (!d || !f) return false;
 
+        // One layer at a time: the mobile drawer (z-40 + backdrop z-30)
+        // would sit under the dialog (z-100) with a second X and double
+        // dim. Closing it first leaves the dialog's X as the single close.
+        if (typeof window.toggleSidebar === 'function') {
+            try { window.toggleSidebar(false); } catch (e) { /* drawer absent */ }
+        }
+
         lastFocused = document.activeElement;
 
         f.src = embedUrl(href); // reloads the frame at the section the trigger names
