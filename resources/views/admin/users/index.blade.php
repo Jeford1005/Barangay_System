@@ -36,10 +36,9 @@
                 <label for="user-status" class="sr-only">Filter by status</label>
                 <select id="user-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                     <option value="">All Status</option>
-                    <option value="pending" @selected($status === 'pending')>Pending</option>
-                    <option value="approved" @selected($status === 'approved')>Approved</option>
-                    <option value="rejected" @selected($status === 'rejected')>Rejected</option>
-                    <option value="suspended" @selected($status === 'suspended')>Suspended</option>
+                    @foreach (\App\Models\User::statusFilterOptions() as $optionValue => $optionLabel)
+                        <option value="{{ $optionValue }}" @selected($status === $optionValue)>{{ $optionLabel }}</option>
+                    @endforeach
                 </select>
             </div>
             <noscript><button type="submit" class="btn btn-neutral">Filter</button></noscript>
@@ -76,13 +75,16 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($users as $user)
                             @php
-                                $displayStatus = $user->suspended_at ? 'Suspended' : ucfirst($user->status);
-                                $statusClasses = $user->suspended_at
+                                $displayStatus = $user->statusLabel();
+                                // Local *-100 mapping so the directory pill matches every
+                                // other status badge in the app (Requested/suspended slate,
+                                // pending amber, approved emerald, rejected red).
+                                $statusClasses = $user->isSuspended()
                                     ? 'bg-slate-100 text-slate-700'
                                     : match ($user->status) {
-                                        'approved' => 'bg-emerald-50 text-emerald-700',
-                                        'pending' => 'bg-amber-50 text-amber-700',
-                                        default => 'bg-red-50 text-red-700',
+                                        'approved' => 'bg-emerald-100 text-emerald-800',
+                                        'pending' => 'bg-amber-100 text-amber-800',
+                                        default => 'bg-red-100 text-red-800',
                                     };
                             @endphp
                             <tr class="hover:bg-slate-50">
@@ -108,7 +110,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-slate-200 px-4 py-3">{{ $users->links() }}</div>
+            <div class="border-t border-slate-200 px-4 py-3">{{ $users->withQueryString()->links() }}</div>
         @endif
     </div>
 </div>

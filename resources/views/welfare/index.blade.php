@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div>
     <div class="bg-white rounded-xl shadow overflow-visible">
 
         <div class="p-6">
@@ -72,7 +72,7 @@
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Approved</th>
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Request Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -91,7 +91,7 @@
                                         <span class="text-sm text-slate-900">₱{{ number_format($welfare->requested_amount, 2) }}</span>
                                     </td>
                                     <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
-                                        <span class="text-sm text-slate-900">{{ $welfare->approved_amount > 0 ? '₱'.number_format($welfare->approved_amount, 2) : '—' }}</span>
+                                        <span class="text-sm text-slate-900">₱{{ number_format((float) $welfare->approved_amount, 2) }}</span>
                                     </td>
                                     <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $welfare->request_date->format('M j, Y') }}</span>
@@ -132,7 +132,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $welfares->links() }}
+                    {{ $welfares->withQueryString()->links() }}
                 </div>
             @endif
         </div>

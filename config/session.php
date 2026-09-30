@@ -6,6 +6,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Required Session Keys (.env)
+    |--------------------------------------------------------------------------
+    |
+    | Always set: SESSION_DRIVER, SESSION_LIFETIME.
+    | Cookie scope: SESSION_PATH (/), SESSION_DOMAIN (null), SESSION_COOKIE
+    | (defaults to "<app-slug>-session").
+    | Security (set explicitly in production): SESSION_SECURE_COOKIE=true on
+    | any HTTPS host or browsers drop the cookie, SESSION_HTTP_ONLY=true,
+    | SESSION_SAME_SITE=lax. Optional: SESSION_EXPIRE_ON_CLOSE,
+    | SESSION_ENCRYPT, SESSION_CONNECTION / SESSION_TABLE (database driver),
+    | SESSION_STORE (cache-backed drivers), SESSION_PARTITIONED_COOKIE.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Session Driver
     |--------------------------------------------------------------------------
     |
@@ -166,6 +182,10 @@ return [
     | By setting this option to true, session cookies will only be sent back
     | to the server if the browser has a HTTPS connection. This will keep
     | the cookie from being sent to you when it can't be done securely.
+    |
+    | Required in production: set SESSION_SECURE_COOKIE=true on any HTTPS
+    | host. The local default is null (unset) so plain-http development
+    | keeps working; see the "Required Session Keys" block above.
     |
     */
 

@@ -8,12 +8,12 @@
     $tabs = match ($type) {
         'certificates' => [
             ['label' => 'Issued', 'href' => route('certificates.index'), 'match' => 'certificates.index'],
-            ['label' => 'Requests', 'href' => route('admin.certificate-requests.index'), 'match' => 'admin.certificate-requests.*', 'badge' => App\Models\CertificateRequest::pending()->count()],
+            ['label' => 'Requests', 'href' => route('admin.certificate-requests.index'), 'match' => 'admin.certificate-requests.*', 'badge' => ($moduleTabBadges['certRequests'] ?? null) ?? App\Models\CertificateRequest::pending()->count()],
             ['label' => 'Catalog', 'href' => route('admin.certificate-types.index'), 'match' => 'admin.certificate-types.*', 'visible' => auth()->user()?->isAdmin() ?? false],
         ],
         'residents' => [
             ['label' => 'Residents', 'href' => route('residents.index'), 'match' => 'residents.index'],
-            ['label' => 'Corrections', 'href' => route('admin.resident-changes.index'), 'match' => 'admin.resident-changes.*', 'badge' => App\Models\ResidentRecordChange::where('status', 'Pending')->count()],
+            ['label' => 'Corrections', 'href' => route('admin.resident-changes.index'), 'match' => 'admin.resident-changes.*', 'badge' => ($moduleTabBadges['residentChanges'] ?? null) ?? App\Models\ResidentRecordChange::where('status', 'Pending')->count()],
         ],
         'reports' => [
             ['label' => 'Reports', 'href' => route('reports.index'), 'match' => 'reports.*'],

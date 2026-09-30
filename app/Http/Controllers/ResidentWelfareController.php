@@ -41,7 +41,7 @@ class ResidentWelfareController extends Controller
         $validated = $request->validate([
             'assistance_type' => 'required|in:Financial,Food,Medical,Educational,Housing,Other',
             'program_name' => 'required|string|max:255',
-            'requested_amount' => 'required|numeric|decimal:0,2|min:0|max:99999999.99',
+            'requested_amount' => 'required|numeric|decimal:0,2|gt:0|max:99999999.99',
             'remarks' => 'nullable|string|max:1000',
         ], [
             'assistance_type.required' => 'Choose the kind of assistance you need.',
@@ -82,7 +82,7 @@ class ResidentWelfareController extends Controller
      */
     private function resident(Request $request)
     {
-        $resident = $request->user()->residentProfile;
+        $resident = $request->user()?->residentProfile;
 
         abort_if(! $resident, 404, 'No resident profile is linked to this account. Please contact the barangay office.');
         abort_if($resident->status !== 'Active', 403, 'This resident record is archived. Please contact the barangay office.');

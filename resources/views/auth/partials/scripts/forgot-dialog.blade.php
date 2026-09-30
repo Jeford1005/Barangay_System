@@ -166,6 +166,28 @@
                     node.textContent = '';
                     node.classList.add('hidden');
                 });
+                const status = el('forgot-resend-status');
+                if (status) {
+                    if (status.dismissTimer) clearTimeout(status.dismissTimer);
+                    status.dismissTimer = null;
+                    status.textContent = '';
+                    status.classList.add('hidden');
+                }
+            }
+
+            function showResendStatus(message, isError) {
+                const status = el('forgot-resend-status');
+                if (!status) return;
+                status.textContent = message;
+                status.classList.remove('hidden');
+                status.classList.toggle('text-red-600', !!isError);
+                status.classList.toggle('text-emerald-700', !isError);
+                if (status.dismissTimer) clearTimeout(status.dismissTimer);
+                status.dismissTimer = setTimeout(() => {
+                    status.dismissTimer = null;
+                    status.textContent = '';
+                    status.classList.add('hidden');
+                }, 5000);
             }
 
             function maskEmail(email) {
@@ -339,8 +361,15 @@
                     if (data.cooldown !== undefined) setCooldown(data.cooldown);
                     boxes.forEach((box) => (box.value = ''));
                     codeField.value = '';
+                    if (!response.ok) {
+                        showResendStatus(data.errors?.email?.[0] || data.message || 'Could not resend the code. Please try again.', true);
+                    } else {
+                        showResendStatus('A new code has been sent — check your email.', false);
+                    }
                     await autoFillFromClipboard();
                     boxes[0].focus();
+                } catch {
+                    showResendStatus('Network error — check your connection and try again.', true);
                 } finally {
                     if (cooldown === 0) updateCooldownButtons();
                 }

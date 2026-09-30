@@ -108,7 +108,7 @@
         scrollLock(false);
         var restore = lastFocused;
         lastFocused = null;
-        if (restore && restore.focus) restore.focus();
+        if (restore && restore.focus && restore.isConnected) restore.focus();
     }
 
     function open(href) {
@@ -210,7 +210,10 @@
         if (event.key !== 'Tab') return;
 
         var d = node();
-        var focusables = d.querySelectorAll('button:not([disabled]), a[href], iframe');
+        // Every focusable control participates in the trap — buttons, links,
+        // the frame, and all form fields (inputs incl. non-hidden, selects,
+        // textareas) so Tab can never escape into the page behind the dialog.
+        var focusables = d.querySelectorAll('button:not([disabled]), a[href], iframe, input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
         if (!focusables.length) return;
         var first = focusables[0];
         var last = focusables[focusables.length - 1];

@@ -24,7 +24,7 @@ class ResidentPortalController extends Controller
      */
     public function index(Request $request): View
     {
-        $resident = $request->user()->residentProfile;
+        $resident = $request->user()?->residentProfile;
 
         abort_if(! $resident, 404, 'No resident profile is linked to this account. Please contact the barangay office.');
         abort_if($resident->status !== 'Active', 403, 'This resident record is archived. Please contact the barangay office.');
@@ -46,7 +46,7 @@ class ResidentPortalController extends Controller
         return view('resident.portal', [
             'resident' => $resident->load(['purok', 'household']),
             'householdMembers' => $householdMembers,
-            'changes' => ResidentRecordChange::where('resident_id', $resident->id)->latest('id')->paginate(10),
+            'changes' => ResidentRecordChange::where('resident_id', $resident->id)->latest('id')->paginate(10)->withQueryString(),
             'editing' => $editing,
             'puroks' => $puroks,
             'households' => $households,
@@ -59,64 +59,76 @@ class ResidentPortalController extends Controller
     public function updateContact(ResidentContactUpdateRequest $request)
     {
         $user = $request->user();
-        $resident = $user->residentProfile;
+        $resident = $user?->residentProfile;
 
         abort_if(! $resident, 404);
         abort_if($resident->status !== 'Active', 403, 'Archived resident profiles cannot be updated.');
 
         $validated = $request->validated();
         $newEmail = trim((string) ($validated['email'] ?? ''));
-        $emailChanged = $newEmail !== '' && strcasecmp($newEmail, $user->email) !== 0;
+        $emailChanged = $newEmail !== '' && strcasecmp($newEmail, (string) $user->email) !== 0;
         $oldEmail = $user->email;
         $oldPhoto = $resident->photo;
-        $newPhoto = $request->hasFile('photo')
-            ? $request->file('photo')->store('residents', 'local')
-            : null;
+        // The upload is only captured here. It is stored inside the
+        // transaction below under a random hashed name, and deleted again if
+        // the transaction fails, so a rolled-back save never leaves an orphan
+        // file behind.
+        $photoFile = $request->hasFile('photo') ? $request->file('photo') : null;
+        $newPhoto = null;
 
-        DB::transaction(function () use ($request, $user, $resident, $validated, $newEmail, $emailChanged, $oldEmail, $newPhoto) {
-            $residentData = [
-                'phone_number' => $validated['phone_number'] ?? null,
-                'address' => $validated['address'],
-            ];
+        try {
+            DB::transaction(function () use ($request, $user, $resident, $validated, $newEmail, $emailChanged, $oldEmail, $photoFile, &$newPhoto) {
+                $residentData = [
+                    'phone_number' => $validated['phone_number'] ?? null,
+                    'address' => $validated['address'],
+                ];
 
-            if ($newEmail !== '') {
-                $residentData['email'] = $newEmail;
-            }
+                if ($newEmail !== '') {
+                    $residentData['email'] = $newEmail;
+                }
 
+                if ($photoFile) {
+                    $newPhoto = $photoFile->storeAs('residents', $photoFile->hashName(), 'local');
+                    $residentData['photo'] = $newPhoto;
+                }
+
+                $resident->update($residentData);
+
+                if ($newPhoto) {
+                    AuditLog::record(
+                        'resident.photo_updated',
+                        $user->id,
+                        $user->email,
+                        $request->ip(),
+                        $request->userAgent(),
+                        ['resident_id' => $resident->id, 'photo' => $newPhoto],
+                    );
+                }
+
+                if ($emailChanged) {
+                    $user->update(['email' => $newEmail]);
+
+                    DB::table('password_reset_tokens')
+                        ->whereIn('email', array_unique([$oldEmail, $newEmail]))
+                        ->delete();
+
+                    AuditLog::record(
+                        'resident.email_updated',
+                        $user->id,
+                        $user->email,
+                        $request->ip(),
+                        $request->userAgent(),
+                        ['resident_id' => $resident->id, 'old_email' => $oldEmail, 'new_email' => $newEmail],
+                    );
+                }
+            });
+        } catch (\Throwable $e) {
             if ($newPhoto) {
-                $residentData['photo'] = $newPhoto;
+                Storage::disk('local')->delete($newPhoto);
             }
 
-            $resident->update($residentData);
-
-            if ($newPhoto) {
-                AuditLog::record(
-                    'resident.photo_updated',
-                    $user->id,
-                    $user->email,
-                    $request->ip(),
-                    $request->userAgent(),
-                    ['resident_id' => $resident->id, 'photo' => $newPhoto],
-                );
-            }
-
-            if ($emailChanged) {
-                $user->update(['email' => $newEmail]);
-
-                DB::table('password_reset_tokens')
-                    ->whereIn('email', array_unique([$oldEmail, $newEmail]))
-                    ->delete();
-
-                AuditLog::record(
-                    'resident.email_updated',
-                    $user->id,
-                    $user->email,
-                    $request->ip(),
-                    $request->userAgent(),
-                    ['resident_id' => $resident->id, 'old_email' => $oldEmail, 'new_email' => $newEmail],
-                );
-            }
-        });
+            throw $e;
+        }
 
         if ($emailChanged) {
             $user->notify(new ResidentEmailChangedNotification($oldEmail, $newEmail));

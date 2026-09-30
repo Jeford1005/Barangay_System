@@ -51,6 +51,8 @@ const shown = async (text) => {
 };
 
 const visit = async (path) => {
+  // Same pacing as check-app.mjs: stay under the 60/min group throttle.
+  await page.waitForTimeout(1000);
   await page.goto(`${BASE}${path}`, { waitUntil: 'load', timeout: 20000 });
 };
 

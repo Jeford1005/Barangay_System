@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div>
     <div class="bg-white rounded-xl shadow overflow-visible">
 
         <div class="p-6">
@@ -15,7 +15,7 @@
                     <div class="min-w-0">
                         <label for="blotter-search" class="sr-only">Search blotter records</label>
                         <input id="blotter-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search case no., parties, complaint type"
-                            class="min-h-11 min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                            class="min-h-11 min-w-0 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                     </div>
                     <div class="min-w-0">
                         <label for="blotter-status" class="sr-only">Filter blotter records by status</label>
@@ -26,7 +26,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="flex min-w-0 items-center justify-end gap-2">
+                    <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
                         @if (auth()->user()?->isAdmin())
                          <a href="{{ route('admin.exports.blotter', request()->query()) }}" class="btn btn-outline"><x-icon name="arrow-down-tray" class="h-4 w-4" /> Export</a>
                          @endif
@@ -58,7 +58,7 @@
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Complaint</th>
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -102,6 +102,7 @@
                                                 Edit
                                             </a>
                                             <a href="{{ route('blotter.print', $blotter) }}" target="_blank" class="btn btn-neutral btn-row" title="Print official case sheet">
+                                                <x-icon name="printer" class="h-4 w-4" />
                                                 Print
                                             </a>
                                             <form action="{{ route('blotter.destroy', $blotter->id) }}" method="POST" class="inline {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}"
@@ -120,7 +121,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $blotters->links() }}
+                    {{ $blotters->withQueryString()->links() }}
                 </div>
             @endif
         </div>

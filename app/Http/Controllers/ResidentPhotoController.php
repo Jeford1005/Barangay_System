@@ -54,25 +54,44 @@ class ResidentPhotoController extends Controller
     /**
      * Stream the stored file, falling back to the public disk so photos taken
      * before this change keep rendering.
+     *
+     * The column only ever holds `residents/<hashed-name>.<ext>` (written by
+     * `storeAs()` with `hashName()`), so anything else — traversal, absolute
+     * paths, subdirectories, unexpected extensions — is rejected before any
+     * disk is touched.
      */
     private function stream(string $path): Response
     {
         $path = ltrim(str_replace('\\', '/', $path), '/');
 
-        // Defence in depth: the column is only ever written by `store()`, but a
-        // traversal here would expose arbitrary files under storage/.
-        abort_if(str_contains($path, '..'), 404);
+        // Defence in depth: reject traversal, null bytes, absolute paths, and
+        // anything outside the single hashed-name level under residents/.
+        abort_if(str_contains($path, '..') || str_contains($path, "\0"), 404);
+        abort_unless(str_starts_with($path, 'residents/'), 404);
+
+        $base = basename($path);
+        abort_if($base === '' || $base !== substr($path, strlen('residents/')), 404);
+        abort_unless((bool) preg_match('/\A[A-Za-z0-9_\-]+\.[A-Za-z0-9]{2,5}\z/', $base), 404);
 
         foreach ([Storage::disk('local'), Storage::disk('public')] as $disk) {
             if ($disk->exists($path)) {
                 $response = new BinaryFileResponse($disk->path($path));
 
                 $mime = $disk->mimeType($path) ?: 'application/octet-stream';
+                $imageMimes = ['image/jpeg', 'image/png', 'image/webp'];
+
+                if (! in_array($mime, $imageMimes, true)) {
+                    // A crafted upload must never render as markup in our
+                    // origin: force non-images to download as opaque bytes.
+                    $mime = 'application/octet-stream';
+                    $response->headers->set('Content-Disposition', 'attachment; filename="'.$base.'"');
+                } else {
+                    $response->headers->set('Content-Disposition', 'inline; filename="'.$base.'"');
+                }
+
                 $response->headers->set('Content-Type', $mime);
                 $response->headers->set('Cache-Control', 'private, no-store');
                 $response->headers->set('X-Content-Type-Options', 'nosniff');
-                // Never let a crafted upload render as markup in our origin.
-                $response->headers->set('Content-Disposition', 'inline');
 
                 return $response;
             }

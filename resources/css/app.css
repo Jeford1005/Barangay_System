@@ -696,7 +696,15 @@
     position: sticky;
     top: 0;
     z-index: 20;
+    /* No overflow clipping here: rounded corners + overflow live on an
+       inner card so stickiness is never contained and nothing clips. */
+    overflow: visible;
     background-color: #fff;
+}
+
+/* Bare variant: positioning only — the inner card owns bg/border/radius. */
+.module-toolbar-sticky--bare {
+    background-color: transparent;
 }
 
 @media (min-width: 640px) {
@@ -982,4 +990,20 @@
     .dialog-content-in {
         animation: none;
     }
+}
+
+/* ------------------------------------------------------------------
+   Confirm/error dialog button height parity.
+   The button classes for these two cards are owned by Blade
+   (data-classes-* attributes), outside the .btn system above, so the
+   guard lives here: both actions hold the shared 44px line (min-h-11,
+   the same as .btn's 2.75rem height) even if a future class edit drops
+   the utility. min-height (not fixed height) is used deliberately to
+   match the existing min-h-11 approach on both cards.
+   ------------------------------------------------------------------ */
+[data-confirm-dialog-cancel],
+[data-confirm-dialog-accept],
+[data-error-dialog-cancel],
+[data-error-dialog-action] {
+    min-height: 2.75rem;
 }

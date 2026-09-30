@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -39,8 +40,9 @@ class SettingsController extends Controller
 
     public function storeBackup(Request $request): RedirectResponse
     {
-        $this->recordAudit($request, 'system.backup_requested');
-
+        // The audit entry is written only after the run row exists and the
+        // job dispatched: auditing first would log backups that never
+        // happened whenever creation or dispatch throws.
         $backupRun = BackupRun::create([
             'requested_by' => $request->user()?->id,
             'status' => 'Queued',
@@ -65,19 +67,29 @@ class SettingsController extends Controller
             return back()->withErrors(['backup' => $exception->getMessage()]);
         }
 
+        $this->recordAudit($request, 'system.backup_requested', [
+            'backup_run_id' => $backupRun->id,
+        ]);
+
         return back()->with('success', 'Database backup queued successfully.');
     }
 
     public function downloadBackup(Request $request, BackupService $backups, string $backup): BinaryFileResponse
     {
+        // path() 404s on unknown names before anything is logged. The
+        // response is built first so the audit entry is recorded only when
+        // the download will actually be served — a file vanishing between
+        // the lookup and the download must not leave a false audit trail.
         $path = $backups->path($backup);
+        $response = response()->download($path, basename($path), [
+            'Content-Type' => 'application/octet-stream',
+        ]);
+
         $this->recordAudit($request, 'system.backup_downloaded', [
             'file' => basename($path),
         ]);
 
-        return response()->download($path, basename($path), [
-            'Content-Type' => 'application/octet-stream',
-        ]);
+        return $response;
     }
 
     public function deleteBackup(Request $request, BackupService $backups, string $backup): RedirectResponse
@@ -93,8 +105,22 @@ class SettingsController extends Controller
 
     public function clearCache(Request $request): RedirectResponse
     {
+        // Throttle rapid repeated clears (double-clicks, refresh-resubmits).
+        // The form already asks for confirmation (data-confirm); this is the
+        // server-side half. The hit is recorded AFTER the flush on purpose:
+        // cache:clear wipes the default store, so a hit taken before it
+        // would be erased along with everything else it just cleared.
+        $key = 'cache-clear:'.($request->user()?->getKey() ?? $request->ip());
+
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            return back()->withErrors([
+                'cache' => 'Caches were just cleared. Wait '.RateLimiter::availableIn($key).' seconds before clearing again.',
+            ]);
+        }
+
         Artisan::call('cache:clear');
         Artisan::call('view:clear');
+        RateLimiter::hit($key, 30);
         $this->recordAudit($request, 'system.cache_cleared');
 
         return back()->with('success', 'Application and view caches cleared.');

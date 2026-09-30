@@ -8,9 +8,33 @@
     // an entry of its own — so the row must light up wherever the dialog is
     // parked, not only on maintenance.
     $onSettingsSection = request()->routeIs('admin.settings.*', 'admin.users.*', 'admin.approvals.*', 'admin.mail.*', 'admin.audit-logs.*');
-    $pendingApprovals = $isAdmin && ! $isFragment ? App\Models\User::where('status', 'pending')->where('user_type', 'resident')->count() : 0;
-    $pendingCertRequests = $isOfficeUser && ! $isFragment ? App\Models\CertificateRequest::pending()->count() : 0;
-    $pendingResidentChanges = $isOfficeUser && ! $isFragment ? App\Models\ResidentRecordChange::where('status', 'Pending')->count() : 0;
+    // Sidebar badges share one request-scoped source instead of three
+    // per-render counts. Reuse badges already computed for this request when
+    // present, otherwise compute once, memoize on the container, and cache
+    // briefly per user so every sidebar render recounts nothing.
+    if (app()->bound('sidebar.badges')) {
+        $sidebarBadges = app('sidebar.badges');
+    } elseif ($isFragment || ! $isOfficeUser) {
+        // Fragments skip chrome data; guests/residents never see these badges
+        // (admins are office users, so the approvals badge stays covered).
+        $sidebarBadges = ['approvals' => 0, 'certRequests' => 0, 'residentChanges' => 0];
+    } else {
+        $sidebarBadges = \Illuminate\Support\Facades\Cache::remember(
+            'sidebar.badges.'.auth()->id(),
+            now()->addSeconds(30),
+            function () use ($isAdmin) {
+                return [
+                    'approvals' => $isAdmin ? App\Models\User::where('status', 'pending')->where('user_type', 'resident')->count() : 0,
+                    'certRequests' => App\Models\CertificateRequest::pending()->count(),
+                    'residentChanges' => App\Models\ResidentRecordChange::where('status', 'Pending')->count(),
+                ];
+            }
+        );
+        app()->instance('sidebar.badges', $sidebarBadges);
+    }
+    $pendingApprovals = $sidebarBadges['approvals'];
+    $pendingCertRequests = $sidebarBadges['certRequests'];
+    $pendingResidentChanges = $sidebarBadges['residentChanges'];
     // Merged modules carry their own queues now: Residents shows corrections,
     // Certificates shows requests, and Settings keeps only account approvals.
 @endphp

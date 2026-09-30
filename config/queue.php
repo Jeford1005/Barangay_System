@@ -11,9 +11,14 @@ return [
     | API, giving you convenient access to each backend using identical
     | syntax for each. The default queue connection is defined below.
     |
+    | "sync" runs jobs inline with no worker process, which is the correct
+    | local default: "database" (or "redis") without a running
+    | `php artisan queue:work` leaves jobs piled up unprocessed. Production
+    | hosts with a worker should set QUEUE_CONNECTION=database (or redis).
+    |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'sync'),
 
     /*
     |--------------------------------------------------------------------------

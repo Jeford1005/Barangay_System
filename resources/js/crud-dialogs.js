@@ -26,6 +26,35 @@
     var csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     var openDialog = null;
     var lastFocused = null;
+    var openCount = 0; // crud dialogs currently revealed (open() closes the previous one, so 0..1)
+
+    // Every overlay that locks page scroll. Kept as a DOM query (not just
+    // openCount) so crud-dialogs never unlocks the page under an open
+    // confirm / error / settings dialog owned by another engine.
+    var OVERLAY_SELECTOR = '.crud-dialog:not(.hidden), #confirm-dialog:not(.hidden), #error-dialog:not(.hidden), #settings-dialog:not(.hidden), #forgot-modal:not(.hidden), #register-modal:not(.hidden)';
+
+    function anyOverlayOpen() {
+        return !!document.querySelector(OVERLAY_SELECTOR);
+    }
+
+    function unlockScrollIfFree() {
+        // Only restore scroll when NO other dialog remains open.
+        if (!anyOverlayOpen()) document.body.classList.remove('overflow-hidden');
+    }
+
+    // Move focus into the topmost remaining overlay instead of yanking it
+    // back to the page trigger while another dialog is still open.
+    function focusTopOverlay() {
+        var top = document.querySelector('#settings-dialog:not(.hidden)')
+            || document.querySelector('#confirm-dialog:not(.hidden)')
+            || document.querySelector('#error-dialog:not(.hidden)')
+            || document.querySelector('.crud-dialog:not(.hidden)')
+            || document.querySelector('#forgot-modal:not(.hidden), #register-modal:not(.hidden)');
+        if (!top) return;
+        var target = top.querySelector('input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]')
+            || top.querySelector('[tabindex="-1"]');
+        if (target && target.focus) target.focus();
+    }
 
     function body(dialog) {
         return dialog.querySelector('.crud-dialog-body');
@@ -44,23 +73,30 @@
 
     function focusFirstField(dialog) {
         var field = body(dialog)?.querySelector('input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])');
-        if (field) field.focus();
+        if (field) {
+            field.focus();
+            return;
+        }
+        dialog.querySelector('.crud-dialog-panel')?.focus();
     }
 
     function open(dialog, fetchUrl, mode) {
         if (openDialog && openDialog !== dialog) close(openDialog);
 
+        var wasHidden = dialog.classList.contains('hidden');
         openDialog = dialog;
         lastFocused = document.activeElement;
         dialog.classList.remove('hidden');
+        if (wasHidden) openCount += 1;
         dialog.setAttribute('aria-busy', 'true');
         document.body.classList.add('overflow-hidden');
         var dialogBody = body(dialog);
         if (dialogBody) dialogBody.scrollTop = 0;
-        dialog.querySelector('.crud-dialog-panel')?.focus();
 
         var url = fetchUrl || dialog.dataset.fetchBase;
         if (url && dialog.dataset.loadedUrl !== url) {
+            // Fetch pending: the skeleton is empty, so focus waits for the
+            // fragment — loadFragment() focuses the first field on swap-in.
             loadFragment(dialog, url);
         } else {
             dialog.removeAttribute('aria-busy');
@@ -69,14 +105,26 @@
     }
 
     function close(dialog) {
+        if (dialog.classList.contains('hidden')) {
+            if (openDialog === dialog) openDialog = null;
+            return;
+        }
         dialog.classList.add('hidden');
         dialog.removeAttribute('aria-busy');
-        document.body.classList.remove('overflow-hidden');
+        openCount = Math.max(0, openCount - 1);
         if (lastFocused?.getAttribute('aria-controls') === dialog.id) {
             lastFocused.setAttribute('aria-expanded', 'false');
         }
         if (openDialog === dialog) openDialog = null;
-        if (lastFocused && lastFocused.focus) lastFocused.focus();
+        // Only restore page scroll when NO other dialog remains open.
+        unlockScrollIfFree();
+        var restore = lastFocused;
+        lastFocused = null;
+        if (anyOverlayOpen()) {
+            focusTopOverlay();
+        } else if (restore && restore.focus && restore.isConnected) {
+            restore.focus();
+        }
     }
 
     /**
@@ -343,13 +391,19 @@
         }
 
         if (openDialog) {
-            if (event.target.closest('[data-dialog-close]')) {
+            var closer = event.target.closest('[data-dialog-close]');
+            if (closer) {
+                // Close the dialog that owns the clicked control, not the
+                // whole stack.
+                var owned = closer.closest('.crud-dialog');
                 event.preventDefault();
-                close(openDialog);
+                close(owned && !owned.classList.contains('hidden') ? owned : openDialog);
                 return;
             }
             if (event.target.classList.contains('crud-dialog-backdrop')) {
-                close(openDialog);
+                // Backdrop closes only the clicked (topmost) dialog.
+                var clicked = event.target.closest('.crud-dialog');
+                if (clicked && !clicked.classList.contains('hidden')) close(clicked);
             }
         }
     });

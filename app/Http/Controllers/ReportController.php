@@ -26,53 +26,55 @@ class ReportController extends Controller
     {
         [$from, $to, $asOf] = $this->dateRange($request);
 
-        $residents = Resident::query()
-            ->where('status', 'Active')
-            ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
-            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
-            ->get();
-
-        // Calculate ages once instead of once per bracket and per resident.
-        $residentAges = $residents->mapWithKeys(
-            fn (Resident $resident) => [$resident->id => $this->ageOn($resident->birth_date, $asOf)],
-        );
-
-        // Purok rows with sex totals and per-bracket counts.
-        $puroks = Purok::orderBy('name')->get();
         $brackets = $this->ageBrackets();
 
-        $rows = $puroks->map(function (Purok $purok) use ($residents, $residentAges, $brackets) {
-            $inPurok = $residents->where('purok_id', $purok->id);
+        $base = Resident::query()
+            ->where('status', 'Active')
+            ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from));
 
+        // Sex and age-bracket aggregates per purok in a single GROUP BY. The
+        // screen and print views render counts only, so no resident row is
+        // hydrated no matter how large the barangay grows.
+        [$bracketSelects, $bracketBindings] = $this->bracketAggregates($brackets, $asOf);
+
+        $aggregates = $base
+            ->selectRaw(
+                "purok_id, COUNT(*) as total,"
+                ." SUM(CASE WHEN sex = 'Male' THEN 1 ELSE 0 END) as male,"
+                ." SUM(CASE WHEN sex = 'Female' THEN 1 ELSE 0 END) as female,"
+                ." SUM(CASE WHEN sex = 'Other' THEN 1 ELSE 0 END) as other,"
+                .implode(',', $bracketSelects),
+                $bracketBindings,
+            )
+            ->groupBy('purok_id')
+            ->get()
+            ->keyBy(fn ($row) => $row->purok_id === null ? 'unassigned' : 'purok:'.$row->purok_id);
+
+        // Purok rows with sex totals and per-bracket counts.
+        $puroks = Purok::orderBy('name')->get(['id', 'name']);
+
+        $rowFromAggregate = function ($aggregate, string $label) use ($brackets) {
             return (object) [
-                'label' => $purok->name,
-                'male' => $inPurok->where('sex', 'Male')->count(),
-                'female' => $inPurok->where('sex', 'Female')->count(),
-                'other' => $inPurok->where('sex', 'Other')->count(),
-                'total' => $inPurok->count(),
+                'label' => $label,
+                'male' => (int) ($aggregate->male ?? 0),
+                'female' => (int) ($aggregate->female ?? 0),
+                'other' => (int) ($aggregate->other ?? 0),
+                'total' => (int) ($aggregate->total ?? 0),
                 'brackets' => collect($brackets)->mapWithKeys(
-                    fn ($bracket) => [$bracket['label'] => $inPurok->filter(
-                        fn ($r) => $this->ageInBracket($residentAges->get($r->id), $bracket),
-                    )->count()],
+                    fn ($bracket, $index) => [$bracket['label'] => (int) ($aggregate?->{'bracket_'.$index} ?? 0)],
                 ),
             ];
-        });
+        };
+
+        $rows = $puroks->map(
+            fn (Purok $purok) => $rowFromAggregate($aggregates->get('purok:'.$purok->id), $purok->name),
+        );
 
         // Residents without a purok get their own row — nobody silently dropped.
-        $unassigned = $residents->whereNull('purok_id');
-        if ($unassigned->isNotEmpty()) {
-            $rows->push((object) [
-                'label' => 'No Purok Assigned',
-                'male' => $unassigned->where('sex', 'Male')->count(),
-                'female' => $unassigned->where('sex', 'Female')->count(),
-                'other' => $unassigned->where('sex', 'Other')->count(),
-                'total' => $unassigned->count(),
-                'brackets' => collect($brackets)->mapWithKeys(
-                    fn ($bracket) => [$bracket['label'] => $unassigned->filter(
-                        fn ($r) => $this->ageInBracket($residentAges->get($r->id), $bracket),
-                    )->count()],
-                ),
-            ]);
+        $unassigned = $aggregates->get('unassigned');
+        if ($unassigned && $unassigned->total > 0) {
+            $rows->push($rowFromAggregate($unassigned, 'No Purok Assigned'));
         }
 
         $totals = (object) [
@@ -86,7 +88,12 @@ class ReportController extends Controller
         ];
 
         // Voters are a standing question for barangay planning.
-        $voters = $residents->where('voter_status', true)->count();
+        $voters = Resident::query()
+            ->where('status', 'Active')
+            ->where('voter_status', true)
+            ->when($to, fn ($q) => $q->where('created_at', '<=', $to))
+            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
+            ->count();
 
         if ($request->boolean('print')) {
             AuditLog::record(
@@ -109,6 +116,8 @@ class ReportController extends Controller
             ]);
         }
 
+        $this->auditScreenView($request, 'population', $from, $to, $totals->total);
+
         return view('reports.population', compact('rows', 'totals', 'brackets', 'voters', 'from', 'to', 'asOf'));
     }
 
@@ -120,47 +129,86 @@ class ReportController extends Controller
     {
         [$from, $to, $asOf] = $this->dateRange($request, defaultMonths: 1);
 
-        $cases = Blotter::query()
+        $base = Blotter::query()
             ->when($to, fn ($q) => $q->where('complaint_date', '<=', $to->toDateTimeString()))
-            ->when($from, fn ($q) => $q->where('complaint_date', '>=', $from->toDateString()))
-            ->get();
+            ->when($from, fn ($q) => $q->where('complaint_date', '>=', $from->toDateString()));
 
-        $byType = $cases->groupBy('complaint_type')
-            ->map(fn ($group) => (object) [
-                'count' => $group->count(),
-                'open' => $group->where('status', 'Open')->count(),
-                'pending' => $group->where('status', 'Pending')->count(),
-                'resolved' => $group->where('status', 'Resolved')->count(),
-                'dismissed' => $group->where('status', 'Dismissed')->count(),
-            ])
-            ->sortByDesc(fn ($row) => $row->count); // keep complaint-type keys
+        // Status/volume aggregates in one GROUP BY-free aggregate row — the
+        // views render grouped counts, never full case rows.
+        $statusRow = (clone $base)->selectRaw(
+            "COUNT(*) as total,"
+            ." SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) as open,"
+            ." SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,"
+            ." SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved,"
+            ." SUM(CASE WHEN status = 'Dismissed' THEN 1 ELSE 0 END) as dismissed,"
+            ." SUM(CASE WHEN arrest_made = 'Yes' THEN 1 ELSE 0 END) as arrests",
+        )->first();
 
         $statusTotals = (object) [
-            'total' => $cases->count(),
-            'open' => $cases->where('status', 'Open')->count(),
-            'pending' => $cases->where('status', 'Pending')->count(),
-            'resolved' => $cases->where('status', 'Resolved')->count(),
-            'dismissed' => $cases->where('status', 'Dismissed')->count(),
-            'arrests' => $cases->where('arrest_made', 'Yes')->count(),
+            'total' => (int) ($statusRow->total ?? 0),
+            'open' => (int) ($statusRow->open ?? 0),
+            'pending' => (int) ($statusRow->pending ?? 0),
+            'resolved' => (int) ($statusRow->resolved ?? 0),
+            'dismissed' => (int) ($statusRow->dismissed ?? 0),
+            'arrests' => (int) ($statusRow->arrests ?? 0),
         ];
 
-        // Monthly trend across the selected period.
+        // Case volume by complaint type and status, grouped in SQL. Keep
+        // complaint-type keys so the views iterate exactly as before.
+        $byType = (clone $base)
+            ->selectRaw(
+                "complaint_type, COUNT(*) as count,"
+                ." SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) as open,"
+                ." SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending,"
+                ." SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved,"
+                ." SUM(CASE WHEN status = 'Dismissed' THEN 1 ELSE 0 END) as dismissed",
+            )
+            ->groupBy('complaint_type')
+            ->get()
+            ->mapWithKeys(fn ($row) => [($row->complaint_type ?? '') => (object) [
+                'count' => (int) $row->count,
+                'open' => (int) $row->open,
+                'pending' => (int) $row->pending,
+                'resolved' => (int) $row->resolved,
+                'dismissed' => (int) $row->dismissed,
+            ]])
+            ->sortByDesc(fn ($row) => $row->count); // keep complaint-type keys
+
+        // Monthly trend across the selected period, counted per month in SQL.
         $months = [];
-        $cursor = $from?->copy()->startOfMonth() ?? $cases->min('complaint_date')?->copy()->startOfMonth() ?? now()->startOfMonth();
+        $cursor = $from?->copy()->startOfMonth();
+        if ($cursor === null) {
+            $earliest = (clone $base)->min('complaint_date');
+            $cursor = $earliest ? Carbon::parse($earliest)->startOfMonth() : now()->startOfMonth();
+        }
         $end = $to?->copy()->endOfMonth() ?? now()->endOfMonth();
         while ($cursor <= $end && count($months) < 24) {
             $months[$cursor->format('M Y')] = 0;
             $cursor->addMonth();
         }
-        foreach ($cases as $case) {
-            $key = $case->complaint_date->format('M Y');
-            if (array_key_exists($key, $months)) {
-                $months[$key]++;
+
+        if ($months !== []) {
+            $monthCounts = (clone $base)
+                ->selectRaw($this->monthExpression('complaint_date').' as ym, COUNT(*) as c')
+                ->groupBy('ym')
+                ->pluck('c', 'ym');
+
+            $cursor = $from?->copy()->startOfMonth()
+                ?? ($earliest ?? null ? Carbon::parse($earliest)->startOfMonth() : now()->startOfMonth());
+            foreach (array_keys($months) as $label) {
+                $months[$label] = (int) ($monthCounts[$cursor->format('Y-m')] ?? 0);
+                $cursor->addMonth();
             }
         }
 
         // Recent cases appendix for context (latest 10 in period).
-        $recent = $cases->sortByDesc('complaint_date')->take(10);
+        // Aggregate-only columns: case number, type, date, status.
+        $recent = (clone $base)
+            ->select(['id', 'case_number', 'complaint_type', 'complaint_date', 'status'])
+            ->orderByDesc('complaint_date')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
 
         if ($request->boolean('print')) {
             AuditLog::record(
@@ -183,6 +231,8 @@ class ReportController extends Controller
             ]);
         }
 
+        $this->auditScreenView($request, 'blotter', $from, $to, $statusTotals->total);
+
         return view('reports.blotter', compact('byType', 'statusTotals', 'months', 'recent', 'from', 'to', 'asOf'));
     }
 
@@ -194,51 +244,82 @@ class ReportController extends Controller
     {
         [$from, $to, $asOf] = $this->dateRange($request, defaultMonths: 1);
 
-        $query = Welfare::query()->with('beneficiary.purok');
-
+        $base = Welfare::query();
         if ($to) {
-            $query->where('request_date', '<=', $to->toDateTimeString());
+            $base->where('request_date', '<=', $to->toDateTimeString());
         }
         if ($from) {
-            $query->where('request_date', '>=', $from->toDateString());
+            $base->where('request_date', '>=', $from->toDateString());
         }
 
-        $records = $query->orderBy('request_date')->get();
+        // Status and peso totals cover the whole period in single aggregate
+        // rows — no welfare record is hydrated for the summary cards.
+        $statusRow = (clone $base)->selectRaw(
+            "COUNT(*) as total,"
+            ." SUM(CASE WHEN status = 'Requested' THEN 1 ELSE 0 END) as requested,"
+            ." SUM(CASE WHEN status = 'Under Review' THEN 1 ELSE 0 END) as under_review,"
+            ." SUM(CASE WHEN status = 'Approved' THEN 1 ELSE 0 END) as approved,"
+            ." SUM(CASE WHEN status = 'Released' THEN 1 ELSE 0 END) as released,"
+            ." SUM(CASE WHEN status = 'Denied' THEN 1 ELSE 0 END) as denied",
+        )->first();
 
         $statusTotals = (object) [
-            'total' => $records->count(),
-            'requested' => $records->where('status', 'Requested')->count(),
-            'review' => $records->where('status', 'Under Review')->count(),
-            'approved' => $records->where('status', 'Approved')->count(),
-            'released' => $records->where('status', 'Released')->count(),
-            'denied' => $records->where('status', 'Denied')->count(),
+            'total' => (int) ($statusRow->total ?? 0),
+            // Keyed by status slug so views never guess abbreviations.
+            'requested' => (int) ($statusRow->requested ?? 0),
+            'under_review' => (int) ($statusRow->under_review ?? 0),
+            'approved' => (int) ($statusRow->approved ?? 0),
+            'released' => (int) ($statusRow->released ?? 0),
+            'denied' => (int) ($statusRow->denied ?? 0),
         ];
 
         // Only approved and released rows represent money the office committed
         // to. Summing `approved_amount` across every status would book
         // Requested and Denied rows as disbursed on the printed report, and
         // would disagree with the analytics page, which already filters.
-        $committed = $records->whereIn('status', ['Approved', 'Released']);
+        $amountRow = (clone $base)->selectRaw(
+            'COALESCE(SUM(requested_amount), 0) as requested,'
+            ." COALESCE(SUM(CASE WHEN status IN ('Approved', 'Released') THEN approved_amount ELSE 0 END), 0) as approved,"
+            ." COALESCE(SUM(CASE WHEN status = 'Released' THEN approved_amount ELSE 0 END), 0) as released",
+        )->first();
 
         $amounts = (object) [
-            'requested' => (float) $records->sum('requested_amount'),
-            'approved' => (float) $committed->sum('approved_amount'),
-            'released' => (float) $records->where('status', 'Released')->sum('approved_amount'),
+            'requested' => (float) ($amountRow->requested ?? 0),
+            'approved' => (float) ($amountRow->approved ?? 0),
+            'released' => (float) ($amountRow->released ?? 0),
         ];
 
-        $byType = $records->groupBy('assistance_type')
-            ->map(fn ($group) => (object) [
-                'count' => $group->count(),
-                'amount' => (float) $group->whereIn('status', ['Approved', 'Released'])->sum('approved_amount'),
-            ])
+        $breakdownSelect = 'COUNT(*) as count,'
+            ." COALESCE(SUM(CASE WHEN status IN ('Approved', 'Released') THEN approved_amount ELSE 0 END), 0) as amount";
+
+        $byType = (clone $base)
+            ->selectRaw('assistance_type, '.$breakdownSelect)
+            ->groupBy('assistance_type')
+            ->get()
+            ->mapWithKeys(fn ($row) => [($row->assistance_type ?? '') => (object) [
+                'count' => (int) $row->count,
+                'amount' => (float) $row->amount,
+            ]])
             ->sortKeys();
 
-        $byProgram = $records->groupBy('program_name')
-            ->map(fn ($group) => (object) [
-                'count' => $group->count(),
-                'amount' => (float) $group->whereIn('status', ['Approved', 'Released'])->sum('approved_amount'),
-            ])
+        $byProgram = (clone $base)
+            ->selectRaw('program_name, '.$breakdownSelect)
+            ->groupBy('program_name')
+            ->get()
+            ->mapWithKeys(fn ($row) => [($row->program_name ?? '') => (object) [
+                'count' => (int) $row->count,
+                'amount' => (float) $row->amount,
+            ]])
             ->sortKeys();
+
+        // Screen/print columns only: the views show beneficiary, type,
+        // program, amounts, status, and request date — descriptions, remarks,
+        // and timestamps never leave the database.
+        $listColumns = ['id', 'beneficiary_id', 'beneficiary_name', 'assistance_type', 'program_name', 'status', 'requested_amount', 'approved_amount', 'request_date'];
+        $listQuery = fn () => (clone $base)
+            ->select($listColumns)
+            ->with(['beneficiary:id,first_name,middle_name,last_name,suffix,purok_id', 'beneficiary.purok:id,name'])
+            ->orderBy('request_date');
 
         if ($request->boolean('print')) {
             AuditLog::record(
@@ -249,6 +330,11 @@ class ReportController extends Controller
                 $request->userAgent(),
                 ['report' => 'welfare', 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $statusTotals->total],
             );
+
+            // The printed extract lists the period's beneficiaries; cap the
+            // rows so an unbounded period cannot exhaust memory. The totals
+            // above still cover the whole period.
+            $records = $listQuery()->limit(2000)->get();
 
             return view('reports.welfare-print', [
                 'records' => $records,
@@ -261,6 +347,12 @@ class ReportController extends Controller
                 'asOf' => $asOf,
             ]);
         }
+
+        $this->auditScreenView($request, 'welfare', $from, $to, $statusTotals->total);
+
+        // The screen list is paginated; the summary cards above already carry
+        // the whole-period totals.
+        $records = $listQuery()->paginate(50)->withQueryString();
 
         return view('reports.welfare', compact('records', 'statusTotals', 'amounts', 'byType', 'byProgram', 'from', 'to', 'asOf'));
     }
@@ -304,23 +396,65 @@ class ReportController extends Controller
         ];
     }
 
-    private function ageOn(?Carbon $birthDate, Carbon $asOf): ?int
+    /**
+     * Per-bracket COUNT aggregates over `birth_date` for the given brackets.
+     * A resident lands in [min, max] exactly when the birth date falls in
+     * (asOf - (max+1) years, asOf - min years] — the same anniversary math
+     * as a PHP age calculation, evaluated as plain DATE comparisons so it
+     * runs on both SQLite and MySQL. The youngest bracket carries no upper
+     * bound so future birth dates (clamped to age 0 in PHP) stay inside it.
+     *
+     * @return array{0: array<int, string>, 1: array<int, string>}
+     */
+    private function bracketAggregates(array $brackets, Carbon $asOf): array
     {
-        if ($birthDate === null) {
-            return null;
+        $selects = [];
+        $bindings = [];
+
+        foreach (array_values($brackets) as $index => $bracket) {
+            $lower = $asOf->copy()->subYears($bracket['max'] + 1)->toDateString();
+
+            if ($bracket['min'] === 0) {
+                $selects[] = "SUM(CASE WHEN birth_date > ? THEN 1 ELSE 0 END) as bracket_{$index}";
+                $bindings[] = $lower;
+            } else {
+                $upper = $asOf->copy()->subYears($bracket['min'])->toDateString();
+                $selects[] = "SUM(CASE WHEN birth_date > ? AND birth_date <= ? THEN 1 ELSE 0 END) as bracket_{$index}";
+                $bindings[] = $lower;
+                $bindings[] = $upper;
+            }
         }
 
-        $age = $asOf->year - $birthDate->year;
-        if ($birthDate->month > $asOf->month
-            || ($birthDate->month === $asOf->month && $birthDate->day > $asOf->day)) {
-            $age--;
-        }
-
-        return max(0, $age);
+        return [$selects, $bindings];
     }
 
-    private function ageInBracket(?int $age, array $bracket): bool
+    /**
+     * Portable `YYYY-MM` grouping expression for a date column: SQLite uses
+     * strftime, MySQL uses DATE_FORMAT.
+     */
+    private function monthExpression(string $column): string
     {
-        return $age !== null && $age >= $bracket['min'] && $age <= $bracket['max'];
+        $driver = Blotter::query()->getConnection()->getDriverName();
+
+        return $driver === 'sqlite'
+            ? "strftime('%Y-%m', {$column})"
+            : "DATE_FORMAT({$column}, '%Y-%m')";
+    }
+
+    /**
+     * Screen report views expose PII (beneficiary names, case details, age
+     * breakdowns) just like the printed extracts, so they are audited too —
+     * with the active filters, so the log shows what slice was viewed.
+     */
+    private function auditScreenView(Request $request, string $report, ?Carbon $from, ?Carbon $to, int $total): void
+    {
+        AuditLog::record(
+            'report.viewed',
+            auth()->id(),
+            auth()->user()?->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['report' => $report, 'from' => $from?->toDateString(), 'to' => $to?->toDateString(), 'total' => $total],
+        );
     }
 }

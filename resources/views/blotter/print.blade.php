@@ -181,7 +181,7 @@
 <body>
     <div class="toolbar no-print">
         <button type="button" class="primary" onclick="window.print()">Print this sheet</button>
-        <a href="{{ route('blotter.edit', $blotter) }}">Back to case</a>
+        <a href="{{ route('blotter.index') }}">Back to blotter records</a>
     </div>
 
     <div class="sheet">

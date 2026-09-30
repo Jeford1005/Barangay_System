@@ -297,12 +297,58 @@ class CertificateIssuanceTest extends TestCase
         $this->assertSame('Voided', $issuance->fresh()->status);
     }
 
-    public function test_voided_certificates_print_with_a_void_stamp(): void
+    public function test_voided_certificates_cannot_be_printed(): void
     {
         $issuance = CertificateIssuance::factory()->create(['status' => 'Voided']);
 
         $this->actingAs($this->admin)->get(route('certificates.print', $issuance))
-            ->assertOk()
-            ->assertSee('VOID');
+            ->assertRedirect(route('certificates.index'))
+            ->assertSessionHas('error');
+    }
+
+    public function test_store_multiplies_the_unit_fee_by_copies(): void
+    {
+        $document = Document::where('code', 'CLR')->first(); // ₱50.00 catalog price
+
+        $this->actingAs($this->admin)->post('/certificates', $this->validPayload([
+            'document_id' => $document->id,
+            'copies' => 3,
+        ]));
+
+        $this->assertEquals(150.00, CertificateIssuance::firstOrFail()->fee);
+    }
+
+    public function test_restore_reactivates_a_voided_certificate(): void
+    {
+        $issuance = CertificateIssuance::factory()->create([
+            'status' => 'Voided',
+            'voided_by' => $this->admin->id,
+            'voided_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('certificates.restore', $issuance));
+
+        $response->assertRedirect(route('certificates.index'))
+            ->assertSessionHas('success');
+
+        $issuance->refresh();
+        $this->assertSame('Issued', $issuance->status);
+        $this->assertNull($issuance->voided_by);
+        $this->assertNull($issuance->voided_at);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'certificate.restored']);
+
+        // ...and it prints again.
+        $this->actingAs($this->admin)->get(route('certificates.print', $issuance))->assertOk();
+    }
+
+    public function test_restore_is_rejected_when_already_issued(): void
+    {
+        $issuance = CertificateIssuance::factory()->create(['status' => 'Issued']);
+
+        $this->actingAs($this->admin)->post(route('certificates.restore', $issuance))
+            ->assertRedirect(route('certificates.index'))
+            ->assertSessionHas('error');
+
+        $this->assertSame('Issued', $issuance->fresh()->status);
     }
 }

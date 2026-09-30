@@ -5,10 +5,15 @@
 
     RewriteEngine On
 
-    # Served through the Apache Alias /Barangay_Management_System -> public/,
-    # so per-directory rewriting must anchor here or Apache builds the target
-    # from the htdocs docroot and loops (AH00124).
-    RewriteBase /Barangay_Management_System/
+    # No RewriteBase here on purpose. The front-controller rule below uses a
+    # relative substitution ("RewriteRule ^ index.php [L]"), so Apache anchors
+    # the rewrite to this directory automatically. That works unchanged whether
+    # public/ is the DocumentRoot, an Alias/subdirectory (e.g. XAMPP's
+    # /Barangay_Management_System), or a shared host's public_html.
+    # A hardcoded base (e.g. "RewriteBase /Barangay_Management_System/")
+    # breaks every other layout, including Vercel/shared-host deploys — only
+    # add an explicit RewriteBase if your host requires one, and set it to
+    # that host's actual sub-path.
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

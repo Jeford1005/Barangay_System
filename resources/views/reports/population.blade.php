@@ -8,7 +8,7 @@
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
         <div class="p-6">
-            <form method="GET" action="{{ route('reports.population') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
+            <form method="GET" action="{{ route('reports.population') }}" class="no-print mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div class="flex-1">
                     <label for="population-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Registered from</label>
                     <input id="population-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}" onchange="this.form.submit()"
@@ -33,7 +33,7 @@
                         <tr>
                             <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Purok</th>
                             @foreach ($brackets as $bracket)
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase hidden md:table-cell">{{ $bracket['label'] }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase hidden print:table-cell md:table-cell">{{ $bracket['label'] }}</th>
                             @endforeach
                             <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Male</th>
                             <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Female</th>
@@ -45,7 +45,7 @@
                             <tr class="hover:bg-slate-50">
                                 <td class="px-3 py-3 font-medium text-slate-900">{{ $row->label }}</td>
                                 @foreach ($brackets as $bracket)
-                                    <td class="px-3 py-3 text-right text-slate-600 hidden md:table-cell">{{ $row->brackets[$bracket['label']] }}</td>
+                                    <td class="px-3 py-3 text-right text-slate-600 hidden print:table-cell md:table-cell">{{ $row->brackets[$bracket['label']] }}</td>
                                 @endforeach
                                 <td class="px-3 py-3 text-right text-slate-600">{{ $row->male }}</td>
                                 <td class="px-3 py-3 text-right text-slate-600">{{ $row->female }}</td>
@@ -55,7 +55,7 @@
                         <tr class="bg-slate-50 font-semibold">
                             <td class="px-3 py-3">Total</td>
                             @foreach ($brackets as $bracket)
-                                <td class="px-3 py-3 text-right hidden md:table-cell">{{ $totals->brackets[$bracket['label']] }}</td>
+                                <td class="px-3 py-3 text-right hidden print:table-cell md:table-cell">{{ $totals->brackets[$bracket['label']] }}</td>
                             @endforeach
                             <td class="px-3 py-3 text-right">{{ $totals->male }}</td>
                             <td class="px-3 py-3 text-right">{{ $totals->female }}</td>

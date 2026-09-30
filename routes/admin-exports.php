@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Route;
 | This route file is intentionally standalone so the primary integration can
 | require it from routes/web.php without coupling the export slice to any
 | module index view. Every route is protected by the existing auth/admin
-| middleware aliases.
+| middleware aliases plus `verified` (no-op until User implements
+| MustVerifyEmail) and a tight `throttle:10,1` bulk-PII ceiling.
 |
 */
 
@@ -23,7 +24,7 @@ $exportTypes = [
     'certificates' => 'certificates',
 ];
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'verified', 'admin', 'throttle:10,1'])
     ->prefix('admin/exports')
     ->group(function () use ($exportTypes): void {
         foreach ($exportTypes as $dataset => $method) {
@@ -39,7 +40,13 @@ Route::middleware(['auth', 'admin'])
 
 // Module-level aliases make it easy for an existing module toolbar to link to
 // an export without changing the route shape of the other admin modules.
-Route::middleware(['auth', 'admin'])->group(function () use ($exportTypes): void {
+// NOTE: there is no {dataset} wildcard here - the loop registers five
+// concrete literal routes, so there is nothing to constrain with whereIn;
+// the PII-surface concern is that these aliases duplicate the five
+// /admin/exports/* endpoints (ten URLs for five datasets). They carry the
+// same admin gate + tight throttle as the canonical group. `admin` stays the
+// gate because no `exports.*` permission key exists in User::hasPermission().
+Route::middleware(['auth', 'verified', 'admin', 'throttle:10,1'])->group(function () use ($exportTypes): void {
     foreach ($exportTypes as $dataset => $method) {
         Route::get('/'.$dataset.'/export', [
             'uses' => AdminExportController::class.'@'.$method,

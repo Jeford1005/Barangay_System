@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\ResidentApplication;
 use App\Models\User;
 use App\Notifications\AccountApprovedNotification;
 use App\Notifications\AccountRejectedNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class AccountApprovalController extends Controller
@@ -37,80 +40,162 @@ class AccountApprovalController extends Controller
 
     /**
      * Approve a pending account.
+     *
+     * The decision runs inside a transaction with the applicant row locked,
+     * so two admins (or a double-clicked button) cannot approve/reject the
+     * same application twice. The audit entry is written in the same
+     * transaction; the email goes out only after the commit succeeds.
      */
     public function approve(Request $request, User $user)
     {
         $this->authorizePending($request, $user);
 
-        $user->update([
-            'status' => 'approved',
-            'approved_at' => now(),
-            'reviewed_by' => $request->user()->id,
-            'rejection_reason' => null,
-        ]);
+        $actor = $request->user();
+        $ip = $request->ip();
+        $userAgent = $request->userAgent();
 
-        $user->residentApplication?->update([
-            'status' => 'Approved',
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-        ]);
+        $decided = DB::transaction(function () use ($actor, $ip, $userAgent, $user) {
+            $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-        $user->notify(new AccountApprovedNotification($user->name));
+            abort_unless(
+                $locked->user_type === 'resident' && $locked->status === 'pending',
+                404,
+            );
 
-        AuditLog::recordWithSubject(
-            'account.approved',
-            $request->user()?->id,
-            $request->user()?->email,
-            $request->ip(),
-            $request->userAgent(),
-            'user',
-            $user->id,
-            $user->email,
-        );
+            // The linked application has its own lifecycle (it may already
+            // have been approved alongside a created profile, or rejected and
+            // left stale): only a pending application may be transitioned.
+            $application = ResidentApplication::query()
+                ->where('user_id', $locked->id)
+                ->lockForUpdate()
+                ->first();
 
-        return back()->with('success', "Approved — {$user->name} can sign in after staff links or creates the resident profile.");
+            if ($application && $application->status !== 'Pending') {
+                abort(422, 'This resident application is no longer pending.');
+            }
+
+            $locked->update([
+                'status' => 'approved',
+                'approved_at' => now(),
+                'reviewed_by' => $actor->id,
+                'rejection_reason' => null,
+            ]);
+
+            $application?->update([
+                'status' => 'Approved',
+                'reviewed_by' => $actor->id,
+                'reviewed_at' => now(),
+            ]);
+
+            AuditLog::recordWithSubject(
+                'account.approved',
+                $actor?->id,
+                $actor?->email,
+                $ip,
+                $userAgent,
+                'user',
+                $locked->id,
+                $locked->email,
+            );
+
+            return $locked;
+        });
+
+        try {
+            $decided->notify(new AccountApprovedNotification($decided->name));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
+        return back()->with('success', "Approved — {$decided->name} can sign in after staff links or creates the resident profile.");
     }
 
     /**
      * Reject a pending account with a reason.
+     *
+     * Same race protection as approve: row lock, audit inside the
+     * transaction, notification only after the commit.
      */
     public function reject(Request $request, User $user)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'reason' => ['required', 'string', 'min:5', 'max:500'],
         ], [
             'reason.required' => 'A reason is required — it is sent to the applicant by email.',
         ]);
 
+        if ($validator->fails()) {
+            // Scope the failure to this applicant: every pending card shares
+            // the `reason` field name, so without this the old input and the
+            // error message would bleed into every other card on the page.
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('approval_error_user_id', $user->id);
+        }
+
+        $validated = $validator->validated();
+
         $this->authorizePending($request, $user);
 
-        $user->update([
-            'status' => 'rejected',
-            'reviewed_by' => $request->user()->id,
-            'rejection_reason' => $validated['reason'],
-        ]);
+        $actor = $request->user();
+        $ip = $request->ip();
+        $userAgent = $request->userAgent();
 
-        $user->residentApplication?->update([
-            'status' => 'Rejected',
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-            'review_note' => $validated['reason'],
-        ]);
+        $decided = DB::transaction(function () use ($actor, $ip, $userAgent, $user, $validated) {
+            $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-        $user->notify(new AccountRejectedNotification($user->name, $validated['reason']));
+            abort_unless(
+                $locked->user_type === 'resident' && $locked->status === 'pending',
+                404,
+            );
 
-        AuditLog::recordWithSubject(
-            'account.rejected',
-            $request->user()?->id,
-            $request->user()?->email,
-            $request->ip(),
-            $request->userAgent(),
-            'user',
-            $user->id,
-            $user->email,
-        );
+            // Same guard as approve: a non-pending application (e.g. one
+            // already approved with a created profile) must not be flipped
+            // back to Rejected underneath the profile.
+            $application = ResidentApplication::query()
+                ->where('user_id', $locked->id)
+                ->lockForUpdate()
+                ->first();
 
-        return back()->with('success', "Application of {$user->name} was rejected and the applicant was notified.");
+            if ($application && $application->status !== 'Pending') {
+                abort(422, 'This resident application is no longer pending.');
+            }
+
+            $locked->update([
+                'status' => 'rejected',
+                'reviewed_by' => $actor->id,
+                'rejection_reason' => $validated['reason'],
+            ]);
+
+            $application?->update([
+                'status' => 'Rejected',
+                'reviewed_by' => $actor->id,
+                'reviewed_at' => now(),
+                'review_note' => $validated['reason'],
+            ]);
+
+            AuditLog::recordWithSubject(
+                'account.rejected',
+                $actor?->id,
+                $actor?->email,
+                $ip,
+                $userAgent,
+                'user',
+                $locked->id,
+                $locked->email,
+            );
+
+            return $locked;
+        });
+
+        try {
+            $decided->notify(new AccountRejectedNotification($decided->name, $validated['reason']));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
+
+        return back()->with('success', "Application of {$decided->name} was rejected and the applicant was notified.");
     }
 
     /**

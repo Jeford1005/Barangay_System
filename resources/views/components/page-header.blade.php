@@ -21,7 +21,7 @@
 ])
 
 <div class="no-print shrink-0 bg-white border-b border-slate-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 w-full flex items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 w-full flex min-h-14 items-center justify-between gap-3">
         <div class="flex min-w-0 items-start gap-1">
             {{-- Mobile hamburger: opens the sidebar drawer (black header removed).
                  Absent in embed mode — the settings dialog's iframe has no drawer. --}}

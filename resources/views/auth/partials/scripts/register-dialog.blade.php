@@ -123,6 +123,7 @@
                     if (res.ok) {
                         form.reset();
                         showStep(stepDone);
+                        setTimeout(closeRegisterModal, 1800);
                         return;
                     }
 

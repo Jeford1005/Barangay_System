@@ -22,7 +22,8 @@ class ResidentCertificateRequestController extends Controller
             ->where('resident_id', $resident->id)
             ->with(['document', 'issuance'])
             ->latest('id')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         $documents = Document::active()->certificate()->orderBy('code')->get();
 
@@ -78,6 +79,13 @@ class ResidentCertificateRequestController extends Controller
         abort_unless($certificateRequest->resident_id === $resident->id, 403);
         abort_unless($certificateRequest->status === 'Approved' && $certificateRequest->issuance, 404);
 
+        // A voided issuance is no longer an official document — keep the
+        // resident-facing viewer under the same rule as the office print.
+        if ($certificateRequest->issuance->status === 'Voided') {
+            return redirect()->route('resident.requests')
+                ->with('error', 'This certificate was voided by the barangay office. Please visit the hall for assistance.');
+        }
+
         return view('certificates.print', [
             'issuance' => $certificateRequest->issuance->load(['document', 'resident.purok']),
             'punongBarangay' => Official::where('position', 'Punong Barangay')->active()->first(),
@@ -100,7 +108,7 @@ class ResidentCertificateRequestController extends Controller
 
     private function requireProfile(Request $request): Resident
     {
-        $resident = $request->user()->residentProfile;
+        $resident = $request->user()?->residentProfile;
 
         abort_if(! $resident, 404, 'No resident profile is linked to this account. Please contact the barangay office.');
         abort_if($resident->status !== 'Active', 403, 'Archived resident profiles cannot request certificates.');

@@ -11,9 +11,7 @@
 
 @section('content')
 <x-settings-shell>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div class="space-y-4">
+<div class="space-y-4">
             @forelse ($pending as $applicant)
                 @php
                     $profile = $applicant->residentProfile;
@@ -120,10 +118,10 @@
                                 <label for="rejection-reason-{{ $applicant->id }}" class="sr-only">Reason for rejecting {{ $applicant->name }}</label>
                                 <textarea id="rejection-reason-{{ $applicant->id }}" name="reason" rows="2" required minlength="5" maxlength="500"
                                     placeholder="Reason (emailed to the applicant)…"
-                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">{{ old('reason') }}</textarea>
-                                @error('reason')
-                                    <p class="text-xs text-red-600">{{ $message }}</p>
-                                @enderror
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">{{ (string) session('approval_error_user_id') === (string) $applicant->id ? old('reason') : '' }}</textarea>
+                                @if ($errors->has('reason') && (string) session('approval_error_user_id') === (string) $applicant->id)
+                                    <p class="text-xs text-red-600">{{ $errors->first('reason') }}</p>
+                                @endif
                             </form>
                         </div>
                     </div>
@@ -136,7 +134,7 @@
             @endforelse
 
             @if ($pending->hasPages())
-                <div class="border-t border-slate-200 pt-4">{{ $pending->links() }}</div>
+                <div class="border-t border-slate-200 pt-4">{{ $pending->withQueryString()->links() }}</div>
             @endif
         </div>
 
@@ -174,7 +172,6 @@
                 </table>
             </div>
         @endif
-    </div>
 </x-settings-shell>
 @endsection
 </x-app-layout>

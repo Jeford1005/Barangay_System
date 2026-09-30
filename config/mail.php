@@ -12,9 +12,15 @@ return [
     | the message. All additional mailers can be configured within the
     | "mailers" array. Examples of each type of mailer are provided.
     |
+    | "failover" (smtp, then log) is the safe default: a bare "log" driver
+    | would silently swallow production mail such as password resets with no
+    | error shown anywhere. Local development keeps working with no mail
+    | server because unsent mail still lands in the log; production sets
+    | MAIL_MAILER=smtp with real credentials to deliver.
+    |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'failover'),
 
     /*
     |--------------------------------------------------------------------------

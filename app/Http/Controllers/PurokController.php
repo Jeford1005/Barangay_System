@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PurokController extends Controller
 {
@@ -16,14 +17,20 @@ class PurokController extends Controller
 
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
-            $query->where('name', 'like', '%'.$search.'%')
-                ->orWhere('code', 'like', '%'.$search.'%');
+            $like = '%'.self::escapeLike($search).'%';
+            // Grouped so the OR never leaks past additional filters.
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw("name LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("code LIKE ? ESCAPE '\\'", [$like]);
+            });
         }
 
-        $puroks = $query->orderBy('name')->paginate(20);
+        $puroks = $query->orderBy('name')->paginate(20)->withQueryString();
+
+        $page = max(1, (int) $request->input('page', 1));
 
         return view('purok.index', compact('puroks'))
-            ->with('i', ($request->input('page', 1) - 1) * $puroks->perPage());
+            ->with('i', ($page - 1) * $puroks->perPage());
     }
 
     public function create()
@@ -68,9 +75,18 @@ class PurokController extends Controller
 
         $validated = $this->validatePurok($request, $purok->id);
 
+        // The puroks table carries no updated_by column yet; record the actor
+        // only where the column exists so the write never breaks.
+        if (Schema::hasColumn('puroks', 'updated_by')) {
+            $validated['updated_by'] = Auth::id();
+        }
+
         DB::beginTransaction();
         try {
-            $purok->update($validated);
+            // Re-read under a row lock so a concurrent delete cannot slip
+            // between routing and the write.
+            $locked = Purok::whereKey($purok->getKey())->lockForUpdate()->firstOrFail();
+            $locked->update($validated);
             DB::commit();
             Cache::forget('auth.purok-options');
 
@@ -87,40 +103,67 @@ class PurokController extends Controller
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
 
-        $hasResidents = $purok->residents()->exists();
-        $hasHouseholds = $purok->households()->exists();
+        // The occupancy check and the delete run in one transaction with the
+        // row locked and the check repeated inside: a resident or household
+        // assigned between a pre-check and the delete must still block it.
+        $blocked = DB::transaction(function () use ($purok) {
+            $locked = Purok::whereKey($purok->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($hasResidents || $hasHouseholds) {
+            if ($locked->residents()->exists() || $locked->households()->exists()) {
+                return true;
+            }
+
+            $locked->delete();
+
+            return false;
+        });
+
+        if ($blocked) {
             return redirect()->route('puroks.index')
                 ->with('error', 'Cannot delete purok that has associated residents or households.');
         }
 
-        DB::beginTransaction();
-        try {
-            $purok->delete();
-            DB::commit();
-            Cache::forget('auth.purok-options');
+        Cache::forget('auth.purok-options');
 
-            return redirect()->route('puroks.index')
-                ->with('success', 'Purok deleted successfully.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
+        return redirect()->route('puroks.index')
+            ->with('success', 'Purok deleted successfully.');
+    }
 
-            return back()->withErrors(['error' => 'Failed to delete purok.']);
-        }
+    /**
+     * Escape LIKE wildcards so user input only ever matches literally.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function validatePurok(Request $request, $purokId = null)
     {
         $rules = [
             'name' => 'required|string|max:50|unique:puroks,name',
-            'code' => 'nullable|string|max:10',
+            'code' => 'nullable|string|max:10|unique:puroks,code',
         ];
 
         if ($purokId) {
             $rules['name'] = 'required|string|max:50|unique:puroks,name,'.$purokId;
+            $rules['code'] = 'nullable|string|max:10|unique:puroks,code,'.$purokId;
         }
 
-        return $request->validate($rules);
+        $validated = $request->validate($rules);
+
+        // An empty-string code is "no code": normalize to NULL so blank
+        // submissions share one representation and never collide on the
+        // unique index.
+        if (array_key_exists('code', $validated) && trim((string) $validated['code']) === '') {
+            $validated['code'] = null;
+        }
+
+        if (array_key_exists('name', $validated)) {
+            $validated['name'] = trim((string) $validated['name']);
+        }
+
+        return $validated;
     }
 }

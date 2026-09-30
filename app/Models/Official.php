@@ -60,19 +60,28 @@ class Official extends Model
 
     public function getFullNameAttribute()
     {
-        $name = $this->first_name;
-        if ($this->middle_name) {
-            $name .= ' ' . $this->middle_name;
-        }
-        $name .= ' ' . $this->last_name;
-        if ($this->suffix) {
-            $name .= ' ' . $this->suffix;
-        }
-        return $name;
+        $parts = array_filter([
+            $this->first_name ?? null,
+            $this->middle_name ?? null,
+            $this->last_name ?? null,
+            $this->suffix ?? null,
+        ], fn ($part) => trim((string) $part) !== '');
+
+        return implode(' ', array_map(fn ($part) => trim((string) $part), $parts));
     }
 
     public function scopeActive($query)
     {
         return $query->where('status', 'Active');
+    }
+
+    /**
+     * Officials currently serving the barangay: Active plus Elected.
+     * Elected officials hold office by mandate and must appear everywhere
+     * the public directory or an officer dropdown lists serving officials.
+     */
+    public function scopeServing($query)
+    {
+        return $query->whereIn('status', ['Active', 'Elected']);
     }
 }

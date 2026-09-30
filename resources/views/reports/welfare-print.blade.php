@@ -72,7 +72,6 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 20pt;">#</th>
                         <th>Beneficiary</th>
                         <th style="width: 56pt;">Type</th>
                         <th>Program</th>
@@ -84,7 +83,6 @@
                 <tbody>
                     @foreach ($records as $record)
                         <tr>
-                            <td class="num">{{ $loop->iteration }}</td>
                             <td>{{ $record->beneficiary?->full_name ?? $record->beneficiary_name }}</td>
                             <td>{{ $record->assistance_type }}</td>
                             <td>{{ $record->program_name }}</td>

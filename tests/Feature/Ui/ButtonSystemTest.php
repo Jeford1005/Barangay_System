@@ -34,11 +34,11 @@ class ButtonSystemTest extends TestCase
 
     public function test_shared_components_carry_the_button_family(): void
     {
-        $actions = File::get(resource_path('views/components/table/actions.blade.php'));
+        // table/actions.blade.php was removed as dead code (zero usages);
+        // assert it stays gone so the family doesn't silently fork again.
+        $this->assertFileDoesNotExist(resource_path('views/components/table/actions.blade.php'));
         $form = File::get(resource_path('views/components/form/actions.blade.php'));
 
-        $this->assertStringContainsString('btn btn-neutral btn-row', $actions);
-        $this->assertStringContainsString('btn btn-outline-danger btn-row', $actions);
         $this->assertStringContainsString('btn btn-neutral', $form);
         $this->assertStringContainsString('btn btn-primary', $form);
     }
@@ -59,7 +59,6 @@ class ButtonSystemTest extends TestCase
     {
         $allowed = [
             'app-layout.blade.php' => 'sidebar minimize/close chrome',
-            'nav-link.blade.php' => 'sidebar nav rows',
             'toasts.blade.php' => 'toast dismiss control',
         ];
 

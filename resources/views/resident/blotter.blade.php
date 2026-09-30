@@ -58,7 +58,7 @@
                     </li>
                 @endforeach
             </ul>
-            <div class="px-5 pb-4">{{ $cases->links() }}</div>
+            <div class="px-5 pb-4">{{ $cases->withQueryString()->links() }}</div>
         @endif
     </section>
 </div>

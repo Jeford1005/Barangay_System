@@ -9,6 +9,7 @@ use App\Notifications\CertificateRequestDecisionNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CertificateRequestAdminController extends Controller
@@ -32,6 +33,11 @@ class CertificateRequestAdminController extends Controller
     public function approve(Request $request, CertificateRequest $certificateRequest)
     {
         abort_unless($request->user()?->hasPermission('certificate-requests.decide'), 403);
+
+        // Tag the row being decided so validation repopulation (old input)
+        // only refills this row's inline form instead of bleeding into every
+        // row on the page.
+        $request->merge(['_request_id' => $certificateRequest->id]);
 
         $validated = $request->validate([
             // The clerk may adjust the counter fee (e.g. waive for indigents).
@@ -65,7 +71,9 @@ class CertificateRequestAdminController extends Controller
                 'document_snapshot' => CertificateIssuance::documentSnapshot($document),
                 'purpose' => $requestModel->purpose,
                 'copies' => $requestModel->copies,
-                'fee' => $validated['fee'] ?? $document->fee,
+                // The override/catalog fee is a per-copy unit price — the
+                // stored amount is the total for the copies requested.
+                'fee' => round((float) ($validated['fee'] ?? $document->fee) * (int) $requestModel->copies, 2),
                 'status' => 'Issued',
                 'remarks' => 'Issued from online request #'.$requestModel->id,
                 'issued_by' => Auth::id(),
@@ -97,10 +105,19 @@ class CertificateRequestAdminController extends Controller
 
         [$issuance, $requestModel] = $issuance;
 
-        $requestModel->load('resident.user');
-        $requestModel->resident?->user?->notify(
-            new CertificateRequestDecisionNotification($requestModel, true),
-        );
+        // The issuance is already committed — a mail failure must not turn
+        // the approval into a 500. Log it and still hand over the printout.
+        try {
+            $requestModel->load('resident.user');
+            $requestModel->resident?->user?->notify(
+                new CertificateRequestDecisionNotification($requestModel, true),
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Certificate approval email failed after commit.', [
+                'request_id' => $requestModel->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()
             ->route('certificates.print', $issuance)
@@ -110,6 +127,10 @@ class CertificateRequestAdminController extends Controller
     public function reject(Request $request, CertificateRequest $certificateRequest)
     {
         abort_unless($request->user()?->hasPermission('certificate-requests.decide'), 403);
+
+        // Same row-tagging as approve(): keeps old('rejection_reason') on the
+        // row that failed validation instead of every row on the page.
+        $request->merge(['_request_id' => $certificateRequest->id]);
 
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',
@@ -146,9 +167,16 @@ class CertificateRequestAdminController extends Controller
         });
 
         $requestModel->load('resident.user');
-        $requestModel->resident?->user?->notify(
-            new CertificateRequestDecisionNotification($requestModel, false),
-        );
+        try {
+            $requestModel->resident?->user?->notify(
+                new CertificateRequestDecisionNotification($requestModel, false),
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Certificate rejection email failed after commit.', [
+                'request_id' => $requestModel->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()
             ->route('admin.certificate-requests.index')

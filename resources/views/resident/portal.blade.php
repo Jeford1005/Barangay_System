@@ -123,7 +123,7 @@
                     </li>
                 @endforeach
             </ul>
-            <div class="px-5 pb-4">{{ $changes->links() }}</div>
+            <div class="px-5 pb-4">{{ $changes->withQueryString()->links() }}</div>
         </section>
     @endif
 
@@ -134,7 +134,7 @@
                 <h2 class="font-semibold text-slate-900">Contact details</h2>
                 <p class="text-sm text-slate-500">Update these yourself: profile photo, phone number and address.</p>
             </div>
-            <form method="POST" action="{{ route('resident.contact.update') }}" class="space-y-4 p-6">
+            <form method="POST" action="{{ route('resident.contact.update') }}" enctype="multipart/form-data" class="space-y-4 p-6">
                 @csrf
                 @method('PUT')
                 <div>

@@ -248,6 +248,31 @@ class CertificateRequestTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'certificate.request_approved']);
     }
 
+    public function test_approve_multiplies_the_unit_fee_by_copies(): void
+    {
+        $this->actingAs($this->residentUser)->post('/my/requests', $this->validPayload(['copies' => 2]));
+        $request = CertificateRequest::firstOrFail();
+
+        $this->actingAs($this->admin)->post(route('admin.certificate-requests.approve', $request));
+
+        $unitFee = (float) Document::where('code', 'CLR')->first()->fee;
+        $this->assertEquals($unitFee * 2, CertificateIssuance::firstOrFail()->fee);
+    }
+
+    public function test_resident_cannot_view_a_voided_certificate(): void
+    {
+        $this->actingAs($this->residentUser)->post('/my/requests', $this->validPayload());
+        $request = CertificateRequest::firstOrFail();
+
+        $this->actingAs($this->admin)->post(route('admin.certificate-requests.approve', $request));
+        $request->fresh()->issuance->update(['status' => 'Voided']);
+
+        $this->actingAs($this->residentUser)
+            ->get(route('resident.requests.certificate', $request))
+            ->assertRedirect(route('resident.requests'))
+            ->assertSessionHas('error');
+    }
+
     public function test_approve_accepts_a_fee_override(): void
     {
         $this->actingAs($this->residentUser)->post('/my/requests', $this->validPayload());

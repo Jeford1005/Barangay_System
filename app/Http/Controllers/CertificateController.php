@@ -24,12 +24,13 @@ class CertificateController extends Controller
 
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
-            $query->where(function ($q) use ($search) {
-                $q->where('control_number', 'like', '%'.$search.'%')
-                    ->orWhere('purpose', 'like', '%'.$search.'%')
-                    ->orWhereHas('resident', function ($r) use ($search) {
-                        $r->where('first_name', 'like', '%'.$search.'%')
-                            ->orWhere('last_name', 'like', '%'.$search.'%');
+            $like = '%'.self::escapeLike($search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw("control_number LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("purpose LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereHas('resident', function ($r) use ($like) {
+                        $r->whereRaw("first_name LIKE ? ESCAPE '\\'", [$like])
+                            ->orWhereRaw("last_name LIKE ? ESCAPE '\\'", [$like]);
                     });
             });
         }
@@ -42,7 +43,7 @@ class CertificateController extends Controller
             $query->where('document_id', (int) $request->document_id);
         }
 
-        $issuances = $query->paginate(20);
+        $issuances = $query->paginate(20)->withQueryString();
         $documents = Document::orderBy('code')->get();
         $todayCount = CertificateIssuance::whereBetween('created_at', [
             today()->startOfDay(),
@@ -50,6 +51,16 @@ class CertificateController extends Controller
         ])->count();
 
         return view('certificates.index', compact('issuances', 'documents', 'todayCount'));
+    }
+
+    /**
+     * Escape LIKE wildcards so user input only ever matches literally.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     public function create()
@@ -98,9 +109,20 @@ class CertificateController extends Controller
         $issuance = DB::transaction(function () use ($request, $validated) {
             $document = Document::findOrFail($validated['document_id']);
             $resident = Resident::with('purok')->findOrFail($validated['resident_id']);
-            $fee = Auth::user()?->isStaff()
+            $catalogFee = (float) $document->fee;
+            // Only administrators may waive or adjust the unit fee at the
+            // counter. Staff issuance always uses the posted catalog price.
+            $feeOverridden = ! Auth::user()?->isStaff()
+                && array_key_exists('fee', $validated)
+                && $validated['fee'] !== null
+                && round((float) $validated['fee'], 2) !== round($catalogFee, 2);
+            $unitFee = Auth::user()?->isStaff()
                 ? $document->fee
                 : ($validated['fee'] ?? $document->fee);
+
+            // The catalog/override fee is a per-copy unit price — the stored
+            // amount is the total for the copies issued.
+            $fee = round((float) $unitFee * (int) $validated['copies'], 2);
 
             $issuance = CertificateIssuance::create([
                 'control_number' => static::getNextControlNumber($document->code),
@@ -110,7 +132,7 @@ class CertificateController extends Controller
                 'document_snapshot' => CertificateIssuance::documentSnapshot($document),
                 'purpose' => $validated['purpose'],
                 'copies' => $validated['copies'],
-                // Administrators may waive or adjust the fee at the counter.
+                // Administrators may waive or adjust the unit fee at the counter.
                 // Staff issuance always uses the posted catalog price.
                 'fee' => $fee,
                 'status' => 'Issued',
@@ -125,11 +147,18 @@ class CertificateController extends Controller
                 Auth::user()?->email,
                 $request->ip(),
                 $request->userAgent(),
-                [
-                    'control_number' => $issuance->control_number,
-                    'resident_id' => $issuance->resident_id,
-                    'document' => $document->title,
-                ],
+                array_merge(
+                    [
+                        'control_number' => $issuance->control_number,
+                        'resident_id' => $issuance->resident_id,
+                        'document' => $document->title,
+                    ],
+                    $feeOverridden ? [
+                        'fee_overridden' => true,
+                        'catalog_fee' => round($catalogFee * (int) $validated['copies'], 2),
+                        'fee' => $fee,
+                    ] : [],
+                ),
             );
 
             return $issuance;
@@ -148,6 +177,14 @@ class CertificateController extends Controller
     {
         abort_unless(Auth::user()?->hasPermission('certificates.issue'), 403);
 
+        // A voided certificate is no longer an official document — it cannot
+        // be printed. The index hides the print action for voided rows; this
+        // guard covers direct URLs and stale tabs.
+        if ($issuance->status === 'Voided') {
+            return redirect()->route('certificates.index')
+                ->with('error', "Certificate {$issuance->control_number} is voided and cannot be printed.");
+        }
+
         return view('certificates.print', [
             'issuance' => $issuance->load(['document', 'resident.purok']),
             'punongBarangay' => Official::where('position', 'Punong Barangay')->active()->first(),
@@ -158,34 +195,104 @@ class CertificateController extends Controller
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
 
-        if ($issuance->status === 'Voided') {
+        $controlNumber = $issuance->control_number;
+
+        // The row lock serializes concurrent void/restore clicks on the same
+        // certificate; the status is re-checked inside the lock so the second
+        // writer sees the first writer's decision. The audit entry is written
+        // in the same transaction so a rollback can never leave a false audit.
+        $voided = DB::transaction(function () use ($request, $issuance) {
+            $locked = CertificateIssuance::query()
+                ->whereKey($issuance->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === 'Voided') {
+                return false;
+            }
+
+            $locked->update([
+                'status' => 'Voided',
+                'voided_by' => Auth::id(),
+                'voided_at' => now(),
+            ]);
+
+            AuditLog::record(
+                'certificate.voided',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['control_number' => $locked->control_number],
+            );
+
+            return true;
+        });
+
+        if (! $voided) {
             return redirect()->route('certificates.index')
-                ->with('error', "Certificate {$issuance->control_number} is already voided.");
+                ->with('error', "Certificate {$controlNumber} is already voided.");
         }
 
-        $issuance->update([
-            'status' => 'Voided',
-            'voided_by' => Auth::id(),
-            'voided_at' => now(),
-        ]);
+        return redirect()->route('certificates.index')
+            ->with('success', "Certificate {$controlNumber} voided.");
+    }
 
-        AuditLog::record(
-            'certificate.voided',
-            Auth::id(),
-            Auth::user()?->email,
-            $request->ip(),
-            $request->userAgent(),
-            ['control_number' => $issuance->control_number],
-        );
+    /**
+     * Restore (unvoid) a certificate. Voiding is no longer one-way: only
+     * administrators may reverse it, and the reversal is audit-logged like
+     * the void itself.
+     */
+    public function restore(Request $request, CertificateIssuance $issuance)
+    {
+        abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $controlNumber = $issuance->control_number;
+
+        // Same race protection as void(): row lock, status re-checked inside
+        // the lock, audit written in the same transaction.
+        $restored = DB::transaction(function () use ($request, $issuance) {
+            $locked = CertificateIssuance::query()
+                ->whereKey($issuance->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === 'Issued') {
+                return false;
+            }
+
+            $locked->update([
+                'status' => 'Issued',
+                'voided_by' => null,
+                'voided_at' => null,
+            ]);
+
+            AuditLog::record(
+                'certificate.restored',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['control_number' => $locked->control_number],
+            );
+
+            return true;
+        });
+
+        if (! $restored) {
+            return redirect()->route('certificates.index')
+                ->with('error', "Certificate {$controlNumber} is already active.");
+        }
 
         return redirect()->route('certificates.index')
-            ->with('success', "Certificate {$issuance->control_number} voided.");
+            ->with('success', "Certificate {$controlNumber} restored.");
     }
 
     /**
      * The next control number in the barangay's <CODE>-YYYY-#### sequence,
-     * e.g. CLR-2026-0007. Takes a shared lock — call inside a transaction so
-     * concurrent clerks can't collide (same pattern as blotter case numbers).
+     * e.g. CLR-2026-0007. The max() read and the counter reservation run in
+     * one transaction so concurrent clerks serialize on the counter row
+     * (same pattern as blotter case numbers) instead of colliding.
      */
     public static function getNextControlNumber(string $documentCode): string
     {
@@ -197,12 +304,14 @@ class CertificateController extends Controller
         $year = now()->format('Y');
         $prefix = $documentCode."-{$year}-";
 
-        $max = DB::table('certificate_issuances')
-            ->where('control_number', 'like', $prefix.'%')
-            ->max('control_number');
-        $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
-        $next = app(SequenceCounter::class)->reserve('certificate:'.$documentCode, (int) $year, $currentMaximum);
+        return DB::transaction(function () use ($documentCode, $year, $prefix) {
+            $max = DB::table('certificate_issuances')
+                ->where('control_number', 'like', $prefix.'%')
+                ->max('control_number');
+            $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
+            $next = app(SequenceCounter::class)->reserve('certificate:'.$documentCode, (int) $year, $currentMaximum);
 
-        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+            return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        }, 3);
     }
 }

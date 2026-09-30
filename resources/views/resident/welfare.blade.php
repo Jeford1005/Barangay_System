@@ -53,12 +53,12 @@
                                     <p class="mt-2 text-sm text-slate-700">{{ $entry->remarks }}</p>
                                 @endif
                             </div>
-                            <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {{ ['Requested' => 'bg-sky-100 text-sky-800', 'Under Review' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Denied' => 'bg-red-100 text-red-800', 'Released' => 'bg-slate-100 text-slate-700'][$entry->status] ?? 'bg-slate-100 text-slate-700' }}">{{ $entry->status }}</span>
+                            <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {{ ['Requested' => 'bg-slate-100 text-slate-700', 'Under Review' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Denied' => 'bg-red-100 text-red-800', 'Released' => 'bg-sky-100 text-sky-800'][$entry->status] ?? 'bg-slate-100 text-slate-700' }}">{{ $entry->status }}</span>
                         </div>
                     </li>
                 @endforeach
             </ul>
-            <div class="px-5 pb-4">{{ $requests->links() }}</div>
+            <div class="px-5 pb-4">{{ $requests->withQueryString()->links() }}</div>
         @endif
     </section>
 </div>

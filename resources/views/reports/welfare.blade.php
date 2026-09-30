@@ -28,7 +28,7 @@
             </form>
 
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-                @foreach ([['Requested', $statusTotals->requested], ['Under Review', $statusTotals->review], ['Approved', $statusTotals->approved], ['Released', $statusTotals->released], ['Denied', $statusTotals->denied]] as [$label, $value])
+                @foreach ([['Requested', $statusTotals->requested], ['Under Review', $statusTotals->under_review], ['Approved', $statusTotals->approved], ['Released', $statusTotals->released], ['Denied', $statusTotals->denied]] as [$label, $value])
                     <div class="rounded-lg border border-slate-200 p-4">
                         <p class="text-xs font-medium text-slate-500 uppercase">{{ $label }}</p>
                         <p class="mt-1 text-2xl font-bold text-slate-900">{{ $value }}</p>
@@ -112,7 +112,7 @@
                                 <td class="hidden md:table-cell px-3 py-3 text-slate-600">{{ $record->program_name }}</td>
                                 <td class="px-3 py-3 text-right font-medium">{{ number_format((float) $record->approved_amount, 2) }}</td>
                                 <td class="hidden md:table-cell px-3 py-3">
-                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ ['Released' => 'bg-emerald-100 text-emerald-800', 'Approved' => 'bg-sky-100 text-sky-800', 'Denied' => 'bg-red-100 text-red-800'][$record->status] ?? 'bg-slate-100 text-slate-600' }}">{{ $record->status }}</span>
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ ['Requested' => 'bg-slate-100 text-slate-700', 'Under Review' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Denied' => 'bg-red-100 text-red-800', 'Released' => 'bg-sky-100 text-sky-800'][$record->status] ?? 'bg-slate-100 text-slate-600' }}">{{ $record->status }}</span>
                                 </td>
                                 <td class="px-3 py-3 text-slate-600">{{ $record->request_date->format('M j, Y') }}</td>
                             </tr>

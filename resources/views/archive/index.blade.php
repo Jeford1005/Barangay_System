@@ -36,7 +36,13 @@
             @if($records->isEmpty())
                 <div class="text-center py-8 text-slate-500">
                     <x-icon name="inbox" class="mx-auto mb-4 h-12 w-12 text-slate-200" />
-                    <p class="mt-2">Nothing in the {{ strtolower($types[$type]['label']) }} archive{{ request('search') ? ' matching your search' : '' }}.</p>
+                    <h2 class="mt-2 text-sm font-semibold text-slate-900">No archived {{ strtolower($types[$type]['label']) }} found</h2>
+                    <p class="mt-1 text-sm">{{ request('search') ? 'Nothing matches your search. Try different keywords or clear the search.' : 'Deleted records will appear here for recovery.' }}</p>
+                    @if (request('search'))
+                        <a href="{{ route('archive.type', $type) }}" class="btn btn-neutral mt-4">Clear search</a>
+                    @else
+                        <a href="{{ route($type.'.index') }}" class="btn btn-neutral mt-4">Browse active {{ strtolower($types[$type]['label']) }}</a>
+                    @endif
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -58,8 +64,11 @@
                                             <span class="block text-xs text-slate-500">{{ e($record->sex) }}@if($record->birth_date) · {{ $record->birth_date->format('M j, Y') }}@endif</span>
                                         @elseif ($type === 'households')
                                             <span class="font-medium text-slate-900">{{ e($record->household_code) }}</span>
-                                        @else
+                                        @elseif ($type === 'blotter')
                                             <span class="font-medium text-slate-900">{{ e($record->case_number) }}</span>
+                                        @else
+                                            <span class="font-medium text-slate-900">{{ e($record->beneficiary_name) }}</span>
+                                            <span class="block text-xs text-slate-500">{{ e($record->assistance_type) }} · ₱{{ number_format((float) $record->approved_amount, 2) }}</span>
                                         @endif
                                     </td>
                                     <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
@@ -67,8 +76,10 @@
                                             {{ e($record->purok?->name ?? 'No purok') }}@if($record->address) · {{ e(Str::limit($record->address, 40)) }}@endif
                                         @elseif ($type === 'households')
                                             {{ e($record->purok?->name ?? 'No purok') }} · {{ $record->num_members }} member{{ $record->num_members === 1 ? '' : 's' }}
-                                        @else
+                                        @elseif ($type === 'blotter')
                                             {{ e(Str::limit($record->complaint_type, 50)) }}
+                                        @else
+                                            {{ e(Str::limit($record->program_name, 50)) }} · {{ e($record->status) }}
                                         @endif
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -76,13 +87,17 @@
                                         <span class="block text-xs text-slate-500">{{ $record->deleted_at->diffForHumans() }}</span>
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
-                                        <div class="inline-flex items-center gap-1">
-                                            <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}">
+                                        <div class="inline-flex items-center gap-2">
+                                            <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}"
+                                                data-confirm="Restore this {{ strtolower($types[$type]['singular']) }}? It will return to the active list."
+                                                data-confirm-title="Restore {{ strtolower($types[$type]['singular']) }}"
+                                                data-confirm-accept="Restore" data-confirm-tone="primary" data-confirm-icon="archive-box">
                                                 @csrf
                                                 <button type="submit" class="btn btn-outline-success btn-row" title="Restore this record">
                                                     Restore
                                                 </button>
                                             </form>
+                                            @if ($type !== 'welfare')
                                             <form method="POST" action="{{ route('archive.destroy', ['type' => $type, 'id' => $record->id]) }}"
                                                 data-confirm="Permanently delete this {{ strtolower($types[$type]['singular']) }}? This cannot be undone."
                                                 data-confirm-title="Delete {{ strtolower($types[$type]['singular']) }}"
@@ -93,13 +108,14 @@
                                                     Delete forever
                                                 </button>
                                             </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $records->links() }}
+                    {{ $records->withQueryString()->links() }}
                 </div>
             @endif
         </div>

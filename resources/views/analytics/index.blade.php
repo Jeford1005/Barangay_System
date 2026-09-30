@@ -79,7 +79,7 @@
                     <div class="flex flex-1 flex-col items-center justify-end gap-1 h-full">
                         <span class="text-[11px] font-semibold text-slate-700">{{ $bar['count'] ?: '' }}</span>
                         <div class="w-full rounded-t-md transition-all"
-                            style="height: {{ max(2, $bar['count'] * 100 / $ageTotal) }}%; background: {{ $bar['color'] }}"></div>
+                            style="height: {{ $bar['count'] > 0 ? max(2, $bar['count'] * 100 / $ageTotal) : 0 }}%; background: {{ $bar['color'] }}"></div>
                         <span class="text-[11px] text-slate-500">{{ $bar['label'] }}</span>
                     </div>
                 @endforeach

@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 
 class Resident extends Model
 {
@@ -67,7 +69,9 @@ class Resident extends Model
 
     public function household()
     {
-        return $this->belongsTo(Household::class, 'household_id');
+        // A resident keeps its household link for display even after the
+        // household itself is archived.
+        return $this->belongsTo(Household::class, 'household_id')->withTrashed();
     }
 
     public function user()
@@ -106,5 +110,46 @@ class Resident extends Model
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date?->age;
+    }
+
+    /**
+     * Canonical uniqueness rule for residents.email: unique among live
+     * rows, ignoring the record being updated. Mirrors the users.email
+     * UNIQUE semantics (one live owner per address) while letting an
+     * archived profile keep its address and freeing it for reuse.
+     */
+    public static function emailUniqueRule(?int $ignoreId = null): Unique
+    {
+        return Rule::unique('residents', 'email')->ignore($ignoreId)->whereNull('deleted_at');
+    }
+
+    /**
+     * Canonical uniqueness rule for the 1:1 user account link. A resident
+     * profile belongs to at most one user account and vice versa.
+     */
+    public static function userIdUniqueRule(?int $ignoreId = null): Unique
+    {
+        return Rule::unique('residents', 'user_id')->ignore($ignoreId)->whereNull('deleted_at');
+    }
+
+    /**
+     * Application-level check for the 1:1 link. There is deliberately no
+     * hard UNIQUE index on residents.user_id: legacy duplicates are
+     * tolerated and reported (not destroyed) by
+     * `residents:check-account-integrity` and `data:quality-audit`, and a
+     * database constraint would break the archival and approval flows that
+     * move accounts between profiles.
+     */
+    public static function isUserIdAvailable(?int $userId, ?int $ignoreId = null): bool
+    {
+        if ($userId === null) {
+            return true;
+        }
+
+        return ! static::query()
+            ->where('user_id', $userId)
+            ->whereNull('deleted_at')
+            ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+            ->exists();
     }
 }

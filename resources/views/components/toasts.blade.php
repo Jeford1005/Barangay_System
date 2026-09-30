@@ -15,10 +15,13 @@
     if (session('warning')) {
         $toasts->push(['type' => 'warning', 'message' => session('warning')]);
     }
-    if ($errors->any()) {
+    // $errors is shared by the web middleware group; router-level error
+    // pages (404/419/500) render without it, so stay null-safe here.
+    $sharedErrors = $errors ?? null;
+    if ($sharedErrors?->any()) {
         // Validation failures read best as a single toast (the first message)
         // plus an inline error block where the form already shows details.
-        $toasts->push(['type' => 'error', 'message' => $errors->first()]);
+        $toasts->push(['type' => 'error', 'message' => $sharedErrors->first()]);
     }
 @endphp
 

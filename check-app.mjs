@@ -166,6 +166,9 @@ for (const [vname, w, h] of VIEWPORTS) {
   console.log(`\n########## ${vname} ##########`);
 
   for (const path of PAGES) {
+    // Pace the walk: the office/resident groups are throttled at 60/min,
+    // and ~40 pages × 2 viewports back-to-back would 429 (false failures).
+    await page.waitForTimeout(1000);
     let status = 0;
     try {
       const resp = await page.goto(BASE + path, { waitUntil: 'load', timeout: 20000 });

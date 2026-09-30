@@ -83,17 +83,25 @@ class ResidentRecordChangeController extends Controller
     public function indexForAdmin(Request $request): View
     {
         $status = (string) $request->input('status', 'Pending');
-        if (! in_array($status, ['Pending', 'Approved', 'Rejected', 'Cancelled'], true)) {
+        $showAll = $status === '' || $status === 'All';
+        if (! $showAll && ! in_array($status, ['Pending', 'Approved', 'Rejected', 'Cancelled'], true)) {
             $status = 'Pending';
         }
 
         $changes = ResidentRecordChange::with(['resident', 'requester', 'reviewer'])
-            ->where('status', $status)
+            ->when(! $showAll, fn ($query) => $query->where('status', $status))
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.resident-changes', compact('changes', 'status'));
+        return view('admin.resident-changes', [
+            'changes' => $changes,
+            'status' => $showAll ? 'All' : $status,
+            // Resolve raw purok_id/household_id values to names in the table
+            // instead of showing bare foreign keys.
+            'purokNames' => Purok::pluck('name', 'id'),
+            'householdCodes' => Household::pluck('household_code', 'id'),
+        ]);
     }
 
     public function approve(Request $request, ResidentRecordChange $change, HouseholdResidentSync $sync): RedirectResponse
@@ -193,7 +201,7 @@ class ResidentRecordChangeController extends Controller
 
     private function requireProfile(Request $request): Resident
     {
-        $resident = $request->user()->residentProfile;
+        $resident = $request->user()?->residentProfile;
         abort_if(! $resident, 404, 'No resident profile is linked to this account.');
         abort_if($resident->status !== 'Active', 403, 'Archived resident profiles cannot submit correction requests.');
 

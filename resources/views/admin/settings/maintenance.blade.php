@@ -24,7 +24,7 @@
             </div>
             <form method="POST" action="{{ route('admin.settings.cache.clear') }}" data-confirm="Clear the application and view caches?" data-confirm-title="Clear caches" data-confirm-accept="Clear" data-confirm-icon="cog-6-tooth" data-confirm-tone="primary">
                 @csrf
-                <button type="submit" class="text-sm font-medium text-slate-600 hover:text-sky-700 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600">Clear caches</button>
+                <button type="submit" class="inline-flex min-h-11 items-center text-sm font-medium text-slate-600 hover:text-sky-700 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600">Clear caches</button>
             </form>
         </div>
 

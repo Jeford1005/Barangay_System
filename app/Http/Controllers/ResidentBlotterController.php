@@ -90,7 +90,7 @@ class ResidentBlotterController extends Controller
      */
     private function resident(Request $request)
     {
-        $resident = $request->user()->residentProfile;
+        $resident = $request->user()?->residentProfile;
 
         abort_if(! $resident, 404, 'No resident profile is linked to this account. Please contact the barangay office.');
         abort_if($resident->status !== 'Active', 403, 'This resident record is archived. Please contact the barangay office.');

@@ -19,9 +19,10 @@ class WelfareController extends Controller
 
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
-            $query->where(function ($q) use ($search) {
-                $q->where('beneficiary_name', 'like', '%'.$search.'%')
-                    ->orWhere('program_name', 'like', '%'.$search.'%');
+            $like = '%'.self::escapeLike($search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw("beneficiary_name LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("program_name LIKE ? ESCAPE '\\'", [$like]);
             });
         }
 
@@ -48,18 +49,19 @@ class WelfareController extends Controller
 
     public function store(Request $request)
     {
-        // Staff may record intake only. Approval, release, denial, and
-        // monetary decisions remain administrator-controlled.
-        if (Auth::user()?->isStaff()) {
-            $request->merge([
-                'status' => 'Requested',
-                'approved_amount' => 0,
-                'approval_date' => null,
-                'release_date' => null,
-            ]);
-        }
+        // Intake records requests only: validation still runs on exactly
+        // what was submitted (so bad money/status input errors instead of
+        // passing silently), then approval, release, denial, and monetary
+        // decisions are stripped before the row is written. They happen
+        // through the approve-gated update path — even for administrators.
+        abort_unless($request->user()?->hasPermission('welfare.intake'), 403);
 
         $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request));
+
+        $validated['status'] = 'Requested';
+        $validated['approved_amount'] = 0;
+        $validated['approval_date'] = null;
+        $validated['release_date'] = null;
 
         $welfare = DB::transaction(function () use ($request, $validated) {
             $welfare = Welfare::create($validated);
@@ -92,9 +94,33 @@ class WelfareController extends Controller
 
     public function update(Request $request, Welfare $welfare)
     {
-        abort_unless(Auth::user()?->hasPermission('welfare.approve'), 403);
+        abort_unless($request->user()?->hasPermission('welfare.approve'), 403);
 
         $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request, $welfare));
+
+        // The workflow is a state machine, not a free dropdown: anything
+        // outside the whitelisted transitions is rejected, so money can only
+        // reach Released through Approved — never straight from intake,
+        // review, or denial.
+        if ($welfare->status !== $validated['status']
+            && ! Welfare::canTransition($welfare->status, $validated['status'])
+        ) {
+            throw ValidationException::withMessages([
+                'status' => "A request with status '{$welfare->status}' cannot move to '{$validated['status']}'.",
+            ]);
+        }
+
+        // Committed money must never evaporate through a status edit: leaving
+        // Approved/Released for an unapproved state while an amount is booked
+        // would erase the totals the reports already counted.
+        if (in_array($welfare->status, ['Approved', 'Released'], true)
+            && in_array($validated['status'], ['Requested', 'Under Review', 'Denied'], true)
+            && (float) $welfare->approved_amount > 0
+        ) {
+            throw ValidationException::withMessages([
+                'status' => 'This request carries a committed amount. Clear the approved amount (and its dates) before moving it back to an unapproved status.',
+            ]);
+        }
 
         DB::transaction(function () use ($request, $welfare, $validated) {
             $welfare->update($validated);
@@ -116,6 +142,16 @@ class WelfareController extends Controller
     public function destroy(Request $request, Welfare $welfare)
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
+
+        // Committed money must not vanish from the totals: an Approved or
+        // Released request cannot be deleted (even softly) while it carries
+        // an amount. Settle or zero it through the approve-gated update path
+        // first; other states soft-delete with a full audit trail as before.
+        if (in_array($welfare->status, ['Approved', 'Released'], true) && (float) $welfare->approved_amount > 0) {
+            return back()->withErrors([
+                'welfare' => "This request is {$welfare->status} with a committed amount of {$welfare->approved_amount}. It cannot be deleted while the amount is booked.",
+            ]);
+        }
 
         $beneficiary = $welfare->beneficiary_name;
 
@@ -160,7 +196,7 @@ class WelfareController extends Controller
             'assistance_type' => 'required|in:Financial,Food,Medical,Educational,Housing,Other',
             'program_name' => 'required|string|max:255',
             'program_description' => 'nullable|string|max:2000',
-            'requested_amount' => 'required|numeric|decimal:0,2|min:0|max:99999999.99',
+            'requested_amount' => 'required|numeric|decimal:0,2|gt:0|max:99999999.99',
             'approved_amount' => 'nullable|numeric|decimal:0,2|min:0|max:99999999.99',
             'status' => 'required|in:Requested,Under Review,Approved,Denied,Released',
             'request_date' => 'required|date_format:Y-m-d|before_or_equal:today',
@@ -214,7 +250,7 @@ class WelfareController extends Controller
         }
 
         // A denied request must record why, and must not carry money or dates
-        // that imply funds moved.
+        // that imply funds moved: decision dates are cleared on deny.
         if ($validated['status'] === 'Denied') {
             if (blank($validated['remarks'] ?? null)) {
                 throw ValidationException::withMessages([
@@ -227,9 +263,37 @@ class WelfareController extends Controller
                     'approved_amount' => 'A denied request cannot carry an approved amount.',
                 ]);
             }
+
+            $validated['approved_amount'] = 0;
+            $validated['approval_date'] = null;
+            $validated['release_date'] = null;
+        }
+
+        // Money and decision dates exist only after approval: a request that
+        // is still Requested or Under Review must not carry either.
+        if (in_array($validated['status'], ['Requested', 'Under Review'], true)) {
+            if ((float) $validated['approved_amount'] > 0) {
+                throw ValidationException::withMessages([
+                    'approved_amount' => 'An unapproved request cannot carry an approved amount.',
+                ]);
+            }
+
+            $validated['approved_amount'] = 0;
+            $validated['approval_date'] = null;
+            $validated['release_date'] = null;
         }
 
         return $validated;
+    }
+
+    /**
+     * Escape LIKE wildcards so user input only ever matches literally.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function formOptions(?Welfare $welfare = null): array
@@ -237,6 +301,8 @@ class WelfareController extends Controller
         $currentResidentIds = $welfare && $welfare->beneficiary_id ? [(int) $welfare->beneficiary_id] : [];
 
         return [
+            // Capped dropdown source: the form needs id/name/contact columns
+            // for the options and autofill only, never the whole registry.
             'residents' => Resident::withTrashed()
                 ->where(function ($query) use ($currentResidentIds) {
                     $query->where('status', 'Active')->whereNull('deleted_at');
@@ -246,6 +312,7 @@ class WelfareController extends Controller
                 })
                 ->orderBy('last_name')
                 ->orderBy('first_name')
+                ->limit(1000)
                 ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'address', 'phone_number', 'status', 'deleted_at']),
         ];
     }

@@ -205,19 +205,19 @@ class RegistrationTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function test_sign_up_shows_the_password_in_plain_text_with_one_eye_on_confirmation(): void
+    public function test_sign_up_masks_passwords_behind_toggles(): void
     {
-        // Dialog on the login page: the visitor must see what they typed —
-        // no dots, no eye on Password. Only Confirm hides, and it keeps the toggle.
+        // Both password fields mask by default; each keeps a show/hide toggle
+        // so a typo can still be caught before submitting.
         $login = $this->get('/login')->getContent();
-        $this->assertStringContainsString('id="register-password" type="text"', $login);
-        $this->assertStringNotContainsString('data-password-toggle="register-password"', $login);
+        $this->assertStringContainsString('id="register-password" type="password"', $login);
+        $this->assertStringContainsString('data-password-toggle="register-password"', $login);
         $this->assertStringContainsString('data-password-toggle="register-password_confirmation"', $login);
 
         // Same rule on the standalone no-script sign-up page.
         $page = $this->get('/register')->getContent();
-        $this->assertStringContainsString('id="password" type="text"', $page);
-        $this->assertStringNotContainsString('data-password-toggle="password"', $page);
+        $this->assertStringContainsString('id="password" type="password"', $page);
+        $this->assertStringContainsString('data-password-toggle="password"', $page);
         $this->assertStringContainsString('data-password-toggle="password_confirmation"', $page);
     }
 

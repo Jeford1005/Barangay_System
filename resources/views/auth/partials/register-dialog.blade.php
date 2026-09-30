@@ -120,17 +120,18 @@
                             <div>
                                 <label for="register-purok_id" class="mb-1.5 block text-sm font-medium text-slate-700">Purok</label>
                                 <select id="register-purok_id" name="purok_id"
-                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('purok_id', 'register') border-red-500! @enderror">
                                     <option value="">Select purok…</option>
                                     @foreach ($puroks as $purok)
                                         <option value="{{ $purok->id }}" @selected(old('purok_id') == $purok->id)>{{ $purok->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('purok_id', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label for="register-household_id" class="mb-1.5 block text-sm font-medium text-slate-700">Household</label>
                                 <select id="register-household_id" name="household_id"
-                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('household_id', 'register') border-red-500! @enderror">
                                     <option value="">Select household…</option>
                                     @foreach ($households as $household)
                                         <option value="{{ $household->id }}" @selected(old('household_id') == $household->id)>
@@ -138,6 +139,7 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                @error('household_id', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                                 <p class="mt-1 text-xs text-slate-500">Leave blank if your household isn't listed yet.</p>
                             </div>
                         </div>
@@ -155,11 +157,13 @@
                             <div>
                                 <label for="register-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password *</label>
                                 <div class="relative">
-                                    {{-- Sign-up shows the password in plain text so a typo
-                                         is caught before submitting; only Confirm hides,
-                                         and it keeps the eye. --}}
-                                    <input id="register-password" type="text" name="password" required minlength="8" autocomplete="new-password"
-                                        class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password', 'register') border-red-500! @enderror">
+                                    <input id="register-password" type="password" name="password" required minlength="8" autocomplete="new-password"
+                                        class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 pr-10 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password', 'register') border-red-500! @enderror">
+                                    <button type="button" data-password-toggle="register-password" aria-label="Show password" aria-pressed="false"
+                                        class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded text-slate-500 transition-colors hover:text-slate-700 focus:outline-none">
+                                        <svg class="icon-eye h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <svg class="icon-eye-off hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+                                    </button>
                                 </div>
                                 @error('password', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>

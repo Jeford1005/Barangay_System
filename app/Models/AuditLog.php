@@ -24,6 +24,7 @@ class AuditLog extends Model
 
     protected $casts = [
         'occurred_at' => 'datetime',
+        'user_id' => 'integer',
         'actor_id' => 'integer',
         'subject_id' => 'integer',
         'properties' => 'array',
@@ -147,6 +148,17 @@ class AuditLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The account that performed the event. There is deliberately no
+     * foreign key on actor_id even though it references users when
+     * actor_type is 'user': the actor is polymorphic (user/system/guest,
+     * null for system and guest rows), the legacy user_id FK with
+     * set-null already preserves the user link, and audit writes must
+     * never fail — record()/recordWithSubject() swallow every exception
+     * so auditing can never break the request it observes. A hard
+     * constraint would risk failed inserts (and a failed migration) on
+     * legacy rows whose actor has no matching user.
+     */
     public function actor()
     {
         return $this->belongsTo(User::class, 'actor_id');

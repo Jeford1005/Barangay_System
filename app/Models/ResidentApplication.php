@@ -30,6 +30,10 @@ class ResidentApplication extends Model
     ];
 
     protected $casts = [
+        'user_id' => 'integer',
+        'purok_id' => 'integer',
+        'household_id' => 'integer',
+        'reviewed_by' => 'integer',
         'birth_date' => 'date',
         'reviewed_at' => 'datetime',
     ];

@@ -72,11 +72,14 @@
                     <form id="reset-form" method="POST" action="{{ route('password.update') }}" class="mt-4 space-y-4">
                         @csrf
 
-                        <input type="hidden" name="email" value="{{ $email }}">
+                        <input type="hidden" name="email" value="{{ old('email', $email) }}">
+                        @error('email')
+                            <p class="text-sm text-red-600" role="alert" aria-live="assertive">{{ $message }}</p>
+                        @enderror
 
                         <div>
                             <div class="mb-1.5 flex items-center justify-between">
-                                <label class="block text-sm font-medium text-slate-700">Reset code</label>
+                                <label for="reset-code-1" class="block text-sm font-medium text-slate-700">Reset code</label>
                                 <button
                                     type="button"
                                     id="paste-code-btn"
@@ -90,6 +93,7 @@
                                     <input
                                         type="text"
                                         inputmode="text"
+                                        @if ($i === 0) id="reset-code-1" @endif
                                         pattern="[23456789ABCDEFGHJKMNPQRSTUVWXYZ]"
                                         autocomplete="one-time-code"
                                         required
@@ -176,7 +180,7 @@
                         @if ($maskedEmail !== '')
                             <form action="{{ route('password.email') }}" method="POST" class="mt-2">
                                 @csrf
-                                <input type="hidden" name="email" value="{{ $email }}">
+                                <input type="hidden" name="email" value="{{ old('email', $email) }}">
                                 <button
                                     type="submit"
                                     id="resend-btn"

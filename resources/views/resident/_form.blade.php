@@ -44,7 +44,16 @@
         <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" placeholder-option="None" :value="$resident->purok_id ?? null" />
         <x-form.field name="household_id" label="Household" type="select" :options="$households" placeholder-option="None" :value="$resident->household_id ?? null" />
         <p class="text-xs text-slate-500 sm:col-span-2 lg:col-span-4">Choose a purok or household from the list. Names and codes are shown for readability; the system stores the selected record ID.</p>
-        <x-form.field name="residency_status" label="Residency Status" :value="$resident->residency_status ?? null" maxlength="50" placeholder="e.g. Permanent" />
+        @php
+            // Fixed options for new input; a legacy free-text value already
+            // stored on this record is appended so it stays visible/selected.
+            $residencyOptions = ['Permanent', 'Temporary', 'Transient'];
+            $currentResidency = old('residency_status', $resident->residency_status ?? null);
+            if ($currentResidency && ! in_array($currentResidency, $residencyOptions, true)) {
+                $residencyOptions[] = $currentResidency;
+            }
+        @endphp
+        <x-form.field name="residency_status" label="Residency Status" type="select" :options="$residencyOptions" placeholder-option="Select status" :value="$resident->residency_status ?? null" />
         @if (auth()->user()?->isAdmin())
          <x-form.field name="status" label="Status" type="select" required :options="['Active', 'Archived']" :value="$resident->status ?? 'Active'" />
          @else

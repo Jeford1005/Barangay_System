@@ -71,12 +71,12 @@
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 text-right text-sm font-medium whitespace-normal">
                                         @if (auth()->user()?->hasPermission('certificate-requests.decide') && $req->status === 'Pending')
-                                            <div class="inline-flex items-center gap-1">
-                                                <form method="POST" action="{{ route('admin.certificate-requests.approve', $req) }}" class="inline-flex items-center gap-1"
+                                            <div class="inline-flex items-center gap-2">
+                                                <form method="POST" action="{{ route('admin.certificate-requests.approve', $req) }}" class="inline-flex items-center gap-2"
                                                     onsubmit="if(this.fee && this.fee.value === '') this.fee.disabled = true;">
                                                     @csrf
                                                     <label for="certificate-fee-{{ $req->id }}" class="sr-only">Optional fee for {{ $req->document?->title }}</label>
-                                                    <input id="certificate-fee-{{ $req->id }}" type="number" name="fee" value="{{ old('fee') }}" placeholder="{{ number_format((float) $req->document?->fee ?? 0, 2) }}" min="0" max="9999" step="0.01" inputmode="decimal"
+                                                    <input id="certificate-fee-{{ $req->id }}" type="number" name="fee" value="{{ (string) old('_request_id') === (string) $req->id ? old('fee') : '' }}" placeholder="{{ number_format((float) $req->document?->fee ?? 0, 2) }}" min="0" max="9999" step="0.01" inputmode="decimal"
                                                         class="w-28 min-h-11 rounded-lg border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
                                                     <button type="submit" class="btn btn-outline-success">
                                                         Approve
@@ -89,7 +89,7 @@
                                                             @csrf
                                                             <label for="certificate-rejection-{{ $req->id }}" class="block text-xs font-medium text-slate-600 mb-1">Reason (sent to the resident by email)</label>
                                                             <textarea id="certificate-rejection-{{ $req->id }}" name="rejection_reason" required rows="3" maxlength="1000" placeholder="e.g. Requires a barangay hearing first"
-                                                                class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">{{ old('rejection_reason') }}</textarea>
+                                                                class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">{{ (string) old('_request_id') === (string) $req->id ? old('rejection_reason') : '' }}</textarea>
                                                             @error('rejection_reason')
                                                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                                             @enderror
@@ -101,9 +101,14 @@
                                                 </details>
                                             </div>
                                         @elseif ($req->status === 'Approved' && $req->issuance)
-                                            <a href="{{ route('certificates.print', $req->issuance) }}" class="btn btn-outline">
-                                                Reprint
-                                            </a>
+                                            @if ($req->issuance->status === 'Voided')
+                                                <span class="text-xs text-red-600">Voided — no reprint</span>
+                                            @else
+                                                <a href="{{ route('certificates.print', $req->issuance) }}" class="btn btn-outline">
+                                                    <x-icon name="printer" class="h-4 w-4" />
+                                                    Reprint
+                                                </a>
+                                            @endif
                                         @else
                                             <span class="text-xs text-slate-500">—</span>
                                         @endif
@@ -112,7 +117,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $requests->links() }}
+                    {{ $requests->withQueryString()->links() }}
                 </div>
             @endif
         </div>

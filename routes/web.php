@@ -33,6 +33,9 @@ use App\Models\Resident;
 use App\Models\ResidentRecordChange;
 use App\Models\User;
 use App\Models\Welfare;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,6 +51,14 @@ use Illuminate\Support\Facades\Route;
 | router to this provider instead of the default router.
 |
 */
+
+// The test-email endpoint gets its own limiter bucket: the enclosing office
+// group already applies throttle:60,1, and two numeric layers would share one
+// counter (each request burns a hit per layer, so the 5/min ceiling tripped
+// on the 3rd request). The named limiter keeps an effective 5/min per admin.
+RateLimiter::for('mailhealth', function (Request $request) {
+    return Limit::perMinute(5)->by('mailhealth:'.($request->user()?->getAuthIdentifier() ?? $request->ip()));
+});
 
 // Internal barangay system: the root URL routes by role —
 // guests to sign-in, signed-in users straight to their workspace.
@@ -109,8 +120,12 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     })->name('dashboard');
 });
 
-// Administrative and operational modules - gated by role/permission middleware
-Route::middleware(['auth'])->group(function () {
+// Administrative and operational modules - gated by role/permission middleware.
+// `verified` is a no-op until User implements MustVerifyEmail (see
+// EnsureEmailIsVerified: it only blocks MustVerifyEmail instances), so seeded
+// logins keep working. The group throttle rate-limits direct-URL bypass
+// attempts against every office route at once.
+Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     Route::get('/admin/mail-health', [MailHealthController::class, 'show'])
         ->middleware('admin')
         ->name('admin.mail.health');
@@ -118,8 +133,12 @@ Route::middleware(['auth'])->group(function () {
     // Resident account approvals (admin only)
     Route::middleware('admin')->prefix('admin/approvals')->name('admin.approvals.')->group(function () {
         Route::get('/', [AccountApprovalController::class, 'index'])->name('index');
-        Route::post('/{user}/approve', [AccountApprovalController::class, 'approve'])->name('approve');
-        Route::post('/{user}/reject', [AccountApprovalController::class, 'reject'])->name('reject');
+        Route::post('/{user}/approve', [AccountApprovalController::class, 'approve'])
+            ->middleware('throttle:30,1')
+            ->name('approve');
+        Route::post('/{user}/reject', [AccountApprovalController::class, 'reject'])
+            ->middleware('throttle:30,1')
+            ->name('reject');
     });
 
     // Settings and system maintenance (admin only)
@@ -129,9 +148,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/backups', [SettingsController::class, 'storeBackup'])
             ->middleware('throttle:5,1')
             ->name('backups.store');
-        Route::get('/backups/{backup}/download', [SettingsController::class, 'downloadBackup'])->name('backups.download');
-        Route::delete('/backups/{backup}', [SettingsController::class, 'deleteBackup'])->name('backups.destroy');
-        Route::post('/cache/clear', [SettingsController::class, 'clearCache'])->name('cache.clear');
+        Route::get('/backups/{backup}/download', [SettingsController::class, 'downloadBackup'])
+            ->middleware('throttle:10,1')
+            ->name('backups.download');
+        Route::delete('/backups/{backup}', [SettingsController::class, 'deleteBackup'])
+            ->middleware('throttle:15,1')
+            ->name('backups.destroy');
+        Route::post('/cache/clear', [SettingsController::class, 'clearCache'])
+            ->middleware('throttle:5,1')
+            ->name('cache.clear');
     });
 
     // User account directory and access management (admin only)
@@ -139,20 +164,23 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [UserAccountController::class, 'index'])->name('index');
         Route::post('/{user}/resident-profile-from-application', [UserAccountController::class, 'createResidentFromApplication'])->name('resident-profile-from-application');
         Route::post('/{user}/resident-unlink', [UserAccountController::class, 'unlinkResident'])->name('resident-unlink');
-        Route::patch('/{user}/resident-link', [UserAccountController::class, 'linkResident'])->name('resident-link');
-        Route::patch('/{user}/role', [UserAccountController::class, 'updateRole'])->name('role');
+        // Link/role/identity edits accept both PATCH and PUT so proxied or
+        // hand-rolled clients sending PUT don't hit a 405; Blade keeps
+        // sending POST+@method('PATCH'), which still matches.
+        Route::match(['PATCH', 'PUT'], '/{user}/resident-link', [UserAccountController::class, 'linkResident'])->name('resident-link');
+        Route::match(['PATCH', 'PUT'], '/{user}/role', [UserAccountController::class, 'updateRole'])->name('role');
         Route::post('/{user}/suspend', [UserAccountController::class, 'suspend'])->name('suspend');
         Route::post('/{user}/reactivate', [UserAccountController::class, 'reactivate'])->name('reactivate');
         Route::post('/{user}/reset-code', [UserAccountController::class, 'sendResetCode'])
             ->middleware('throttle:10,1')
             ->name('reset');
         Route::get('/{user}/edit', [UserAccountController::class, 'edit'])->name('edit');
-        Route::patch('/{user}', [UserAccountController::class, 'update'])->name('update');
+        Route::match(['PATCH', 'PUT'], '/{user}', [UserAccountController::class, 'update'])->name('update');
         Route::get('/{user}', [UserAccountController::class, 'show'])->name('show');
     });
 
     Route::post('/admin/mail-health/send-test', [MailHealthController::class, 'sendTest'])
-        ->middleware(['admin', 'throttle:5,1'])
+        ->middleware(['admin', 'throttle:mailhealth'])
         ->name('admin.mail.test');
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])
         ->middleware('admin')
@@ -161,9 +189,20 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('admin')
         ->prefix('archive')->name('archive.')->group(function () {
             Route::get('/', [ArchiveController::class, 'index'])->name('index');
-            Route::get('/{type}', [ArchiveController::class, 'index'])->name('type');
-            Route::post('/{type}/{id}/restore', [ArchiveController::class, 'restore'])->name('restore');
-            Route::delete('/{type}/{id}', [ArchiveController::class, 'destroy'])->name('destroy');
+            // Constrain {type} to the ArchiveController::TYPES keys so this
+            // wildcard cannot shadow future subpaths and unknown types 404 at
+            // the router (the controller 404s them too - defence in depth).
+            Route::get('/{type}', [ArchiveController::class, 'index'])
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->name('type');
+            Route::post('/{type}/{id}/restore', [ArchiveController::class, 'restore'])
+                ->middleware('throttle:30,1')
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->name('restore');
+            Route::delete('/{type}/{id}', [ArchiveController::class, 'destroy'])
+                ->middleware('throttle:15,1')
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->name('destroy');
         });
 
     Route::middleware('permission:analytics.view')
@@ -222,11 +261,15 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{resident}/edit', [ResidentController::class, 'edit'])
                 ->middleware('permission:residents.manage')
                 ->name('edit');
+            // Archive/restore stay POST: the directory Blade forms submit plain
+            // POST with no @method spoof, and ResidentCrudTest/StaffAccessTest/
+            // OfficialAccessTest pin POST. Moving to DELETE needs Blade + test
+            // edits (REPORTED, not done here).
             Route::post('/{resident}/archive', [ResidentController::class, 'archive'])
-                ->middleware('admin')
+                ->middleware(['admin', 'throttle:30,1'])
                 ->name('archive');
             Route::post('/{resident}/restore', [ResidentController::class, 'restore'])
-                ->middleware('admin')
+                ->middleware(['admin', 'throttle:30,1'])
                 ->name('restore');
             Route::put('/{resident}', [ResidentController::class, 'update'])
                 ->middleware('permission:residents.manage')
@@ -236,8 +279,12 @@ Route::middleware(['auth'])->group(function () {
     // Photos are personal data, so they are streamed through an authorized
     // route instead of a public /storage URL. This sits outside the
     // `residents.view` permission group because the owning resident is allowed
-    // to see their own photo; the controller holds the ownership rule.
-    Route::middleware('auth')
+    // to see their own photo; the controller holds the ownership rule
+    // (staff with residents.view OR $resident->user_id === auth id) — a `can:`
+    // gate would need a new Policy (REPORTED, not added here), and `signed`
+    // would break the unsigned <img> URLs in resident/_form.blade.php.
+    // The throttle slows sequential-ID enumeration scrapes.
+    Route::middleware(['auth', 'verified', 'throttle:30,1'])
         ->get('/residents/{resident}/photo', ResidentPhotoController::class)
         ->name('residents.photo');
 
@@ -299,6 +346,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{issuance}/void', [CertificateController::class, 'void'])
                 ->middleware('admin')
                 ->name('void');
+            Route::post('/{issuance}/restore', [CertificateController::class, 'restore'])
+                ->middleware('admin')
+                ->name('restore');
         });
 
     Route::middleware('permission:welfare.view')
@@ -323,20 +373,24 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Resident profile correction review (staff may view; officials decide)
-Route::middleware(['auth', 'permission:resident-changes.view'])->prefix('admin/resident-changes')->name('admin.resident-changes.')->group(function () {
+Route::middleware(['auth', 'verified', 'permission:resident-changes.view', 'throttle:60,1'])->prefix('admin/resident-changes')->name('admin.resident-changes.')->group(function () {
     Route::get('/', [ResidentRecordChangeController::class, 'indexForAdmin'])->name('index');
     Route::post('/{change}/approve', [ResidentRecordChangeController::class, 'approve'])
-        ->middleware('permission:resident-changes.decide')
+        ->middleware(['permission:resident-changes.decide', 'throttle:30,1'])
         ->name('approve');
     Route::post('/{change}/reject', [ResidentRecordChangeController::class, 'reject'])
-        ->middleware('permission:resident-changes.decide')
+        ->middleware(['permission:resident-changes.decide', 'throttle:30,1'])
         ->name('reject');
 });
 
-// Resident portal - gated by role via the 'resident' middleware alias
-Route::middleware(['auth', 'resident'])->group(function () {
+// Resident portal - gated by role via the 'resident' middleware alias.
+// `verified` is a future-proof no-op (see office group note above). The group
+// throttle rate-limits direct-URL bypass; write endpoints add tighter limits.
+Route::middleware(['auth', 'verified', 'resident', 'throttle:60,1'])->group(function () {
     Route::get('/my', [ResidentPortalController::class, 'index'])->name('resident.portal');
-    Route::put('/my/contact', [ResidentPortalController::class, 'updateContact'])->name('resident.contact.update');
+    Route::put('/my/contact', [ResidentPortalController::class, 'updateContact'])
+        ->middleware('throttle:30,1')
+        ->name('resident.contact.update');
 
     // The resident's own photo. Staff use residents.photo; this entry point
     // resolves the profile from the signed-in account.
@@ -345,11 +399,18 @@ Route::middleware(['auth', 'resident'])->group(function () {
     // The contact form can only replace a photo (it keys on hasFile), so
     // clearing one is a separate action with its own confirmation.
     Route::delete('/my/photo', [ResidentPortalController::class, 'destroyPhoto'])
+        ->middleware('throttle:30,1')
         ->name('resident.photo.destroy');
 
     // Online certificate requests
     Route::get('/my/requests', [ResidentCertificateRequestController::class, 'index'])->name('resident.requests');
-    Route::get('/my/requests/{certificateRequest}/certificate', [ResidentCertificateRequestController::class, 'certificate'])->name('resident.requests.certificate');
+    // Ownership is enforced in the controller (request must belong to the
+    // sign-in's own profile and be Approved); the throttle slows
+    // sequential-ID enumeration. A `can:` gate would need a new Policy
+    // (REPORTED, not added here).
+    Route::get('/my/requests/{certificateRequest}/certificate', [ResidentCertificateRequestController::class, 'certificate'])
+        ->middleware('throttle:30,1')
+        ->name('resident.requests.certificate');
     Route::post('/my/requests', [ResidentCertificateRequestController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('resident.requests.store');
@@ -359,8 +420,12 @@ Route::middleware(['auth', 'resident'])->group(function () {
 
     // The correction form renders on the Profile page (?edit=1); only the
     // submission and cancellation endpoints remain here.
-    Route::post('/my/changes', [ResidentRecordChangeController::class, 'store'])->name('resident.changes.store');
-    Route::post('/my/changes/{change}/cancel', [ResidentRecordChangeController::class, 'cancel'])->name('resident.changes.cancel');
+    Route::post('/my/changes', [ResidentRecordChangeController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('resident.changes.store');
+    Route::post('/my/changes/{change}/cancel', [ResidentRecordChangeController::class, 'cancel'])
+        ->middleware('throttle:15,1')
+        ->name('resident.changes.cancel');
 
     // Read-only directory of the officials serving the barangay, drawn from
     // the same reference table the certificate signatures come from.
@@ -381,13 +446,13 @@ Route::middleware(['auth', 'resident'])->group(function () {
 });
 
 // Office queue for online certificate requests (staff may view; officials decide)
-Route::middleware(['auth', 'permission:certificate-requests.view'])->prefix('admin/certificate-requests')->name('admin.certificate-requests.')->group(function () {
+Route::middleware(['auth', 'verified', 'permission:certificate-requests.view', 'throttle:60,1'])->prefix('admin/certificate-requests')->name('admin.certificate-requests.')->group(function () {
     Route::get('/', [CertificateRequestAdminController::class, 'index'])->name('index');
     Route::post('/{certificateRequest}/approve', [CertificateRequestAdminController::class, 'approve'])
-        ->middleware('permission:certificate-requests.decide')
+        ->middleware(['permission:certificate-requests.decide', 'throttle:30,1'])
         ->name('approve');
     Route::post('/{certificateRequest}/reject', [CertificateRequestAdminController::class, 'reject'])
-        ->middleware('permission:certificate-requests.decide')
+        ->middleware(['permission:certificate-requests.decide', 'throttle:30,1'])
         ->name('reject');
 });
 

@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div>
     <div class="bg-white rounded-xl shadow overflow-visible">
         <!-- Search + filter + create action -->
         <div class="module-toolbar-sticky no-print mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -45,7 +45,7 @@
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purok Name</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Code</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -83,7 +83,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $puroks->links() }}
+                    {{ $puroks->withQueryString()->links() }}
                 </div>
             @endif
         </div>

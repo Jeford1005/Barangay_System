@@ -31,12 +31,26 @@
                         <td class="px-4 py-3 text-slate-700">{{ (float) $document->fee > 0 ? '₱'.number_format((float) $document->fee, 2) : 'Free' }}</td>
                         <td class="px-4 py-3"><span class="rounded-full px-2 py-1 text-xs font-medium {{ $document->status === 'Active' ? 'bg-emerald-100 text-emerald-800' : ($document->status === 'Draft' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">{{ $document->status }}</span></td>
                         <td class="px-4 py-3 text-slate-600">{{ $document->issuances_count }}</td>
-                        <td class="no-print px-4 py-3 text-right"><a href="{{ route('admin.certificate-types.edit', $document) }}" class="btn btn-neutral btn-row">Edit</a></td>
+                        <td class="no-print px-4 py-3 text-right">
+                            <span class="inline-flex items-center justify-end gap-2">
+                                <a href="{{ route('admin.certificate-types.edit', $document) }}" class="btn btn-neutral btn-row">Edit</a>
+                                @if (auth()->user()?->isAdmin())
+                                    <form method="POST" action="{{ route('admin.certificate-types.destroy', $document) }}" class="inline"
+                                        data-confirm="Delete document type {{ $document->code }}? Unused types are archived; types with history are kept."
+                                        data-confirm-title="Delete document type"
+                                        data-confirm-accept="Delete" data-confirm-icon="trash">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-row">Delete</button>
+                                    </form>
+                                @endif
+                            </span>
+                        </td>
                     </tr>
                 @empty<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No document types match these filters.</td></tr>@endforelse
                 </tbody>
             </table>
-            <div class="border-t border-slate-200 px-4 py-3">{{ $documents->links() }}</div>
+            <div class="border-t border-slate-200 px-4 py-3">{{ $documents->withQueryString()->links() }}</div>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

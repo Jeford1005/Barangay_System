@@ -12,7 +12,7 @@
             <p class="mt-1 text-sm text-slate-500">Update this resident’s record and classification.</p>
         </div>
     @endunless
-    <form action="{{ route('residents.update', $resident->id) }}" method="POST" class="space-y-6 {{ request()->boolean('fragment') ? 'p-0' : 'p-6' }}">
+    <form action="{{ route('residents.update', $resident->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6 {{ request()->boolean('fragment') ? 'p-0' : 'p-6' }}">
         @csrf
         @method('PUT')
         @include('resident._form', ['resident' => $resident])

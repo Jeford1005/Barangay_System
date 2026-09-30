@@ -31,9 +31,10 @@ class UserAccountController extends Controller
         $query = User::query()->with('residentProfile');
 
         if ($search !== '') {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+            $like = '%'.self::escapeLike($search).'%';
+            $query->where(function ($builder) use ($like) {
+                $builder->whereRaw("name LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("email LIKE ? ESCAPE '\\'", [$like]);
             });
         }
 
@@ -41,9 +42,9 @@ class UserAccountController extends Controller
             $query->where('user_type', $role);
         }
 
-        if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
+        if (in_array($status, User::ACCOUNT_STATUSES, true)) {
             $query->where('status', $status);
-        } elseif ($status === 'suspended') {
+        } elseif ($status === User::SUSPENDED_FILTER) {
             $query->whereNotNull('suspended_at');
         }
 
@@ -276,9 +277,21 @@ class UserAccountController extends Controller
 
                 $resident->update(['user_id' => $lockedUser->id]);
 
+                // A (re)link means staff verified the profile, so any
+                // suspension parked by a previous unlink is lifted along with
+                // its metadata — otherwise the account stays suspended forever
+                // despite the fresh link.
+                $suspensionCleared = $lockedUser->isSuspended();
+                $lockedUser->update([
+                    'suspended_at' => null,
+                    'suspended_by' => null,
+                    'suspension_reason' => null,
+                ]);
+
                 $this->recordAudit($request, $lockedUser, 'account.resident_linked', [
                     'from_resident_id' => $previousResidentId,
                     'to_resident_id' => $resident->id,
+                    'suspension_cleared' => $suspensionCleared,
                 ]);
             });
         } catch (ValidationException $e) {
@@ -308,38 +321,74 @@ class UserAccountController extends Controller
             return back()->withErrors(['user_type' => 'You cannot change your own role.']);
         }
 
-        if (! $user->isActive()) {
-            return back()->withErrors(['user_type' => 'Only active accounts can change roles.']);
-        }
+        // The whole decision runs on the locked row: the pre-lock reads above
+        // are UX fast-paths only. Locking every active admin row (not just the
+        // target) serializes two concurrent demotions of the last two admins,
+        // and the survivor count is re-checked inside the lock.
+        try {
+            $outcome = DB::transaction(function () use ($request, $user, $newRole) {
+                $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-        if ($newRole !== 'resident' && $user->residentProfile()->exists()) {
-            return back()->withErrors([
-                'user_type' => 'Unlink the resident profile before assigning an office role.',
-            ]);
-        }
+                if ($newRole === $locked->user_type) {
+                    return 'noop';
+                }
 
-        if ($user->isAdmin() && $newRole !== 'admin' && $this->activeAdminCount() <= 1) {
-            return back()->withErrors(['user_type' => 'The last active administrator cannot be demoted.']);
-        }
+                if (! $locked->isActive()) {
+                    throw ValidationException::withMessages([
+                        'user_type' => 'Only active accounts can change roles.',
+                    ]);
+                }
 
-        if ($user->isOfficeUser() && $newRole === 'resident') {
-            if (! $user->residentProfile()->exists()) {
-                return back()->withErrors([
-                    'user_type' => 'Link a resident profile before changing this account to resident.',
+                if ($newRole !== 'resident' && $locked->residentProfile()->exists()) {
+                    throw ValidationException::withMessages([
+                        'user_type' => 'Unlink the resident profile before assigning an office role.',
+                    ]);
+                }
+
+                if ($locked->isOfficeUser() && $newRole === 'resident' && ! $locked->residentProfile()->exists()) {
+                    throw ValidationException::withMessages([
+                        'user_type' => 'Link a resident profile before changing this account to resident.',
+                    ]);
+                }
+
+                if ($locked->isAdmin() && $newRole !== 'admin') {
+                    $remainingAdmins = User::query()
+                        ->where('user_type', 'admin')
+                        ->where('status', 'approved')
+                        ->whereNull('suspended_at')
+                        ->whereKeyNot($locked->getKey())
+                        ->lockForUpdate()
+                        ->pluck('id');
+
+                    if ($remainingAdmins->isEmpty()) {
+                        throw ValidationException::withMessages([
+                            'user_type' => 'The last active administrator cannot be demoted.',
+                        ]);
+                    }
+                }
+
+                $oldRole = $locked->user_type;
+                $locked->user_type = $newRole;
+                $locked->save();
+                $this->revokeUserSessions($locked);
+
+                $this->recordAudit($request, $locked, 'account.role_changed', [
+                    'from_role' => $oldRole,
+                    'to_role' => $newRole,
                 ]);
-            }
+
+                return $oldRole;
+            });
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
         }
 
-        $oldRole = $user->user_type;
-        $user->user_type = $newRole;
-        $user->save();
-        $this->revokeUserSessions($user);
+        if ($outcome === 'noop') {
+            return redirect()->route('admin.users.show', $user)
+                ->with('status', 'That account already has the selected role.');
+        }
 
-        $this->recordAudit($request, $user, 'account.role_changed', [
-            'from_role' => $oldRole,
-            'to_role' => $newRole,
-        ]);
-        $this->notifySafely($user->fresh(), 'role_changed', $oldRole, $newRole);
+        $this->notifySafely($user->fresh(), 'role_changed', $outcome, $newRole);
 
         return redirect()->route('admin.users.show', $user)
             ->with('success', "Role changed to {$newRole}.");
@@ -398,20 +447,32 @@ class UserAccountController extends Controller
     public function reactivate(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($user->id !== $request->user()->id, 403, 'You cannot reactivate your own account.');
 
         if (! $user->isSuspended() || ! $user->isApproved()) {
-            return back()->withErrors(['user' => 'Only suspended approved accounts can be reactivated.']);
+            return redirect()->route('admin.users.show', $user)
+                ->withErrors(['user' => 'Only suspended approved accounts can be reactivated.']);
         }
 
-        DB::transaction(function () use ($request, $user) {
-            $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $locked->suspended_at = null;
-            $locked->suspended_by = null;
-            $locked->suspension_reason = null;
-            $locked->save();
+        try {
+            DB::transaction(function () use ($request, $user) {
+                $locked = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-            $this->recordAudit($request, $locked, 'account.reactivated');
-        });
+                if (! $locked->isSuspended() || ! $locked->isApproved()) {
+                    throw new \RuntimeException('Only suspended approved accounts can be reactivated.');
+                }
+
+                $locked->suspended_at = null;
+                $locked->suspended_by = null;
+                $locked->suspension_reason = null;
+                $locked->save();
+
+                $this->recordAudit($request, $locked, 'account.reactivated');
+            });
+        } catch (\RuntimeException $exception) {
+            return redirect()->route('admin.users.show', $user)
+                ->withErrors(['user' => $exception->getMessage()]);
+        }
 
         $this->notifySafely($user->fresh(), 'reactivated');
 
@@ -455,6 +516,16 @@ class UserAccountController extends Controller
             ->where('status', 'approved')
             ->whereNull('suspended_at')
             ->count();
+    }
+
+    /**
+     * Escape LIKE wildcards so user input only ever matches literally.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function revokeUserSessions(User $user): void

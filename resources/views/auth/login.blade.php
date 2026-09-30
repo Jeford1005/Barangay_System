@@ -124,6 +124,9 @@
                     </noscript>
 
                     <input type="hidden" id="login-user-type" value="{{ $selectedRole }}">
+                    @error('user_type')
+                        <p class="mt-1.5 text-[13px] text-red-600" role="alert" aria-live="assertive">{{ $message }}</p>
+                    @enderror
 
                     {{-- No role blurb here. It cost two lines of reserved height
                          (mt-3 + min-h-11 = 56px) and pushed the card past the

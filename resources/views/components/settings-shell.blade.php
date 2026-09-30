@@ -7,7 +7,7 @@
     {{-- Full page: content only, centered. The section navigation lives in the
          settings dialog (its rail is the one section list), so no tab strip
          renders here - deep links and no-JS still get the section itself. --}}
-    <div class="mx-auto max-w-6xl">
+    <div class="mx-auto w-full max-w-5xl">
         {{ $slot }}
     </div>
 @endif

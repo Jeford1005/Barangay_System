@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div>
     <div class="bg-white rounded-xl shadow overflow-visible">
         <!-- Search + filters + create action -->
         <div class="module-toolbar-sticky no-print mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -58,7 +58,7 @@
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Head</th>
                                 <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Members</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -66,6 +66,7 @@
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="font-medium text-slate-900">{{ e($household->household_code) }}</span>
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">Head: {{ $household->head ? $household->head->last_name.', '.$household->head->first_name : 'N/A' }} &middot; {{ $household->num_members }} member{{ (int) $household->num_members === 1 ? '' : 's' }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $household->purok ? $household->purok->name : 'N/A' }}</span>
@@ -103,7 +104,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $households->links() }}
+                    {{ $households->withQueryString()->links() }}
                 </div>
             @endif
         </div>

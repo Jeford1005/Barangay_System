@@ -68,13 +68,14 @@
                         Code sent to <span id="forgot-masked" class="font-medium text-slate-800"></span>.
                         Expires in 15 minutes.
                     </p>
+                    <p id="forgot-resend-status" class="mt-2 hidden text-sm text-emerald-700" role="status" aria-live="polite"></p>
 
                     <form id="forgot-code-form" class="mt-5 space-y-4" novalidate>
                         <input type="hidden" id="forgot-email-held" value="">
 
                         <div>
                             <div class="mb-1.5 flex items-center justify-between">
-                            <label class="block text-sm font-medium text-slate-700">Reset code</label>
+                            <label for="forgot-code-1" class="block text-sm font-medium text-slate-700">Reset code</label>
                             <button
                                 type="button"
                                 id="forgot-paste-btn"
@@ -88,6 +89,7 @@
                                     <input
                                         type="text"
                                         inputmode="text"
+                                        @if ($i === 0) id="forgot-code-1" @endif
                                         pattern="[23456789ABCDEFGHJKMNPQRSTUVWXYZ]"
                                         autocomplete="one-time-code"
                                         maxlength="1"

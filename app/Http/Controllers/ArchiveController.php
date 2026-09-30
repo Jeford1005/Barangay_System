@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ArchiveController extends Controller
 {
@@ -68,10 +69,15 @@ class ArchiveController extends Controller
     {
         $model = $this->requireType($type);
 
-        $record = $model::onlyTrashed()->findOrFail($id);
-        $record->restore();
+        // onlyTrashed() guarantees only archived records are restorable; the
+        // row lock inside the transaction serializes concurrent restores of
+        // the same record, and the audit entry commits atomically with it.
+        DB::transaction(function () use ($request, $type, $model, $id) {
+            $record = $model::onlyTrashed()->whereKey($id)->lockForUpdate()->firstOrFail();
+            $record->restore();
 
-        $this->audit($request, 'archive.restored', $type, $this->describe($type, $record));
+            $this->audit($request, 'archive.restored', $type, $this->describe($type, $record));
+        });
 
         return redirect()
             ->route('archive.type', $type)
@@ -86,22 +92,28 @@ class ArchiveController extends Controller
 
         $model = $this->requireType($type);
 
-        $record = $model::onlyTrashed()->findOrFail($id);
+        // The blocker check runs inside the transaction on the locked row so
+        // a reference created between the check and the delete cannot slip
+        // through and surface as a foreign key exception (HTTP 500).
+        try {
+            $description = DB::transaction(function () use ($model, $request, $type, $id) {
+                $record = $model::onlyTrashed()->whereKey($id)->lockForUpdate()->firstOrFail();
 
-        // A purge must never orphan a record other tables still point at. Each
-        // blocker is reported as a form error instead of surfacing as a foreign
-        // key exception (HTTP 500) halfway through the transaction.
-        if ($blocker = $this->purgeBlocker($type, $record)) {
-            return back()->withErrors(['archive' => $blocker]);
+                if ($blocker = $this->purgeBlocker($type, $record)) {
+                    throw ValidationException::withMessages(['archive' => $blocker]);
+                }
+
+                $this->detachResidentReferences($type, $record);
+                $description = $this->describe($type, $record);
+                $record->forceDelete();
+
+                $this->audit($request, 'archive.purged', $type, $description);
+
+                return $description;
+            });
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
         }
-
-        $description = $this->describe($type, $record);
-
-        DB::transaction(function () use ($record, $request, $type, $description) {
-            $record->forceDelete();
-
-            $this->audit($request, 'archive.purged', $type, $description);
-        });
 
         return redirect()
             ->route('archive.type', $type)
@@ -128,7 +140,10 @@ class ArchiveController extends Controller
         }
 
         if ($type === 'households') {
-            $members = Resident::withTrashed()->where('household_id', $record->getKey())->count();
+            // Only live members block the purge. Already-archived members are
+            // detached in the purge transaction instead of blocking the
+            // household forever.
+            $members = Resident::where('household_id', $record->getKey())->count();
 
             if ($members > 0) {
                 return "This household still has {$members} resident record(s) attached. Move or remove them before purging the household.";
@@ -138,31 +153,65 @@ class ArchiveController extends Controller
         return null;
     }
 
+    /**
+     * Null out the nullable foreign keys that point at a record about to be
+     * purged, mirroring each column's onDelete('set null') rule explicitly.
+     * Relying solely on the database FK leaves orphans on stores where FK
+     * enforcement is off, and purging a household must also release its
+     * already-archived members instead of stranding them on a deleted id.
+     */
+    private function detachResidentReferences(string $type, Model $record): void
+    {
+        if ($type === 'residents') {
+            $key = $record->getKey();
+
+            Blotter::withTrashed()->where('complainant_id', $key)->update(['complainant_id' => null]);
+            Blotter::withTrashed()->where('accused_id', $key)->update(['accused_id' => null]);
+            Welfare::withTrashed()->where('beneficiary_id', $key)->update(['beneficiary_id' => null]);
+            Household::withTrashed()->where('head_of_household_id', $key)->update(['head_of_household_id' => null]);
+        }
+
+        if ($type === 'households') {
+            Resident::withTrashed()->where('household_id', $record->getKey())->update(['household_id' => null]);
+        }
+    }
+
     private function trashedQuery(string $type, Request $request): Builder
     {
         $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+        $like = '%'.self::escapeLike($search).'%';
 
         return match ($type) {
             'residents' => Resident::onlyTrashed()
                 ->with('purok')
-                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
+                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($like) {
+                    $q->whereRaw("first_name LIKE ? ESCAPE '\\'", [$like])
+                        ->orWhereRaw("last_name LIKE ? ESCAPE '\\'", [$like]);
                 })),
             'households' => Household::onlyTrashed()
                 ->with('purok')
-                ->when($search !== '', fn ($q) => $q->where('household_code', 'like', "%{$search}%")),
+                ->when($search !== '', fn ($q) => $q->whereRaw("household_code LIKE ? ESCAPE '\\'", [$like])),
             'blotter' => Blotter::onlyTrashed()
-                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
-                    $q->where('case_number', 'like', "%{$search}%")
-                        ->orWhere('complaint_type', 'like', "%{$search}%");
+                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($like) {
+                    $q->whereRaw("case_number LIKE ? ESCAPE '\\'", [$like])
+                        ->orWhereRaw("complaint_type LIKE ? ESCAPE '\\'", [$like]);
                 })),
             'welfare' => Welfare::onlyTrashed()
-                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
-                    $q->where('beneficiary_name', 'like', "%{$search}%")
-                        ->orWhere('program_name', 'like', "%{$search}%");
+                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($like) {
+                    $q->whereRaw("beneficiary_name LIKE ? ESCAPE '\\'", [$like])
+                        ->orWhereRaw("program_name LIKE ? ESCAPE '\\'", [$like]);
                 })),
         };
+    }
+
+    /**
+     * Escape LIKE wildcards in user search input.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     private function requireType(string $type): string

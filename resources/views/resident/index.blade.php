@@ -6,7 +6,8 @@
 @section('content')
 <div class="space-y-4">
     <x-module-tabs type="residents" />
-    <div class="module-toolbar-sticky no-print overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="module-toolbar-sticky module-toolbar-sticky--bare no-print">
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <form method="GET" action="{{ route('residents.index') }}" class="p-3">
             <div class="module-toolbar module-toolbar--resident">
                 <div class="min-w-0">
@@ -58,6 +59,7 @@
                 </div>
             </div>
         </form>
+        </div>
     </div>
 
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -99,6 +101,7 @@
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-500 md:table-cell">{{ ($residents->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
                                 <td class="min-w-[180px] px-4 py-3">
                                     <span class="font-medium text-slate-900">{{ $resident->last_name }}, {{ $resident->first_name }} {{ $resident->suffix }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ $resident->phone_number ?? '—' }} &middot; {{ $resident->household?->household_code ?? '—' }}</span>
                                 </td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->sex }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->civil_status }}</td>
@@ -107,7 +110,7 @@
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $resident->purok?->name ?? '—' }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->household?->household_code ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
-                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700' }}">{{ $resident->status }}</span>
+                                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">{{ $resident->status }}</span>
                                 </td>
                                 <td class="no-print whitespace-nowrap px-4 py-3 text-right">
                                     <div class="inline-flex items-center justify-end gap-2">
@@ -130,7 +133,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-slate-200 px-4 py-3">{{ $residents->links() }}</div>
+            <div class="border-t border-slate-200 px-4 py-3">{{ $residents->withQueryString()->links() }}</div>
         @endif
     </div>
 </div>

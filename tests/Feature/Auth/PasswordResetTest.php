@@ -100,27 +100,22 @@ class PasswordResetTest extends TestCase
         $this->assertSame(hash('sha256', $code), $row->token);
     }
 
-    public function test_no_code_is_sent_for_unknown_emails(): void
+    public function test_unknown_emails_get_a_generic_success_response(): void
     {
         Notification::fake();
 
         $response = $this->post('/forgot-password', ['email' => 'nobody@example.com']);
 
-        // Held on step 1 with the reason, never advanced to a code screen that
-        // would wait for an email nothing sent.
-        $response->assertRedirect(route('password.request'))
-            ->assertSessionHasErrors('email');
+        // Same success shape as a real send: the code step opens with a status
+        // notice, no validation error, and nothing reveals the address is unknown.
+        $response->assertRedirect(route('password.reset', ['email' => 'nobody@example.com']))
+            ->assertSessionHas('status')
+            ->assertSessionHasNoErrors();
 
         $this->assertStringContainsString(
-            "couldn't find an account",
-            session('errors')->first('email'),
+            'If an account exists',
+            (string) session('status'),
         );
-
-        // The reason is genuinely rendered on the page they land on, not just
-        // flashed into the session.
-        $this->get(route('password.request'))
-            ->assertOk()
-            ->assertSee("couldn't find an account");
 
         Notification::assertNothingSent();
         $this->assertDatabaseCount('password_reset_tokens', 0);
@@ -132,8 +127,10 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create(['user_type' => 'admin']);
 
+        // The typo gets the same generic success as a real send — and because
+        // no code was issued, it starts no cooldown.
         $this->post('/forgot-password', ['email' => 'nobody@example.com'])
-            ->assertRedirect(route('password.request'));
+            ->assertRedirect(route('password.reset', ['email' => 'nobody@example.com']));
 
         // The corrected address works straight away — a typo must not cost a
         // 60-second wait, because no code was issued for the wrong one.
@@ -214,8 +211,20 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 2);
     }
 
+    public function test_reset_screen_without_a_valid_token_returns_to_step_one(): void
+    {
+        // Direct access with no outstanding code is refused: the visitor is
+        // sent back to step 1 instead of a form that could never succeed.
+        $this->get('/reset-password?email=juan.delacruz@gmail.com')
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
+    }
+
     public function test_reset_screen_shows_a_masked_email_hint(): void
     {
+        $user = User::factory()->create(['user_type' => 'admin', 'email' => 'juan.delacruz@gmail.com']);
+        $this->requestCodeFor($user);
+
         $response = $this->get('/reset-password?email=juan.delacruz@gmail.com')
             ->assertOk()
             ->assertSee('ju***********@gmail.com'); // ju + 11 stars
@@ -247,11 +256,13 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
     }
 
-    public function test_verify_screen_renders_and_prefills_the_email(): void
+    public function test_verify_screen_without_a_valid_token_returns_to_step_one(): void
     {
+        // Prefill is only possible with an outstanding code: without one the
+        // visitor is sent back to step 1 instead of a form that could never succeed.
         $this->get('/reset-password?email=user@example.com')
-            ->assertOk()
-            ->assertSee('user@example.com');
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasErrors('email');
     }
 
     public function test_password_can_be_reset_with_a_valid_code(): void
@@ -392,7 +403,7 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPasswordCodeNotification::class);
     }
 
-    public function test_json_code_request_refuses_unknown_emails(): void
+    public function test_json_code_request_returns_generic_success_for_unknown_emails(): void
     {
         Notification::fake();
 
@@ -401,11 +412,14 @@ class PasswordResetTest extends TestCase
         $this->postJson('/forgot-password', ['email' => $user->email])->assertOk();
         $this->travel(61)->seconds();
 
-        // The login dialog reads this as an error and stays on its email step
-        // instead of opening the code boxes for an address that sent nothing.
+        // Indistinguishable from a real send: 200 with the generic message and
+        // no error shape, so the dialog advances without leaking existence.
         $this->postJson('/forgot-password', ['email' => 'nobody@example.com'])
-            ->assertStatus(422)
-            ->assertJsonPath('message', fn (string $message) => str_contains($message, "couldn't find an account"));
+            ->assertOk()
+            ->assertJsonPath('email', 'nobody@example.com')
+            ->assertJsonPath('cooldown', 0)
+            ->assertJsonPath('expires_in_minutes', 15)
+            ->assertJsonPath('message', fn (string $message) => str_contains($message, 'If an account exists'));
 
         Notification::assertSentTimes(ResetPasswordCodeNotification::class, 1);
     }
@@ -515,7 +529,10 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_page_ships_the_digit_preferring_code_extractor(): void
     {
-        $response = $this->get('/reset-password?email=user@example.com')->assertOk();
+        // The step-2 screen without an email query renders directly (there is
+        // no address to gate on); a queried address with no outstanding code
+        // redirects to step 1 instead.
+        $response = $this->get('/reset-password')->assertOk();
 
         // The strict extractor must prefer digit-bearing tokens over plain
         // words, so a copied sentence containing "SYSTEM" can't fill the boxes.

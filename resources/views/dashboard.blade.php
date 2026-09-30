@@ -115,6 +115,12 @@
         <div class="bg-slate-50 px-6 py-4">
             <h3 class="text-sm font-semibold text-slate-900">Quick Actions</h3>
         </div>
+        {{-- The ?open=<suffix> deep link is live, not dead: crud-dialogs.js reads
+             it on the target index and opens #<suffix>-dialog in create mode
+             (suffixes match the dialog ids there), and components/bare-url
+             deliberately preserves the query so the dialog still opens.
+             Every count on this page arrives from the controller — this view
+             runs no queries of its own, so nothing here recounts the sidebar. --}}
         <div class="p-6 grid grid-cols-1 gap-4 {{ auth()->user()?->isAdmin() ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3' }}">
             <a href="{{ route('residents.index') }}?open=resident" class="btn btn-outline w-full justify-start">
                 <x-icon name="user-plus" class="h-4 w-4 text-sky-600" />

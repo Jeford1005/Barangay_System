@@ -18,6 +18,19 @@ class User extends Authenticatable
 
     public const ROLE_RESIDENT = 'resident';
 
+    /**
+     * Account approval states stored in the `status` column. Suspension is a
+     * separate flag (`suspended_at`), never a status value — `statusLabel()`
+     * is the single source of truth for what the UI shows.
+     */
+    public const ACCOUNT_STATUSES = ['pending', 'approved', 'rejected'];
+
+    /**
+     * Virtual filter/display value for suspended accounts. It is not stored
+     * in `status`; see `statusLabel()`.
+     */
+    public const SUSPENDED_FILTER = 'suspended';
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -105,6 +118,48 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->isApproved() && ! $this->isSuspended();
+    }
+
+    /**
+     * Display status for badges and filters. A suspended account reads as
+     * Suspended regardless of its stored approval status — one source of
+     * truth shared by the directory, the detail page, and the status filter.
+     */
+    public function statusLabel(): string
+    {
+        return $this->isSuspended() ? 'Suspended' : ucfirst((string) $this->status);
+    }
+
+    /**
+     * Badge colors matching `statusLabel()`, so every status pill agrees.
+     */
+    public function statusBadgeClasses(): string
+    {
+        if ($this->isSuspended()) {
+            return 'bg-slate-100 text-slate-700';
+        }
+
+        return match ($this->status) {
+            'approved' => 'bg-emerald-50 text-emerald-700',
+            'pending' => 'bg-amber-50 text-amber-700',
+            default => 'bg-red-50 text-red-700',
+        };
+    }
+
+    /**
+     * Status filter options for the account directory. Single source for the
+     * controller filter and the view dropdown — they must never drift apart.
+     *
+     * @return array<string, string>
+     */
+    public static function statusFilterOptions(): array
+    {
+        return [
+            'pending' => 'Pending',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            self::SUSPENDED_FILTER => 'Suspended',
+        ];
     }
 
     public function isAdmin(): bool

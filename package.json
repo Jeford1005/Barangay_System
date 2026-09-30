@@ -2,9 +2,14 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
+    "engines": {
+        "node": "^20.19 || >=22.12"
+    },
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "preview": "vite preview",
+        "test": "npm run test:browser",
         "test:browser": "playwright test",
         "audit:responsive": "node check-responsive.mjs",
         "audit:targets": "node check-targets.mjs",

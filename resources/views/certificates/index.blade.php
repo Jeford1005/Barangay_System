@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div>
     <x-module-tabs type="certificates" class="mb-4" />
     <div class="bg-white rounded-xl shadow overflow-visible">
 
@@ -105,21 +105,39 @@
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="inline-flex items-center gap-2">
-                                            <a href="{{ route('certificates.print', $issuance) }}" class="btn btn-outline btn-icon {{ auth()->user()?->hasPermission('certificates.issue') ? '' : 'hidden' }}" title="Print certificate">
-                                                <x-icon name="printer" class="h-4 w-4" />
-                                                <span class="sr-only">Print {{ e($issuance->control_number) }}</span>
-                                            </a>
-                                            @if (auth()->user()?->isAdmin() && $issuance->status === 'Issued')
-                                                <form method="POST" action="{{ route('certificates.void', $issuance) }}" class="inline-flex"
-                                                    data-confirm="Void certificate {{ $issuance->control_number }}? This cannot be undone."
-                                                    data-confirm-title="Void certificate"
-                                                    data-confirm-accept="Void" data-confirm-icon="x-circle">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-outline-danger btn-icon" title="Void certificate">
-                                                        <x-icon name="x-mark" class="h-4 w-4" />
-                                                        <span class="sr-only">Void {{ e($issuance->control_number) }}</span>
-                                                    </button>
-                                                </form>
+                                            @if ($issuance->status === 'Voided')
+                                                @if (auth()->user()?->isAdmin())
+                                                    <form method="POST" action="{{ route('certificates.restore', $issuance) }}" class="inline-flex"
+                                                        data-confirm="Restore certificate {{ $issuance->control_number }}? It will become printable again."
+                                                        data-confirm-title="Restore certificate"
+                                                        data-confirm-accept="Restore" data-confirm-tone="primary" data-confirm-icon="check-circle">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-success btn-icon" title="Restore certificate">
+                                                            <x-icon name="check-circle" class="h-4 w-4" />
+                                                            <span class="sr-only">Restore {{ e($issuance->control_number) }}</span>
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-xs text-slate-500">Voided</span>
+                                                @endif
+                                            @else
+                                                <a href="{{ route('certificates.print', $issuance) }}" class="btn btn-outline btn-row {{ auth()->user()?->hasPermission('certificates.issue') ? '' : 'hidden' }}" title="Print certificate">
+                                                    <x-icon name="printer" class="h-4 w-4" />
+                                                    Print
+                                                    <span class="sr-only">{{ e($issuance->control_number) }}</span>
+                                                </a>
+                                                @if (auth()->user()?->isAdmin())
+                                                    <form method="POST" action="{{ route('certificates.void', $issuance) }}" class="inline-flex"
+                                                        data-confirm="Void certificate {{ $issuance->control_number }}? It will no longer print until an administrator restores it."
+                                                        data-confirm-title="Void certificate"
+                                                        data-confirm-accept="Void" data-confirm-icon="x-circle">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-danger btn-icon" title="Void certificate">
+                                                            <x-icon name="x-mark" class="h-4 w-4" />
+                                                            <span class="sr-only">Void {{ e($issuance->control_number) }}</span>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             @endif
                                         </div>
                                     </td>
@@ -127,7 +145,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $issuances->links() }}
+                    {{ $issuances->withQueryString()->links() }}
                 </div>
             @endif
         </div>

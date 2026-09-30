@@ -32,6 +32,8 @@
 /.freebuff
 /database/*.sqlite
 /database/*.sqlite-journal
+# Stray SQLite created when DB_DATABASE is resolved as a relative path.
+/barangay_management
 /vendor
 Homestead.json
 Homestead.yaml

@@ -10,6 +10,20 @@ class CertificateIssuance extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Width of `certificate_issuances.control_number` after the 2026-09-30
+     * widening (was 30). The tombstone parked on soft-delete must always
+     * fit so a deleted control number never blocks reuse of the original.
+     */
+    public const CODE_MAX = 48;
+
+    /**
+     * Marker parked after the original control number on soft-delete.
+     * Control numbers are server-generated (`CODE-YYYY-NNNN`), so the
+     * marker round-trips unambiguously on restore.
+     */
+    public const DELETED_MARKER = '#DEL';
+
     protected $table = 'certificate_issuances';
 
     protected $fillable = [
@@ -44,7 +58,9 @@ class CertificateIssuance extends Model
 
     public function document()
     {
-        return $this->belongsTo(Document::class);
+        // The catalog entry may be archived while issued certificates stay
+        // on record; keep showing the document instead of nulling it.
+        return $this->belongsTo(Document::class)->withTrashed();
     }
 
     public function resident()
@@ -98,5 +114,53 @@ class CertificateIssuance extends Model
     public function scopeVoided($query)
     {
         return $query->where('status', 'Voided');
+    }
+
+    protected static function booted(): void
+    {
+        // The UNIQUE index on control_number also covers soft-deleted rows,
+        // so voiding/archiving an issuance would otherwise block its number
+        // forever. Park a tombstone on soft-delete (freeing the original
+        // for reuse) and reclaim the original on restore when free.
+        static::deleting(function (CertificateIssuance $issuance): void {
+            if ($issuance->isForceDeleting()) {
+                return;
+            }
+
+            $code = (string) ($issuance->getOriginal('control_number') ?? $issuance->control_number);
+
+            if ($code === '' || str_contains($code, self::DELETED_MARKER)) {
+                return;
+            }
+
+            $suffix = self::DELETED_MARKER.$issuance->getKey();
+            $issuance->control_number = substr($code, 0, max(0, self::CODE_MAX - strlen($suffix))).$suffix;
+
+            if ($issuance->control_number === '' || strlen($suffix) > self::CODE_MAX) {
+                $issuance->control_number = substr($suffix, -self::CODE_MAX);
+            }
+
+            $issuance->saveQuietly();
+        });
+
+        static::restoring(function (CertificateIssuance $issuance): void {
+            $code = (string) $issuance->control_number;
+            $pos = strpos($code, self::DELETED_MARKER);
+
+            if ($pos === false || $pos === 0) {
+                return;
+            }
+
+            $original = substr($code, 0, $pos);
+
+            $taken = static::query()
+                ->where('control_number', $original)
+                ->whereKeyNot($issuance->getKey())
+                ->exists();
+
+            if (! $taken) {
+                $issuance->control_number = $original;
+            }
+        });
     }
 }

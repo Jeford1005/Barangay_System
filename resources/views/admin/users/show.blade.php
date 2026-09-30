@@ -1,14 +1,15 @@
 <x-app-layout>
 @section('page_header')
-    <x-page-header title="{{ $user->name }}" subtitle="User account details and access history" />
+    <x-page-header title="{{ $user->name }}" subtitle="User account details and access history">
+        <x-slot:actions>
+            <a href="{{ route('admin.users.index') }}" class="btn btn-outline">All accounts</a>
+            <x-primary-action variant="update" :href="route('admin.users.edit', $user)">Edit details</x-primary-action>
+        </x-slot:actions>
+    </x-page-header>
 @endsection
 
 @section('content')
 <div class="space-y-6">
-    <div class="no-print flex flex-wrap items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <a href="{{ route('admin.users.index') }}" class="btn btn-outline">All accounts</a>
-        <x-primary-action variant="update" :href="route('admin.users.edit', $user)">Edit details</x-primary-action>
-    </div>
     @if ($errors->any())
         <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
             <p class="font-semibold">Unable to complete that action.</p>
@@ -39,11 +40,17 @@
                 <div>
                     <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Account status</dt>
                     <dd class="mt-1">
-                        @if ($user->isSuspended())
-                            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">Suspended</span>
-                        @else
-                            <span class="inline-flex rounded-full {{ $user->status === 'approved' ? 'bg-emerald-50 text-emerald-700' : ($user->status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700') }} px-2 py-0.5 text-xs font-medium">{{ ucfirst($user->status) }}</span>
-                        @endif
+                        @php
+                            // Same *-100 scale as the directory and every other badge.
+                            $accountBadge = $user->isSuspended()
+                                ? 'bg-slate-100 text-slate-700'
+                                : match ($user->status) {
+                                    'approved' => 'bg-emerald-100 text-emerald-800',
+                                    'pending' => 'bg-amber-100 text-amber-800',
+                                    default => 'bg-red-100 text-red-800',
+                                };
+                        @endphp
+                        <span class="inline-flex rounded-full {{ $accountBadge }} px-2 py-0.5 text-xs font-medium">{{ $user->statusLabel() }}</span>
                     </dd>
                 </div>
                 <div>
@@ -147,6 +154,12 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Save resident link</button>
             </form>
+            @if ($user->residentProfile)
+                <p class="mt-3 text-sm text-slate-500">
+                    Currently linked to <span class="font-medium text-slate-700">{{ $user->residentProfile->full_name }}</span>.
+                    <a href="{{ route('residents.index', ['search' => $user->residentProfile->full_name]) }}" class="font-medium text-sky-700 hover:underline">View in the resident directory →</a>
+                </p>
+            @endif
         </section>
     @endif
 

@@ -10,7 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -20,8 +22,12 @@ class PasswordResetCodeController extends Controller
 {
     /**
      * Seconds the visitor must wait before requesting another code.
-     * Keyed to the session, never to the email address, so a "please wait"
-     * response can't reveal whether an account exists.
+     *
+     * The countdown is keyed to the session for instant UX, and mirrored in
+     * the server-side cache per IP and per account, so clearing cookies or
+     * switching to incognito does not bypass the resend limit. It is never
+     * keyed to the raw email address in a visible response, so a "please
+     * wait" notice can't reveal whether an account exists.
      */
     private const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -60,23 +66,36 @@ class PasswordResetCodeController extends Controller
         if ($remaining = $this->cooldownRemaining()) {
             // The wait message stays generic: it is a rate-limit notice, not a
             // verdict on the address.
-            $message = "Please wait {$remaining} seconds before requesting another code.";
+            return $this->cooldownWaitResponse($request, $remaining, (string) $request->input('email'));
+        }
+
+        $email = trim((string) $request->input('email'));
+        $user = User::where('email', $email)->first();
+
+        // Unknown addresses get the same success-shaped response as a real
+        // send, so the endpoint never reveals whether an account exists.
+        // The attempt is logged internally for abuse monitoring.
+        if (! $user) {
+            Log::info('password_reset.code_requested_unknown', [
+                'email' => $email,
+                'ip' => $request->ip(),
+            ]);
+
+            $generic = 'If an account exists for that email address, a 6-character reset code has been sent. It expires in '.PasswordResetCodeService::CODE_TTL_MINUTES.' minutes.';
 
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => $message,
-                    'cooldown' => $remaining,
-                    'wait' => true,
+                    'message' => $generic,
+                    'email' => $email,
+                    'cooldown' => 0,
+                    'expires_in_minutes' => PasswordResetCodeService::CODE_TTL_MINUTES,
                 ]);
             }
 
             return redirect()
-                ->route('password.reset', ['email' => $request->input('email')])
-                ->with('status', $message)
-                ->with('cooldown_seconds', $remaining);
+                ->route('password.reset', ['email' => $email])
+                ->with('status', $generic);
         }
-
-        $user = User::where('email', $request->input('email'))->first();
 
         // Anything that cannot actually receive a code is refused here, on step
         // 1, with the reason. Sending it on to the code screen anyway would
@@ -87,7 +106,41 @@ class PasswordResetCodeController extends Controller
             return $this->refuse($request, $reason);
         }
 
-        $this->resetCodes->issue($user);
+        // The per-account cooldown survives IP rotation and cookie clears.
+        // The wait message stays generic either way.
+        if ($remaining = self::cooldownRemaining(userId: $user->id)) {
+            return $this->cooldownWaitResponse($request, $remaining, $email);
+        }
+
+        try {
+            $this->resetCodes->issue($user);
+        } catch (\Throwable $exception) {
+            report($exception);
+            Log::warning('password_reset.code_send_failed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'ip' => $request->ip(),
+            ]);
+
+            AuditLog::record(
+                'password_reset.code_request_failed',
+                $user->id,
+                $user->email,
+                $request->ip(),
+                $request->userAgent(),
+            );
+
+            $message = 'The reset email could not be sent right now. Check the mail configuration and try again in a minute.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 503);
+            }
+
+            return redirect()
+                ->route('password.request')
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => $message]);
+        }
 
         AuditLog::record(
             'password_reset.code_requested',
@@ -98,8 +151,13 @@ class PasswordResetCodeController extends Controller
         );
 
         // The cooldown starts only once a code has really gone out, so a
-        // mistyped address costs nothing to correct.
+        // mistyped address costs nothing to correct. It lives in the session
+        // for the instant countdown and in the server-side cache per IP and
+        // per account, so clearing cookies or switching networks won't
+        // bypass the resend limit.
         $request->session()->put('password_reset.sent_at', now()->timestamp);
+        Cache::put(self::cooldownCacheKey('ip', (string) $request->ip()), now()->timestamp, self::RESEND_COOLDOWN_SECONDS);
+        Cache::put(self::cooldownCacheKey('user', (string) $user->id), now()->timestamp, self::RESEND_COOLDOWN_SECONDS);
 
         $message = 'A 6-character reset code has been sent to your email address.';
 
@@ -125,12 +183,8 @@ class PasswordResetCodeController extends Controller
      * visitor hears the same reason from both doors instead of a clear
      * explanation at sign-in and a dead end here.
      */
-    private function refusalReason(?User $user): ?string
+    private function refusalReason(User $user): ?string
     {
-        if (! $user) {
-            return "We couldn't find an account with that email address. Check the spelling, or register for an account.";
-        }
-
         if ($user->isSuspended()) {
             return 'This account has been suspended. Please contact the barangay office.';
         }
@@ -162,11 +216,30 @@ class PasswordResetCodeController extends Controller
 
     /**
      * Show the "enter code + new password" screen.
+     *
+     * Direct access without a prior code request is refused: an email that
+     * has no outstanding (unexpired, unconsumed) token is sent back to step
+     * 1 instead of being shown a form that could never succeed.
      */
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
+        $email = trim((string) $request->query('email', old('email', '')));
+
+        if ($email !== '') {
+            $hasToken = DB::table('password_reset_tokens')
+                ->where('email', $email)
+                ->exists();
+
+            if (! $hasToken) {
+                return redirect()
+                    ->route('password.request')
+                    ->withInput(['email' => $email])
+                    ->withErrors(['email' => 'No active reset code was found for this email. Request a new code first.']);
+            }
+        }
+
         return view('auth.passwords.reset', [
-            'email' => $request->query('email', old('email', '')),
+            'email' => $email,
             'expiresInMinutes' => PasswordResetCodeService::CODE_TTL_MINUTES,
             'cooldownSeconds' => $this->cooldownRemaining(),
         ]);
@@ -197,19 +270,21 @@ class PasswordResetCodeController extends Controller
 
         if ($expired) {
             // The route throttle is IP scoped, so a rotating attacker gets a
-            // fresh budget against every address. Burn the token after a few
-            // wrong guesses per account so a single intercepted code cannot be
-            // retried indefinitely from different hosts.
-            $failureKey = 'password-reset-fail:'.Str::lower((string) $request->input('email'));
+            // fresh budget against every address. Burn the token after 5 wrong
+            // guesses per account (the 6th failed attempt withdraws it) so a
+            // single intercepted code cannot be retried indefinitely.
+            $failureKey = 'password-reset-fail:'.Str::lower(trim((string) $request->input('email')));
 
-            if (RateLimiter::tooManyAttempts($failureKey, self::CODE_FAILURE_LIMIT)) {
+            RateLimiter::hit($failureKey, self::CODE_FAILURE_DECAY_SECONDS);
+
+            $withdrawn = RateLimiter::attempts($failureKey) > self::CODE_FAILURE_LIMIT;
+
+            if ($withdrawn) {
                 DB::table('password_reset_tokens')
                     ->where('email', $request->input('email'))
                     ->delete();
 
                 RateLimiter::clear($failureKey);
-            } else {
-                RateLimiter::hit($failureKey, self::CODE_FAILURE_DECAY_SECONDS);
             }
 
             AuditLog::record(
@@ -220,15 +295,19 @@ class PasswordResetCodeController extends Controller
                 $request->userAgent(),
             );
 
+            $failureMessage = $withdrawn
+                ? 'Too many incorrect attempts. Your reset code has been withdrawn. Request a new one.'
+                : 'That code is invalid or has expired. Request a new one.';
+
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'That code is invalid or has expired. Request a new one.',
-                    'errors' => ['code' => ['That code is invalid or has expired. Request a new one.']],
+                    'message' => $failureMessage,
+                    'errors' => ['code' => [$failureMessage]],
                 ], 422);
             }
 
             return back()
-                ->withErrors(['code' => 'That code is invalid or has expired. Request a new one.'])
+                ->withErrors(['code' => $failureMessage])
                 ->withInput($request->only('email'));
         }
 
@@ -270,7 +349,9 @@ class PasswordResetCodeController extends Controller
         // Single use: burn the code and clear the cooldown.
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
         $request->session()->forget('password_reset.sent_at');
-        RateLimiter::clear('password-reset-fail:'.Str::lower((string) $user->email));
+        Cache::forget(self::cooldownCacheKey('ip', (string) $request->ip()));
+        Cache::forget(self::cooldownCacheKey('user', (string) $user->id));
+        RateLimiter::clear('password-reset-fail:'.Str::lower(trim((string) $user->email)));
 
         AuditLog::record(
             'password_reset.completed',
@@ -294,15 +375,62 @@ class PasswordResetCodeController extends Controller
     /**
      * Seconds left before another code may be requested.
      * Public + static so the login page can show an honest countdown too.
+     *
+     * Reads the session timestamp plus the server-side cache (per IP and per
+     * account) and returns the longest remaining wait, so a cleared session
+     * alone does not lift the limit.
      */
-    public static function cooldownRemaining(): int
+    public static function cooldownRemaining(?string $ip = null, ?int $userId = null): int
     {
-        $sentAt = session('password_reset.sent_at');
+        $ip ??= app()->bound('request') ? (string) request()->ip() : '';
 
-        if (! $sentAt) {
+        $sentAt = (int) (session('password_reset.sent_at') ?? 0);
+
+        if ($ip !== '') {
+            $sentAt = max($sentAt, (int) Cache::get(self::cooldownCacheKey('ip', $ip), 0));
+        }
+
+        if ($userId !== null) {
+            $sentAt = max($sentAt, (int) Cache::get(self::cooldownCacheKey('user', (string) $userId), 0));
+        }
+
+        if ($sentAt <= 0) {
             return 0;
         }
 
-        return max(0, self::RESEND_COOLDOWN_SECONDS - (now()->timestamp - (int) $sentAt));
+        return max(0, self::RESEND_COOLDOWN_SECONDS - (now()->timestamp - $sentAt));
+    }
+
+    /**
+     * Server-side cooldown slot. The IP segment is hashed so the cache key
+     * never stores a raw address verbatim.
+     */
+    private static function cooldownCacheKey(string $scope, string $value): string
+    {
+        $segment = $scope === 'ip' ? sha1($value) : $value;
+
+        return 'password-reset-cooldown:'.$scope.':'.$segment;
+    }
+
+    /**
+     * Generic "please wait" response shared by the pre-lookup IP check and
+     * the post-lookup per-account check. It never confirms the address.
+     */
+    private function cooldownWaitResponse(Request $request, int $remaining, string $email): RedirectResponse|JsonResponse
+    {
+        $message = "Please wait {$remaining} seconds before requesting another code.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'cooldown' => $remaining,
+                'wait' => true,
+            ]);
+        }
+
+        return redirect()
+            ->route('password.reset', ['email' => $email])
+            ->with('status', $message)
+            ->with('cooldown_seconds', $remaining);
     }
 }

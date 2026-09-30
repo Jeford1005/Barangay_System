@@ -11,7 +11,7 @@ $residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->first_name.
         <x-form.field name="house_type" label="House Type" type="select" required :options="['Single', 'Duplex', 'Apartment', 'Townhouse', 'Other']" :value="$household->house_type ?? 'Single'" />
         <x-form.field name="ownership" label="Ownership" type="select" required :options="['Owned', 'Rented', 'Leased', 'Occupied']" :value="$household->ownership ?? 'Owned'" />
         <x-form.field name="year_built" label="Year Built" type="number" step="1" :value="$household->year_built ?? null" min="1800" :max="date('Y')" placeholder="2020" />
-        <x-form.field name="num_members" label="Number of Members" type="number" step="1" required :value="$household->num_members ?? 1" min="1" max="4294967295" placeholder="1" />
+        <x-form.field name="num_members" label="Number of Members" type="number" step="1" required :value="$household->num_members ?? 1" min="1" max="50" placeholder="1" />
         <x-form.field name="lot_area" label="Lot Area" :value="$household->lot_area ?? null" maxlength="50" placeholder="e.g. 100 sqm" />
         <x-form.field name="floor_area" label="Floor Area" :value="$household->floor_area ?? null" maxlength="50" placeholder="e.g. 50 sqm" />
         <p class="text-xs text-slate-500 sm:col-span-2">Household codes are text labels, such as HH-004. Choose a purok from the list, or leave it unassigned; its internal ID is saved automatically.</p>

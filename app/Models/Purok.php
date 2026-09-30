@@ -13,10 +13,12 @@ class Purok extends Model
         'name',
         'code',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'created_by' => 'integer',
+        'updated_by' => 'integer',
     ];
 
     public function residents()

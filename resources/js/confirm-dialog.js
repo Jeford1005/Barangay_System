@@ -49,6 +49,23 @@
         return d ? d.querySelector(sel) : null;
     }
 
+    // Every overlay that locks page scroll. The confirm card must stay aware
+    // of the error/settings dialog stack: closing confirm must not unlock
+    // the page, steal focus, or close a card that is still open above it.
+    var OVERLAY_SELECTOR = '.crud-dialog:not(.hidden), #confirm-dialog:not(.hidden), #error-dialog:not(.hidden), #settings-dialog:not(.hidden), #forgot-modal:not(.hidden), #register-modal:not(.hidden)';
+
+    function anyOverlayOpen() {
+        return !!document.querySelector(OVERLAY_SELECTOR);
+    }
+
+    function topOverlay() {
+        return document.querySelector('#settings-dialog:not(.hidden)')
+            || document.querySelector('#error-dialog:not(.hidden)')
+            || document.querySelector('#confirm-dialog:not(.hidden)')
+            || document.querySelector('.crud-dialog:not(.hidden)')
+            || document.querySelector('#forgot-modal:not(.hidden), #register-modal:not(.hidden)');
+    }
+
     function scrollLock(on) {
         if (on) {
             document.body.classList.add('overflow-hidden');
@@ -56,6 +73,9 @@
         }
         // Another dialog may still be open — don't unlock the page under it.
         if (document.querySelector('.crud-dialog:not(.hidden)')) return;
+        if (document.querySelector('#error-dialog:not(.hidden)')) return;
+        if (document.querySelector('#settings-dialog:not(.hidden)')) return;
+        if (document.querySelector('#forgot-modal:not(.hidden), #register-modal:not(.hidden)')) return;
         document.body.classList.remove('overflow-hidden');
     }
 
@@ -67,7 +87,16 @@
         pendingForm = null;
         var restore = lastFocused;
         lastFocused = null;
-        if (restore && restore.focus) restore.focus();
+        if (anyOverlayOpen()) {
+            // An error/settings card is still open — leave it in charge.
+            var top = topOverlay();
+            if (top && !top.contains(document.activeElement)) {
+                var fallback = top.querySelector('button:not([disabled])') || top.querySelector('[tabindex="-1"]');
+                if (fallback && fallback.focus) fallback.focus();
+            }
+            return;
+        }
+        if (restore && restore.focus && restore.isConnected) restore.focus();
     }
 
     function accept() {
@@ -130,11 +159,20 @@
         var dismissBtn = q('[data-confirm-dialog-cancel]');
         if (dismissBtn) dismissBtn.textContent = form.getAttribute('data-confirm-dismiss') || 'Cancel';
 
+        // Hold the 44px line shared with .btn (min-h-11): if a future class
+        // edit drops the utility, the height must not drift.
+        [dismissBtn, acceptBtn].forEach(function (btn) {
+            if (btn && !btn.classList.contains('min-h-11')) btn.classList.add('min-h-11');
+        });
+
         d.classList.remove('hidden');
         scrollLock(true);
 
-        // Focus Cancel — Enter must not destroy a record by reflex.
-        (dismissBtn || acceptBtn).focus();
+        // Focus Cancel — Enter must not destroy a record by reflex — unless
+        // an error/settings card is already open above us. Stealing focus
+        // from it would bury the message the user is reading.
+        var overlayOpen = document.querySelector('#error-dialog:not(.hidden), #settings-dialog:not(.hidden)');
+        if (!overlayOpen) (dismissBtn || acceptBtn).focus();
         return true;
     }
 

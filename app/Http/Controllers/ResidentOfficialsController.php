@@ -12,13 +12,13 @@ class ResidentOfficialsController extends Controller
      *
      * `officials` is a reference table: it supplies certificate signatures and
      * blotter officers and is not maintained from this application, so the
-     * portal only ever reads it. The same `active()` officials the office
-     * modules already treat as serving are listed, ordered by position so the
-     * directory reads the same on every visit.
+     * portal only ever reads it. Serving means Active or Elected — an
+     * Active-only filter would hide every elected official — ordered by
+     * position so the directory reads the same on every visit.
      */
     public function index(): View
     {
-        $officials = Official::active()
+        $officials = Official::serving()
             ->orderBy('position')
             ->orderBy('last_name')
             ->get([
@@ -28,6 +28,7 @@ class ResidentOfficialsController extends Controller
                 'suffix',
                 'office',
                 'position',
+                'status',
                 'term_start',
                 'term_end',
             ]);

@@ -1,6 +1,6 @@
 # Barangay Management System
 
-A comprehensive web-based management system for Philippine barangays, built with Laravel 12 and PHP 8.2.
+A comprehensive web-based management system for Philippine barangays, built with Laravel 12 and PHP 8.2+.
 
 ## Features
 
@@ -15,9 +15,9 @@ A comprehensive web-based management system for Philippine barangays, built with
 
 ## System Requirements
 
-- PHP >= 8.2
+- PHP ^8.2 (>= 8.2, < 9.0 — matches `require.php` in composer.json)
 - Composer 2
-- Node.js ^20.19 or >=22.12 (Vite 7's requirement) and NPM
+- Node.js ^20.19 or >=22.12 (Vite 7's requirement) and npm
 - SQLite (default, recommended) or MySQL
 
 ## Installation
@@ -26,7 +26,7 @@ A comprehensive web-based management system for Philippine barangays, built with
 
 ```bash
 git clone <repository-url>
-cd Barangay_Management_System1
+cd Barangay_Management_System
 ```
 
 ### 2. Install Dependencies
@@ -51,9 +51,15 @@ php artisan key:generate
 
 ### 4. Database Setup
 
-The system uses SQLite by default. The database file will be created automatically.
+The system uses SQLite by default. On a fresh clone the `.sqlite` file does
+not exist yet, so create it **before** migrating (otherwise `migrate` fails
+with a "database does not exist" error). `composer setup` does this for you;
+for a manual setup run:
 
 ```bash
+# Create the SQLite file first (fresh clones only; harmless no-op afterwards)
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+
 # Run migrations
 php artisan migrate
 
@@ -159,17 +165,25 @@ Fresh installations create the sample Staff account with the limited `staff` rol
 ### Running Tests
 
 ```bash
-php artisan test
+php artisan test     # PHP / feature tests (also: composer test)
+npm test             # browser tests (Playwright; also: npm run test:browser)
+npm run preview      # preview the production Vite build locally
 ```
+
+There is intentionally no `npm run lint`: no JS linter is configured for this
+project. PHP style is checked with Pint (see Code Style below).
+
+`package.json` declares `engines: node ^20.19 || >=22.12` (Vite 7's
+requirement), so Node 18 fails fast at install time instead of breaking mid-build.
 
 ### Code Style
 
 ```bash
 # Check code style
-./vendor/bin/pint --test
+./vendor/bin/pint --test   # also: composer lint
 
 # Fix code style
-./vendor/bin/pint
+./vendor/bin/pint          # also: composer format
 ```
 
 ### Database Maintenance
@@ -251,6 +265,19 @@ Plus two processes that must stay running:
 * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+On Windows there is no cron — use Task Scheduler to run the same command
+every minute (adjust the path to your install):
+
+```powershell
+schtasks /create /tn "BarangayApp schedule:run" `
+  /tr "php C:\Xampp\htdocs\Barangay_Management_System\artisan schedule:run" `
+  /sc minute /mo 1
+```
+
+(GUI alternative: Task Scheduler → Create Task → trigger "Daily", repeat every
+1 minute → action starts `php` with argument
+`C:\Xampp\htdocs\Barangay_Management_System\artisan schedule:run`.)
+
 …and a **queue worker** (supervisor, or a cron fallback) — without it certificate
 notifications and backups never leave `Queued`.
 
@@ -262,6 +289,10 @@ Key details the guide covers: doc root must be `public/`; `APP_DEBUG=false`;
 **do not `db:seed` in production** (it creates `admin@barangay.local` /
 `password`); and backups are built in for **SQLite, MySQL and MariaDB** — see the
 [backup and restore notes](docs/operations/deploy.md#backups).
+
+`public/.htaccess` ships with **no hardcoded `RewriteBase`**, so docroot,
+Alias/subdirectory (e.g. XAMPP `/Barangay_Management_System`) and shared-host
+`public_html` layouts all work without edits.
 
 **Hosting:** any PHP host (VPS + Forge, shared cPanel, Render/Railway).
 **Not** Vercel/Netlify/serverless — this is Laravel, and it needs a PHP runtime,
@@ -337,4 +368,4 @@ For issues and questions:
 
 ---
 
-**Built with Laravel 12 and PHP 8.2**
+**Built with Laravel 12 and PHP 8.2+**

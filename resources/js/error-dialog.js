@@ -57,10 +57,29 @@
         // Another dialog may still be open — don't unlock the page under it.
         if (document.querySelector('.crud-dialog:not(.hidden)')) return;
         if (document.querySelector('.confirm-dialog:not(.hidden)')) return;
+        if (document.querySelector('#settings-dialog:not(.hidden)')) return;
+        if (document.querySelector('#forgot-modal:not(.hidden), #register-modal:not(.hidden)')) return;
         document.body.classList.remove('overflow-hidden');
     }
 
-    function close() {
+    function anyOverlayOpen() {
+        return !!document.querySelector('.crud-dialog:not(.hidden), #confirm-dialog:not(.hidden), #settings-dialog:not(.hidden), #forgot-modal:not(.hidden), #register-modal:not(.hidden)');
+    }
+
+    function focusTopOverlay() {
+        var top = document.querySelector('#settings-dialog:not(.hidden)')
+            || document.querySelector('#confirm-dialog:not(.hidden)')
+            || document.querySelector('.crud-dialog:not(.hidden)')
+            || document.querySelector('#forgot-modal:not(.hidden), #register-modal:not(.hidden)');
+        if (!top || top.contains(document.activeElement)) return;
+        var target = top.querySelector('button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]')
+            || top.querySelector('[tabindex="-1"]');
+        if (target && target.focus) target.focus();
+    }
+
+    // reason: 'action' runs the silent retry; anything else (Cancel, Escape,
+    // backdrop) only dismisses and must NEVER trigger the retry action.
+    function close(reason) {
         var d = node();
         if (!d || d.classList.contains('hidden')) return;
         d.classList.add('hidden');
@@ -73,10 +92,17 @@
 
         var restore = lastFocused;
         lastFocused = null;
-        if (restore && restore.focus) restore.focus();
+        if (anyOverlayOpen()) {
+            focusTopOverlay();
+        } else if (restore && restore.focus && restore.isConnected) {
+            restore.focus();
+        }
 
-        if (typeof dismiss === 'function') dismiss();
-        if (typeof retry === 'function') retry();
+        if (reason === 'action') {
+            if (typeof retry === 'function') retry();
+        } else if (typeof dismiss === 'function') {
+            dismiss();
+        }
     }
 
     function open(options) {
@@ -142,17 +168,17 @@
 
         if (target.closest('[data-error-dialog-action]')) {
             event.preventDefault();
-            close(); // closes first, then runs the retry silently
+            close('action'); // closes first, then runs the retry silently
             return;
         }
         if (target.closest('[data-error-dialog-cancel]')) {
             event.preventDefault();
-            close();
+            close('dismiss'); // Cancel only dismisses — never retries
             return;
         }
         // Click on the dim backdrop (anything outside the panel) dismisses.
         var panel = d.querySelector('.error-dialog-panel');
-        if (panel && !panel.contains(target)) close();
+        if (panel && !panel.contains(target)) close('dismiss');
     });
 
     // Capture phase so an open CRUD dialog beneath doesn't also close on
@@ -164,7 +190,7 @@
         if (event.key === 'Escape') {
             event.preventDefault();
             event.stopPropagation();
-            close();
+            close('dismiss');
             return;
         }
         if (event.key !== 'Tab') return;

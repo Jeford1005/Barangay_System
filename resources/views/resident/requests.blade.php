@@ -117,7 +117,7 @@
                         </li>
                     @endforeach
                 </ul>
-                <div class="px-6 pb-4">{{ $requests->links() }}</div>
+                <div class="px-6 pb-4">{{ $requests->withQueryString()->links() }}</div>
             @endif
         </div>
     </div>

@@ -21,11 +21,12 @@ class BlotterController extends Controller
 
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
-            $query->where(function ($q) use ($search) {
-                $q->where('case_number', 'like', '%'.$search.'%')
-                    ->orWhere('complainant_name', 'like', '%'.$search.'%')
-                    ->orWhere('accused_name', 'like', '%'.$search.'%')
-                    ->orWhere('complaint_type', 'like', '%'.$search.'%');
+            $like = '%'.self::escapeLike($search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw("case_number LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("complainant_name LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("accused_name LIKE ? ESCAPE '\\'", [$like])
+                    ->orWhereRaw("complaint_type LIKE ? ESCAPE '\\'", [$like]);
             });
         }
 
@@ -33,11 +34,23 @@ class BlotterController extends Controller
             $query->where('status', $request->status);
         }
 
-        $blotters = $query->paginate(20);
+        $blotters = $query->paginate(20)->withQueryString();
         $openCount = Blotter::open()->count();
 
+        $page = max(1, (int) $request->input('page', 1));
+
         return view('blotter.index', compact('blotters', 'openCount'))
-            ->with('i', ($request->input('page', 1) - 1) * $blotters->perPage());
+            ->with('i', ($page - 1) * $blotters->perPage());
+    }
+
+    /**
+     * Escape LIKE wildcards so user input only ever matches literally.
+     * To be used with an explicit `ESCAPE '\\'` clause (portable across
+     * MySQL and SQLite).
+     */
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     public function create()
@@ -92,7 +105,7 @@ class BlotterController extends Controller
 
     public function update(Request $request, Blotter $blotter)
     {
-        $validated = $this->synchronizeLinkedResidentFields($this->validateBlotter($request, $blotter));
+        $validated = $this->synchronizeLinkedResidentFields($this->validateBlotter($request, $blotter), $blotter);
         $validated['updated_by'] = Auth::id();
 
         DB::transaction(function () use ($request, $blotter, $validated) {
@@ -156,14 +169,22 @@ class BlotterController extends Controller
     /**
      * A linked resident is the source of truth for party identity/contact data.
      * Blank IDs intentionally remain walk-in records and keep their free text.
+     *
+     * On update the sync only fires when the linked resident actually changed:
+     * re-syncing on every save would silently discard the clerk's manual
+     * edits to the name/address/phone fields.
      */
-    private function synchronizeLinkedResidentFields(array $validated): array
+    private function synchronizeLinkedResidentFields(array $validated, ?Blotter $blotter = null): array
     {
         foreach ([
             'complainant_id' => ['complainant_name', 'complainant_address', 'complainant_phone'],
             'accused_id' => ['accused_name', 'accused_address', 'accused_phone'],
         ] as $idField => [$nameField, $addressField, $phoneField]) {
             if (blank($validated[$idField] ?? null)) {
+                continue;
+            }
+
+            if ($blotter && (int) ($blotter->{$idField} ?? 0) === (int) $validated[$idField]) {
                 continue;
             }
 
@@ -194,7 +215,7 @@ class BlotterController extends Controller
             'alleged_offense' => 'required|string|max:2000',
             'status' => 'required|in:Open,Pending,Resolved,Dismissed',
             'disposition' => 'nullable|string|max:2000',
-            'disposition_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'disposition_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:complaint_date',
             'arrest_made' => 'required|in:Yes,No',
             'investigator' => 'nullable|string|max:255',
             'officer_id' => ['nullable', 'integer', Rule::exists('officials', 'id')->where('status', 'Active')],
@@ -234,7 +255,32 @@ class BlotterController extends Controller
         if (in_array($validated['status'], ['Resolved', 'Dismissed'], true)) {
             $request->validate([
                 'disposition' => 'required|string|max:2000',
-                'disposition_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+                'disposition_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:complaint_date',
+            ]);
+        }
+
+        // An open or pending case carries no close data: strip anything
+        // submitted so a reopened case cannot keep its old disposition.
+        if (in_array($validated['status'], ['Open', 'Pending'], true)) {
+            $validated['disposition'] = null;
+            $validated['disposition_date'] = null;
+        }
+
+        // Nobody may accuse themselves: the complainant and the accused must
+        // be different people, whether linked residents or walk-in names.
+        $complainantId = $validated['complainant_id'] ?? null;
+        $accusedId = $validated['accused_id'] ?? null;
+        if (filled($complainantId) && filled($accusedId) && (int) $complainantId === (int) $accusedId) {
+            throw ValidationException::withMessages([
+                'accused_id' => 'The complainant and the accused cannot be the same person.',
+            ]);
+        }
+        if (blank($complainantId) && blank($accusedId)
+            && filled($validated['complainant_name'] ?? null)
+            && mb_strtolower(trim((string) $validated['complainant_name'])) === mb_strtolower(trim((string) ($validated['accused_name'] ?? '')))
+        ) {
+            throw ValidationException::withMessages([
+                'accused_name' => 'The complainant and the accused cannot be the same person.',
             ]);
         }
 
@@ -248,6 +294,8 @@ class BlotterController extends Controller
             : [];
 
         return [
+            // Capped dropdown source: the form needs id/name/contact columns
+            // for the options and autofill only, never the whole registry.
             'residents' => Resident::withTrashed()
                 ->where(function ($query) use ($currentResidentIds) {
                     $query->where('status', 'Active')->whereNull('deleted_at');
@@ -257,6 +305,7 @@ class BlotterController extends Controller
                 })
                 ->orderBy('last_name')
                 ->orderBy('first_name')
+                ->limit(1000)
                 ->get(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'address', 'phone_number', 'status', 'deleted_at']),
             'officials' => Official::active()
                 ->orderBy('last_name')

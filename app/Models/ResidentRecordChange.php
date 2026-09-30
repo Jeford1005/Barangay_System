@@ -20,13 +20,16 @@ class ResidentRecordChange extends Model
     ];
 
     protected $casts = [
+        'resident_id' => 'integer',
+        'requested_by' => 'integer',
+        'reviewed_by' => 'integer',
         'changes' => 'array',
         'reviewed_at' => 'datetime',
     ];
 
     public function resident()
     {
-        return $this->belongsTo(Resident::class);
+        return $this->belongsTo(Resident::class)->withTrashed();
     }
 
     public function requester()

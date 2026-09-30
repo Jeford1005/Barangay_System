@@ -13,9 +13,13 @@ return [
     | framework. This connection is utilized if another isn't explicitly
     | specified when running a cache operation inside the application.
     |
+    | "file" needs no worker process or extra tables, which makes it the
+    | correct local default. Hosts with the cache tables (or redis) should
+    | set CACHE_STORE=database (or redis) explicitly.
+    |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => env('CACHE_STORE', 'file'),
 
     /*
     |--------------------------------------------------------------------------
