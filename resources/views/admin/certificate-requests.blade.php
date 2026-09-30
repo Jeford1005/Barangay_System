@@ -13,14 +13,14 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <label for="certificate-request-status" class="sr-only">Filter certificate requests by status</label>
                     <select id="certificate-request-status" name="status" onchange="this.form.submit()"
-                        class="w-full min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56">
+                        class="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 sm:w-56">
                         @foreach (['' => 'Pending + reviewed', 'Pending' => 'Pending', 'Approved' => 'Approved', 'Rejected' => 'Rejected', 'Cancelled' => 'Cancelled'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <noscript><button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
+                    <noscript><button type="submit" class="btn btn-neutral">Filter</button></noscript>
                     <div class="no-print flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 pt-3 sm:ml-auto sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-                        <a href="{{ route('certificates.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Issued certificates →</a>
+                        <a href="{{ route('certificates.index') }}" class="btn btn-outline">Issued certificates →</a>
                     </div>
                 </div>
             </form>
@@ -77,23 +77,23 @@
                                                     @csrf
                                                     <label for="certificate-fee-{{ $req->id }}" class="sr-only">Optional fee for {{ $req->document?->title }}</label>
                                                     <input id="certificate-fee-{{ $req->id }}" type="number" name="fee" value="{{ old('fee') }}" placeholder="{{ number_format((float) $req->document?->fee ?? 0, 2) }}" min="0" max="9999" step="0.01" inputmode="decimal"
-                                                        class="w-28 min-h-11 rounded-md border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
-                                                    <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                                        class="w-28 min-h-11 rounded-lg border border-slate-300 px-2 py-1.5 text-xs" title="Optional: adjust or waive the fee (blank = standard)">
+                                                    <button type="submit" class="btn btn-outline-success">
                                                         Approve
                                                     </button>
                                                 </form>
                                                 <details class="relative inline-block text-left">
-                                                    <summary class="inline-flex items-center justify-center min-h-11 cursor-pointer rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 list-none">Reject…</summary>
+                                                    <summary class="btn btn-outline-danger list-none">Reject…</summary>
                                                     <div class="relative z-10 mt-2 w-72 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-lg">
                                                         <form method="POST" action="{{ route('admin.certificate-requests.reject', $req) }}">
                                                             @csrf
                                                             <label for="certificate-rejection-{{ $req->id }}" class="block text-xs font-medium text-slate-600 mb-1">Reason (sent to the resident by email)</label>
                                                             <textarea id="certificate-rejection-{{ $req->id }}" name="rejection_reason" required rows="3" maxlength="1000" placeholder="e.g. Requires a barangay hearing first"
-                                                                class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs">{{ old('rejection_reason') }}</textarea>
+                                                                class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">{{ old('rejection_reason') }}</textarea>
                                                             @error('rejection_reason')
                                                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                                                             @enderror
-                                                            <button type="submit" class="mt-2 min-h-11 w-full rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                                                            <button type="submit" class="btn btn-danger mt-2 w-full">
                                                                 Reject & notify
                                                             </button>
                                                         </form>
@@ -101,7 +101,7 @@
                                                 </details>
                                             </div>
                                         @elseif ($req->status === 'Approved' && $req->issuance)
-                                            <a href="{{ route('certificates.print', $req->issuance) }}" class="inline-flex items-center justify-center min-h-11 rounded-md border border-sky-200 bg-white px-3 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                            <a href="{{ route('certificates.print', $req->issuance) }}" class="btn btn-outline">
                                                 Reprint
                                             </a>
                                         @else

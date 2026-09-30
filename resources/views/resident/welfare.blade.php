@@ -30,7 +30,7 @@
                 <x-form.field name="remarks" label="Why you need this (optional)" type="textarea" :rows="3" maxlength="1000" :value="old('remarks')" />
             </div>
             <div class="sm:col-span-2 flex justify-end">
-                <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Submit request</button>
+                <button type="submit" class="btn btn-primary">Submit request</button>
             </div>
         </form>
     </section>

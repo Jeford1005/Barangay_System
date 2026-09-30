@@ -57,7 +57,7 @@ $panelWidth = [
                         type="button"
                         data-dialog-close
                         aria-label="Close dialog"
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        class="btn btn-ghost btn-icon shrink-0"
                     >
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                     </button>

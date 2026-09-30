@@ -86,16 +86,16 @@
                     <button
                         type="button"
                         data-confirm-dialog-cancel
-                        class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
+                        class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-sm"
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
                         data-confirm-dialog-accept
-                        data-classes-danger="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
-                        data-classes-primary="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
-                        class="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
+                        data-classes-danger="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-md shadow-red-600/30"
+                        data-classes-primary="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-md shadow-sky-600/30"
+                        class="min-h-11 rounded-lg px-5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-md shadow-red-600/30"
                     >
                         Confirm
                     </button>

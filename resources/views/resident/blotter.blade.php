@@ -30,7 +30,7 @@
                 <x-form.field name="alleged_offense" label="What happened?" type="textarea" :rows="5" maxlength="2000" required :value="old('alleged_offense')" />
             </div>
             <div class="sm:col-span-2 flex justify-end">
-                <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Submit report</button>
+                <button type="submit" class="btn btn-primary">Submit report</button>
             </div>
         </form>
     </section>

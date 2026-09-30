@@ -2,10 +2,10 @@
 @section('page_header')
     <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory">
         <x-slot:actions>
-            <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline">
                 Account Approvals
                 @if ($pendingCount)
-                    <span class="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">{{ $pendingCount }}</span>
+                    <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">{{ $pendingCount }}</span>
                 @endif
             </a>
         </x-slot:actions>
@@ -42,10 +42,10 @@
                     <option value="suspended" @selected($status === 'suspended')>Suspended</option>
                 </select>
             </div>
-            <noscript><button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
+            <noscript><button type="submit" class="btn btn-neutral">Filter</button></noscript>
             <div class="flex shrink-0 items-center gap-2">
                 @if ($search !== '' || $role !== '' || $status !== '')
-                    <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Reset</a>
+                    <a href="{{ route('admin.users.index') }}" class="btn btn-neutral">Reset</a>
                 @endif
             </div>
             </div>
@@ -98,9 +98,9 @@
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $user->created_at?->format('M j, Y') }}</td>
                                 <td class="no-print px-4 py-3 text-right">
                                     @if ($user->status === 'pending' && $user->user_type === 'resident')
-                                        <a href="{{ route('admin.approvals.index') }}" class="inline-flex min-h-11 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Review</a>
+                                        <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline btn-row">Review</a>
                                     @else
-                                        <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-11 items-center rounded-md border border-sky-200 bg-white px-3 text-xs font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">View</a>
+                                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline btn-row">View</a>
                                     @endif
                                 </td>
                             </tr>

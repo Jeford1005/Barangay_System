@@ -2,7 +2,7 @@
 @section('page_header')
     <x-page-header title="Edit User Account" subtitle="{{ $user->email }}">
         <x-slot:actions>
-            <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">← Back to account</a>
+            <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline">← Back to account</a>
         </x-slot:actions>
     </x-page-header>
 @endsection

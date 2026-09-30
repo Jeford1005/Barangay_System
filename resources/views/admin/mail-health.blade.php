@@ -58,7 +58,7 @@
                         placeholder="recipient@example.com"
                         class="flex-1 min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
                     >
-                    <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                    <button type="submit" class="btn btn-primary">
                         Send Test Email
                     </button>
                 </form>

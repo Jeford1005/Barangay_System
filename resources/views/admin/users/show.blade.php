@@ -6,7 +6,7 @@
 @section('content')
 <div class="space-y-6">
     <div class="no-print flex flex-wrap items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <a href="{{ route('admin.users.index') }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">All accounts</a>
+        <a href="{{ route('admin.users.index') }}" class="btn btn-outline">All accounts</a>
         <x-primary-action variant="update" :href="route('admin.users.edit', $user)">Edit details</x-primary-action>
     </div>
     @if ($errors->any())
@@ -106,7 +106,7 @@
                 </dl>
                 <form method="POST" action="{{ route('admin.users.resident-unlink', $user) }}" class="mt-5 border-t border-slate-200 pt-4" data-confirm="Unlink this resident profile and suspend the account?" data-confirm-title="Unlink resident profile" data-confirm-accept="Unlink" data-confirm-icon="x-mark">
                     @csrf
-                    <button type="submit" class="min-h-11 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500">Unlink and suspend account</button>
+                    <button type="submit" class="btn btn-outline-danger">Unlink and suspend account</button>
                 </form>
             @else
                 <p class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">No resident profile is linked to this account.</p>
@@ -124,7 +124,7 @@
                     <p class="mt-1 text-sky-800">{{ $user->residentApplication->first_name }} {{ $user->residentApplication->last_name }} · {{ optional($user->residentApplication->birth_date)->format('M j, Y') }}</p>
                     <form method="POST" action="{{ route('admin.users.resident-profile-from-application', $user) }}" class="mt-3">
                         @csrf
-                        <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Create profile from application</button>
+                        <button type="submit" class="btn btn-primary">Create profile from application</button>
                     </form>
                 </div>
             @endif
@@ -145,7 +145,7 @@
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
-                <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Save resident link</button>
+                <button type="submit" class="btn btn-primary">Save resident link</button>
             </form>
         </section>
     @endif
@@ -180,7 +180,7 @@
                             <option value="official" @selected($user->user_type === 'official')>Official</option>
                             <option value="resident" @selected($user->user_type === 'resident')>Resident</option>
                         </select>
-                        <button type="submit" class="min-h-11 rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Update role</button>
+                        <button type="submit" class="btn btn-outline-success">Update role</button>
                     </form>
                 @endif
             </div>
@@ -191,7 +191,7 @@
                     <p class="mt-2 text-sm text-slate-500">This account is suspended and cannot sign in or request a reset code.</p>
                     <form method="POST" action="{{ route('admin.users.reactivate', $user) }}" class="mt-3" data-confirm="Reactivate this account?" data-confirm-title="Reactivate account" data-confirm-accept="Reactivate" data-confirm-icon="check-circle" data-confirm-tone="primary">
                         @csrf
-                        <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">Reactivate account</button>
+                        <button type="submit" class="btn btn-primary">Reactivate account</button>
                     </form>
                 @elseif ($user->id === auth()->id())
                     <p class="mt-2 text-sm text-slate-500">You cannot suspend your own account.</p>
@@ -205,7 +205,7 @@
                         @error('reason')
                             <p class="text-xs text-red-600">{{ $message }}</p>
                         @enderror
-                        <button type="submit" class="min-h-11 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500">Suspend account</button>
+                        <button type="submit" class="btn btn-outline-danger">Suspend account</button>
                     </form>
                 @endif
             </div>
@@ -220,7 +220,7 @@
                     <p class="mt-2 text-sm text-slate-500">A one-time six-character code will be emailed to this account. The code is never shown here.</p>
                     <form method="POST" action="{{ route('admin.users.reset', $user) }}" class="mt-3" data-confirm="Send a password reset code to this account?" data-confirm-title="Send reset code" data-confirm-accept="Send code" data-confirm-icon="envelope" data-confirm-tone="primary">
                         @csrf
-                        <button type="submit" class="min-h-11 rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Send reset code</button>
+                        <button type="submit" class="btn btn-outline">Send reset code</button>
                     </form>
                 @endif
             </div>

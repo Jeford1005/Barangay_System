@@ -116,20 +116,20 @@
             <h3 class="text-sm font-semibold text-slate-900">Quick Actions</h3>
         </div>
         <div class="p-6 grid grid-cols-1 gap-4 {{ auth()->user()?->isAdmin() ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3' }}">
-            <a href="{{ route('residents.index') }}?open=resident" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <a href="{{ route('residents.index') }}?open=resident" class="btn btn-outline w-full justify-start">
                 <x-icon name="user-plus" class="h-4 w-4 text-sky-600" />
                 Register a resident
             </a>
-            <a href="{{ route('households.index') }}?open=household" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <a href="{{ route('households.index') }}?open=household" class="btn btn-outline w-full justify-start">
                 <x-icon name="households" class="h-4 w-4 text-sky-600" />
                 Add a household
             </a>
-            <a href="{{ route('certificates.index') }}?open=certificate" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
+            <a href="{{ route('certificates.index') }}?open=certificate" class="btn btn-outline w-full justify-start">
                 <x-icon name="document-text" class="h-4 w-4 text-sky-600" />
                 Issue a certificate
             </a>
             @if (auth()->user()?->isAdmin())
-                <a href="{{ route('puroks.index') }}?open=purok" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                <a href="{{ route('puroks.index') }}?open=purok" class="btn btn-outline w-full justify-start">
                     <x-icon name="plus" class="h-4 w-4 text-sky-600" />
                     Add a purok
                 </a>

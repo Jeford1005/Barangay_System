@@ -41,8 +41,8 @@
                     @endforeach
                 </select>
                 <div class="flex gap-2">
-                    <noscript><button type="submit" class="inline-flex flex-1 items-center justify-center min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Filter</button></noscript>
-                    <a href="{{ route('admin.audit-logs.index') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">
+                    <noscript><button type="submit" class="btn btn-neutral flex-1">Filter</button></noscript>
+                    <a href="{{ route('admin.audit-logs.index') }}" class="btn btn-neutral">
                         Reset
                     </a>
                 </div>

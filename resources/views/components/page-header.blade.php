@@ -27,7 +27,7 @@
                  Absent in embed mode — the settings dialog's iframe has no drawer. --}}
             @unless (request()->boolean('embed'))
             <button type="button" id="sidebar-toggle"
-                class="lg:hidden inline-flex items-center justify-center min-h-11 min-w-11 -ml-2 rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                class="lg:hidden btn btn-ghost btn-icon -ml-2"
                 aria-expanded="false" aria-controls="sidebar" onclick="toggleSidebar()">
                 <span class="sr-only">Toggle navigation</span>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>

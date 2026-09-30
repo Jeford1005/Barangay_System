@@ -38,7 +38,7 @@
                     </div>
                     <div class="flex min-w-0 items-center justify-end gap-2">
                         @if (auth()->user()?->isAdmin())
-                         <a href="{{ route('admin.exports.certificates', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
+                         <a href="{{ route('admin.exports.certificates', request()->query()) }}" class="btn btn-outline"><x-icon name="arrow-down-tray" class="h-4 w-4" /> Export</a>
                          @endif
                         @if (auth()->user()?->hasPermission('certificates.issue'))
                          <x-primary-action :href="route('certificates.create')" compact data-dialog-open="certificate-dialog">
@@ -104,8 +104,8 @@
                                         @endif
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
-                                        <div class="inline-flex items-center gap-1">
-                                            <a href="{{ route('certificates.print', $issuance) }}" class="inline-flex items-center justify-center min-h-11 min-w-9 rounded-md border border-sky-200 bg-white text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 {{ auth()->user()?->hasPermission('certificates.issue') ? '' : 'hidden' }}" title="Print certificate">
+                                        <div class="inline-flex items-center gap-2">
+                                            <a href="{{ route('certificates.print', $issuance) }}" class="btn btn-outline btn-icon {{ auth()->user()?->hasPermission('certificates.issue') ? '' : 'hidden' }}" title="Print certificate">
                                                 <x-icon name="printer" class="h-4 w-4" />
                                                 <span class="sr-only">Print {{ e($issuance->control_number) }}</span>
                                             </a>
@@ -115,7 +115,7 @@
                                                     data-confirm-title="Void certificate"
                                                     data-confirm-accept="Void" data-confirm-icon="x-circle">
                                                     @csrf
-                                                    <button type="submit" class="inline-flex items-center justify-center min-h-11 min-w-9 rounded-md border border-red-200 bg-white text-red-600 hover:bg-red-50" title="Void certificate">
+                                                    <button type="submit" class="btn btn-outline-danger btn-icon" title="Void certificate">
                                                         <x-icon name="x-mark" class="h-4 w-4" />
                                                         <span class="sr-only">Void {{ e($issuance->control_number) }}</span>
                                                     </button>

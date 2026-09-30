@@ -190,7 +190,7 @@
                         </div>
 
                         <button type="submit"
-                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                            class="btn btn-primary w-full">
                             Submit Application
                         </button>
                     </form>

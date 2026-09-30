@@ -2,7 +2,7 @@
 @section('page_header')
     <x-page-header title="Analytics" subtitle="Live at-a-glance statistics across all barangay modules.">
         <x-slot:actions>
-            <a href="{{ route('reports.index') }}" class="inline-flex min-h-11 items-center px-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Printable reports →</a>
+            <a href="{{ route('reports.index') }}" class="btn btn-outline">Printable reports →</a>
         </x-slot:actions>
     </x-page-header>
 @endsection

@@ -20,7 +20,7 @@
     </div>
 
     <div class="flex justify-end gap-2">
-        <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Cancel</a>
-        <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">Save changes</button>
+        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-neutral">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save changes</button>
     </div>
 </form>

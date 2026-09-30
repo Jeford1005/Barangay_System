@@ -85,7 +85,7 @@
                             type="submit"
                             id="send-code-btn"
                             @if ($cooldownSeconds > 0) disabled aria-disabled="true" @endif
-                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                            class="btn btn-primary w-full disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             @if ($cooldownSeconds > 0)
                                 Wait {{ $cooldownSeconds }}s to resend

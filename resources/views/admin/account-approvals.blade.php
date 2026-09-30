@@ -103,7 +103,7 @@
                             <form method="POST" action="{{ route('admin.approvals.approve', $applicant) }}">
                                 @csrf
                                 <button type="submit"
-                                    class="w-full min-h-11 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                                    class="w-full btn btn-primary">
                                     Approve
                                 </button>
                             </form>
@@ -114,7 +114,7 @@
                                 data-confirm-tone="primary">
                                 @csrf
                                 <button type="submit"
-                                    class="w-full min-h-11 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                    class="w-full btn btn-outline-danger">
                                     Reject
                                 </button>
                                 <label for="rejection-reason-{{ $applicant->id }}" class="sr-only">Reason for rejecting {{ $applicant->name }}</label>

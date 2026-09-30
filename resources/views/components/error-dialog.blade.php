@@ -71,14 +71,14 @@
                     <button
                         type="button"
                         data-error-dialog-cancel
-                        class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
+                        class="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-sm"
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
                         data-error-dialog-action
-                        class="min-h-11 rounded-lg bg-red-50 px-4 text-sm font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98]"
+                        class="min-h-11 rounded-lg bg-red-50 px-4 text-sm font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-sm"
                     >
                         Retry
                     </button>

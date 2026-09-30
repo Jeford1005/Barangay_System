@@ -433,6 +433,199 @@
 }
 
 /* ------------------------------------------------------------------
+   Button system - one family for every action control, so height,
+   width, weight and rounding stop drifting between pages. Every .btn
+   is exactly 44px tall (NFR6), rounded-lg (design lock), semibold 14px
+   with a sky focus ring and a 1px press offset. Colour carries meaning
+   and nothing else: sky = primary, slate = neutral (edit/cancel),
+   red = destructive, emerald = approve, amber = archive. Row actions
+   add a fixed 96px minimum (.btn-row) so the ACTIONS column reads as
+   an aligned grid instead of a ragged text run sized by label length.
+   Kept in the components layer so call-site utilities (hidden, w-full,
+   disabled:*, mt-*) still win over it. */
+@layer components {
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 2.75rem;
+        padding-inline: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        text-decoration: none;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease,
+            color 0.15s ease,
+            box-shadow 0.15s ease,
+            transform 0.1s ease;
+    }
+
+    .btn:focus-visible {
+        outline: none;
+        box-shadow:
+            0 0 0 2px #ffffff,
+            0 0 0 4px #0284c7;
+    }
+
+    .btn:active:not(:disabled) {
+        transform: translateY(1px);
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Filled: the design lock's primary colour, lifted with a soft
+       coloured shadow and a hairline top highlight instead of sitting
+       flat on the card. */
+    .btn-primary {
+        background-color: #0284c7;
+        color: #ffffff;
+        box-shadow:
+            0 1px 2px rgba(14, 116, 144, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .btn-primary:hover {
+        background-color: #0369a1;
+        box-shadow:
+            0 4px 10px rgba(2, 132, 199, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .btn-primary:active {
+        background-color: #075985;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+    }
+
+    .btn-danger {
+        background-color: #dc2626;
+        color: #ffffff;
+        box-shadow:
+            0 1px 2px rgba(185, 28, 28, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .btn-danger:hover {
+        background-color: #b91c1c;
+        box-shadow:
+            0 4px 10px rgba(220, 38, 38, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .btn-danger:active {
+        background-color: #991b1b;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Outlines: white body, a deeper border than before, and a resting
+       shadow so the control reads as a control rather than plain text. */
+    .btn-outline {
+        background-color: #ffffff;
+        border-color: #7dd3fc;
+        color: #0369a1;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-outline:hover {
+        background-color: #f0f9ff;
+        border-color: #38bdf8;
+        box-shadow: 0 3px 8px rgba(2, 132, 199, 0.16);
+    }
+
+    .btn-outline:active {
+        background-color: #e0f2fe;
+    }
+
+    .btn-neutral {
+        background-color: #ffffff;
+        border-color: #cbd5e1;
+        color: #334155;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-neutral:hover {
+        background-color: #f8fafc;
+        border-color: #94a3b8;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+    }
+
+    .btn-neutral:active {
+        background-color: #f1f5f9;
+    }
+
+    .btn-outline-danger {
+        background-color: #ffffff;
+        border-color: #fca5a5;
+        color: #dc2626;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #fef2f2;
+        border-color: #f87171;
+        box-shadow: 0 3px 8px rgba(220, 38, 38, 0.16);
+    }
+
+    .btn-outline-success {
+        background-color: #ffffff;
+        border-color: #6ee7b7;
+        color: #047857;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-outline-success:hover {
+        background-color: #ecfdf5;
+        border-color: #34d399;
+        box-shadow: 0 3px 8px rgba(5, 150, 105, 0.16);
+    }
+
+    .btn-outline-warning {
+        background-color: #ffffff;
+        border-color: #fcd34d;
+        color: #b45309;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+    }
+
+    .btn-outline-warning:hover {
+        background-color: #fffbeb;
+        border-color: #fbbf24;
+        box-shadow: 0 3px 8px rgba(180, 83, 9, 0.16);
+    }
+
+    .btn-ghost {
+        background-color: transparent;
+        border-color: transparent;
+        color: #475569;
+    }
+
+    .btn-ghost:hover {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
+
+    /* Row actions share one width; icon-only buttons stay square-ish. */
+    .btn-row {
+        padding-inline: 0.75rem;
+        min-width: 6rem;
+    }
+
+    .btn-icon {
+        width: 2.75rem;
+        min-width: 2.75rem;
+        padding-inline: 0;
+    }
+}
+
+/* ------------------------------------------------------------------
    Module list toolbars
    ------------------------------------------------------------------ */
 .module-toolbar-filters {

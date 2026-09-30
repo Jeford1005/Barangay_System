@@ -46,7 +46,7 @@
                     @error('copies') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <button type="submit"
-                    class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                    class="btn btn-primary w-full">
                     Submit Request
                 </button>
                 <p class="text-xs text-slate-500">One pending request per certificate type. The fee, if any, is paid when you claim the certificate at the barangay hall.</p>
@@ -109,7 +109,7 @@
                                             data-confirm-dismiss="Keep"
                                             data-confirm-icon="x-mark">
                                             @csrf
-                                            <button type="submit" class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Cancel request</button>
+                                            <button type="submit" class="btn btn-outline-danger">Cancel request</button>
                                         </form>
                                     @endif
                                 </div>

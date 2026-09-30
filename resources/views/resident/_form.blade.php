@@ -32,7 +32,7 @@
             @if ($resident?->photo)
                 <img src="{{ route('residents.photo', $resident) }}" alt="Current resident photo" class="mb-2 h-16 w-16 rounded-full object-cover">
             @endif
-            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
+            <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
             @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
     </div>

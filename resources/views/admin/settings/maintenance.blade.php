@@ -55,7 +55,7 @@
             </div>
             <form method="POST" action="{{ route('admin.settings.backups.store') }}">
                 @csrf
-                <button type="submit" class="min-h-11 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">Create backup</button>
+                <button type="submit" class="btn btn-primary">Create backup</button>
             </form>
         </div>
 

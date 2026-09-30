@@ -54,7 +54,7 @@
                         <button
                             type="submit"
                             id="forgot-send-btn"
-                            class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                            class="btn btn-primary w-full disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             Send Reset Code
                         </button>
@@ -152,7 +152,7 @@
                         <button
                             type="submit"
                             id="forgot-reset-btn"
-                            class="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500"
+                            class="btn btn-primary w-full disabled:bg-slate-300 disabled:text-slate-500"
                         >
                             Reset Password
                         </button>
@@ -176,7 +176,7 @@
                     <button
                         type="button"
                         id="forgot-done-btn"
-                        class="mt-6 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+                        class="mt-6 btn btn-primary w-full"
                     >
                         Back to sign in
                     </button>

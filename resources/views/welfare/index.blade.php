@@ -37,7 +37,7 @@
                     </div>
                     <div class="flex min-w-0 items-center justify-end gap-2">
                         @if (auth()->user()?->isAdmin())
-                         <a href="{{ route('admin.exports.welfare', request()->query()) }}" class="inline-flex min-h-11 items-center rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600"><x-icon name="arrow-down-tray" class="mr-1 h-4 w-4" /> Export</a>
+                         <a href="{{ route('admin.exports.welfare', request()->query()) }}" class="btn btn-outline"><x-icon name="arrow-down-tray" class="h-4 w-4" /> Export</a>
                          @endif
                         @if (auth()->user()?->hasPermission('welfare.intake'))
                          <x-primary-action :href="route('welfare.create')" compact data-dialog-open="welfare-dialog">
@@ -111,9 +111,9 @@
                                         </span>
                                     </td>
                                     <td class="no-print px-3 sm:px-6 py-2 whitespace-nowrap text-right text-sm font-medium">
-                                        <span class="inline-flex items-center justify-end gap-1 min-h-11">
+                                        <span class="inline-flex items-center justify-end gap-2">
                                             <a href="{{ route('welfare.edit', $welfare->id) }}" data-dialog-open="welfare-dialog" data-fetch-url="{{ route('welfare.edit', $welfare->id) }}" data-fetch-mode="edit"
-                                                class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 {{ auth()->user()?->hasPermission('welfare.approve') ? '' : 'hidden' }}">
+                                                class="btn btn-neutral btn-row {{ auth()->user()?->hasPermission('welfare.approve') ? '' : 'hidden' }}">
                                                 Edit
                                             </a>
                                             <form action="{{ route('welfare.destroy', $welfare->id) }}" method="POST" class="inline {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}"
@@ -122,7 +122,7 @@
                                                 data-confirm-accept="Delete" data-confirm-icon="trash">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 px-3 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 active:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-row {{ auth()->user()?->isAdmin() ? '' : 'hidden' }}">
                                                     Delete
                                                 </button>
                                             </form>

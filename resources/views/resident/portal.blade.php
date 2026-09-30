@@ -19,7 +19,7 @@
                 {{-- Record edits are requested, never applied directly, so this
                      opens the correction form below rather than editing in place. --}}
                 <a href="{{ route('resident.portal', ['edit' => 1]) }}"
-                    class="inline-flex min-h-11 items-center rounded-lg border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600">Edit</a>
+                    class="btn btn-neutral">Edit</a>
             @endunless
         </div>
         <dl class="grid grid-cols-1 gap-x-6 gap-y-4 p-6 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -70,7 +70,7 @@
                     <h2 class="text-lg font-semibold text-slate-900">Request a profile correction</h2>
                     <p class="mt-1 max-w-2xl text-sm text-slate-600">Changes to your official record require barangay review. Your current record stays unchanged until staff approve the request.</p>
                 </div>
-                <a href="{{ route('resident.portal') }}" class="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-400">Cancel</a>
+                <a href="{{ route('resident.portal') }}" class="btn btn-neutral">Cancel</a>
             </div>
 
             {{-- Field errors render inside x-form.field, so only the
@@ -90,7 +90,7 @@
                     <x-form.field name="notes" label="Notes for staff (optional)" type="textarea" :rows="3" maxlength="1000" :value="old('notes')" />
                 </div>
                 <div class="sm:col-span-2 flex justify-end">
-                    <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600">Submit correction request</button>
+                    <button type="submit" class="btn btn-primary">Submit correction request</button>
                 </div>
             </form>
         </section>
@@ -115,7 +115,7 @@
                                 @if ($change->status === 'Pending')
                                     <form method="POST" action="{{ route('resident.changes.cancel', $change) }}" data-confirm="Cancel this request?" data-confirm-title="Cancel request" data-confirm-accept="Cancel" data-confirm-dismiss="Keep" data-confirm-icon="x-mark">
                                         @csrf
-                                        <button class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-red-700 underline hover:text-red-900" type="submit">Cancel</button>
+                                        <button class="btn btn-outline-danger btn-row" type="submit">Cancel</button>
                                     </form>
                                 @endif
                             </div>
@@ -160,10 +160,10 @@
                         <div class="mb-2 flex items-center gap-3">
                             <img src="{{ route('resident.photo') }}" alt="Current profile photo" class="h-16 w-16 rounded-full object-cover">
                             <button type="submit" form="remove-photo-form"
-                                class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-red-600 underline hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">Remove</button>
+                                class="btn btn-outline-danger">Remove</button>
                         </div>
                     @endif
-                    <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
+                    <input id="photo" type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-file-max-kb="2048" class="block min-h-11 w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-sky-700 hover:file:bg-sky-100">
                     @error('photo') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -194,7 +194,7 @@
                     </div>
                 </div>
                 <button type="submit"
-                    class="min-h-11 w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+                    class="btn btn-primary w-full">
                     Save Changes
                 </button>
             </form>

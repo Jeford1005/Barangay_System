@@ -23,13 +23,13 @@
             <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-col gap-2 sm:flex-row">
                 <label for="archive-search" class="sr-only">Search archived {{ strtolower($types[$type]['label']) }}</label>
                 <input id="archive-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search archived {{ strtolower($types[$type]['label']) }}…"
-                    class="flex-1 min-h-11 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
-                <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                    <x-icon name="funnel" class="mr-2 h-4 w-4 text-slate-500" />
+                    class="flex-1 min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                <button type="submit" class="btn btn-neutral">
+                    <x-icon name="funnel" class="h-4 w-4 text-slate-500" />
                     Search
                 </button>
                 @if (request('search'))
-                    <a href="{{ route('archive.type', $type) }}" class="inline-flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-sm text-slate-500 hover:text-slate-800">Clear</a>
+                    <a href="{{ route('archive.type', $type) }}" class="btn btn-ghost">Clear</a>
                 @endif
             </form>
 
@@ -79,7 +79,7 @@
                                         <div class="inline-flex items-center gap-1">
                                             <form method="POST" action="{{ route('archive.restore', ['type' => $type, 'id' => $record->id]) }}">
                                                 @csrf
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-sky-600" title="Restore this record">
+                                                <button type="submit" class="btn btn-outline-success btn-row" title="Restore this record">
                                                     Restore
                                                 </button>
                                             </form>
@@ -89,7 +89,7 @@
                                                 data-confirm-accept="Delete" data-confirm-icon="trash">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex items-center justify-center min-h-11 rounded-md border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50" title="Delete permanently">
+                                                <button type="submit" class="btn btn-outline-danger btn-row" title="Delete permanently">
                                                     Delete forever
                                                 </button>
                                             </form>

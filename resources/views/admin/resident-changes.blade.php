@@ -21,7 +21,7 @@
                     <option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>
                 @endforeach
             </select>
-            <noscript><button class="min-h-11 rounded-lg border border-slate-300 px-3 text-sm" type="submit">Filter</button></noscript>
+            <noscript><button class="btn btn-neutral" type="submit">Filter</button></noscript>
         </form>
         <span class="text-sm text-slate-500">{{ $changes->total() }} request{{ $changes->total() === 1 ? '' : 's' }}</span>
     </div>
@@ -56,13 +56,13 @@
                                 <div class="mt-3 flex max-w-xs flex-col gap-2">
                                     <form method="POST" action="{{ route('admin.resident-changes.approve', $change) }}" class="flex gap-2">
                                         @csrf
-                                        <input name="review_note" maxlength="1000" placeholder="Approval note (optional)" class="min-h-11 min-w-0 flex-1 rounded border-slate-300 text-xs focus:border-emerald-500 focus:ring-sky-600">
-                                        <button type="submit" class="min-h-11 rounded-md bg-sky-600 px-3 text-xs font-semibold text-white hover:bg-sky-700">Approve</button>
+                                        <input name="review_note" maxlength="1000" placeholder="Approval note (optional)" class="min-h-11 min-w-0 flex-1 rounded-lg border-slate-300 text-xs focus:border-emerald-500 focus:ring-sky-600">
+                                        <button type="submit" class="btn btn-primary btn-row">Approve</button>
                                     </form>
                                     <form method="POST" action="{{ route('admin.resident-changes.reject', $change) }}" class="flex gap-2">
                                         @csrf
-                                        <input name="review_note" required maxlength="1000" placeholder="Reason required" class="min-h-11 min-w-0 flex-1 rounded border-slate-300 text-xs focus:border-red-500 focus:ring-red-500">
-                                        <button type="submit" class="min-h-11 rounded-md bg-red-600 px-3 text-xs font-semibold text-white hover:bg-red-700">Reject</button>
+                                        <input name="review_note" required maxlength="1000" placeholder="Reason required" class="min-h-11 min-w-0 flex-1 rounded-lg border-slate-300 text-xs focus:border-red-500 focus:ring-red-500">
+                                        <button type="submit" class="btn btn-danger btn-row">Reject</button>
                                     </form>
                                 </div>
                             @endif
