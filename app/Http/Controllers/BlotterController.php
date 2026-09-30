@@ -152,21 +152,24 @@ class BlotterController extends Controller
 
     /**
      * The next case number in the barangay's BLTR-YYYY-#### sequence.
-     * Takes a shared lock on the matching rows — call it inside a
-     * transaction so concurrent clerks can't collide.
+     * The max() read and the counter reservation run in one transaction
+     * so concurrent clerks serialize on the counter row (same pattern as
+     * certificate control numbers) instead of colliding.
      */
     public static function getNextCaseNumber(): string
     {
         $year = now()->format('Y');
         $prefix = "BLTR-{$year}-";
 
-        $max = DB::table('blotter')
-            ->where('case_number', 'like', $prefix.'%')
-            ->max('case_number');
-        $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
-        $next = app(SequenceCounter::class)->reserve('blotter', (int) $year, $currentMaximum);
+        return DB::transaction(function () use ($year, $prefix) {
+            $max = DB::table('blotter')
+                ->where('case_number', 'like', $prefix.'%')
+                ->max('case_number');
+            $currentMaximum = $max ? (int) substr($max, strlen($prefix)) : 0;
+            $next = app(SequenceCounter::class)->reserve('blotter', (int) $year, $currentMaximum);
 
-        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+            return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        }, 3);
     }
 
     /**
