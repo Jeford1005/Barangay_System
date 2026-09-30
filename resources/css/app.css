@@ -948,6 +948,10 @@
         position: static !important;
     }
 
+    .table-scroll thead {
+        position: static !important;
+    }
+
     thead th,
     tbody td {
         border: 0.5pt solid #444 !important;

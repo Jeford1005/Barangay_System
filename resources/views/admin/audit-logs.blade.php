@@ -115,7 +115,7 @@
                 <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200 audit-table">
                         <caption class="sr-only">System audit log entries</caption>
-                        <thead class="bg-slate-50">
+                        <thead class="sticky top-0 z-10 bg-slate-50">
                             <tr>
                                 <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">When</th>
                                 <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>

@@ -48,7 +48,7 @@
                 <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Archived records awaiting restore or permanent deletion</caption>
-                        <thead class="bg-slate-50">
+                        <thead class="sticky top-0 z-10 bg-slate-50">
                             <tr>
                                 <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Record</th>
                                 <th scope="col" class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
@@ -107,7 +107,7 @@
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-outline-danger btn-row" title="Delete permanently">
-                                                    Delete forever
+                                                    Delete
                                                 </button>
                                             </form>
                                             @endif

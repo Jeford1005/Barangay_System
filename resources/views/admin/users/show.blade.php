@@ -251,7 +251,7 @@
             <div class="table-scroll">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">Audit history for {{ $user->email }}</caption>
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                             <th scope="col" class="px-4 py-3 font-medium">Event</th>
                             <th scope="col" class="px-4 py-3 font-medium">Actor</th>
