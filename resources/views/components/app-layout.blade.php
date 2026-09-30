@@ -109,7 +109,7 @@
                              bare form card (no app chrome). The card includes its own <form>. --}}
                         <div class="p-1" data-crud-fragment>{{ $slot }}@yield('content')</div>
                     @else
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12 w-full">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6 w-full">
                             {{ $slot }}
                             @yield('content')
                         </div>

@@ -248,7 +248,7 @@
         @if ($auditLogs->isEmpty())
             <p class="px-5 py-8 text-center text-sm text-slate-500">No audit events are recorded for this account yet.</p>
         @else
-            <div class="overflow-x-auto">
+            <div class="table-scroll">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">Audit history for {{ $user->email }}</caption>
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -265,7 +265,9 @@
                                 $properties = $entry->properties ?? [];
                             @endphp
                             <tr>
-                                <td class="px-4 py-3 font-medium text-slate-800">{{ $entry->event_label }}</td>
+                                <td class="px-4 py-3 font-medium text-slate-800">{{ $entry->event_label }}
+                                    <span class="mt-1 block text-xs font-normal text-slate-500 md:hidden">{{ $entry->occurred_at?->format('M j, Y g:i A') ?? '—' }}</span>
+                                </td>
                                 <td class="px-4 py-3 text-slate-600">{{ $entry->actor_email ?? data_get($properties, 'actor_email') ?? (($entry->actor_type ?? 'guest') === 'guest' ? 'Guest' : 'System') }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $entry->occurred_at?->format('M j, Y g:i A') }}</td>
                                 <td class="px-4 py-3 text-xs text-slate-500">

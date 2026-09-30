@@ -32,7 +32,7 @@
         </form>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="min-w-[900px] divide-y divide-slate-200">
             <caption class="sr-only">Resident correction requests</caption>
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">

@@ -19,7 +19,7 @@
     </div>
 
     <div class="grid gap-5 lg:grid-cols-[1fr_20rem]">
-        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-[800px] divide-y divide-slate-200 text-sm">
                 <caption class="sr-only">Certificate document catalog</caption>
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th scope="col" class="px-4 py-3">Code</th><th scope="col" class="px-4 py-3">Title</th><th scope="col" class="px-4 py-3">Type</th><th scope="col" class="px-4 py-3">Fee</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Issued</th><th scope="col" class="no-print px-4 py-3 text-right">Actions</th></tr></thead>

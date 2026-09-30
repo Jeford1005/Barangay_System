@@ -39,7 +39,7 @@
                     @endif
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Purok list</caption>
                         <thead class="bg-slate-50">

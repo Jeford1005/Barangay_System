@@ -59,7 +59,7 @@
                 <p class="mt-1 text-sm text-slate-500">Try clearing the filters or check the Account Approvals queue.</p>
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="table-scroll">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">User accounts</caption>
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -91,6 +91,7 @@
                                 <td class="px-4 py-3">
                                     <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:underline">{{ $user->name }}</a>
                                     <span class="block text-xs text-slate-500">{{ $user->email }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($user->residentProfile?->full_name ?? '—') }} &middot; {{ $user->created_at?->format('M j, Y') ?? '—' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-slate-700">{{ $user->roleLabel() }}</td>
                                 <td class="px-4 py-3">

@@ -730,6 +730,52 @@
     z-index: 10;
 }
 
+/* Short windows: shrink the table cap so the header, tabs, toolbar
+   and three rows still fit with no page scroll; longer lists scroll
+   inside the table body instead. */
+@media (max-height: 720px) {
+    .table-scroll {
+        max-height: 34vh;
+    }
+
+    /* The pagination footer below the scroll wrapper also tightens on
+       short windows so a long list leaves zero page scroll. */
+    .table-scroll + div {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+}
+
+/* Phones (<640px): reclaim ~90px so a short list fits the viewport with
+   no page scroll. Filters pair into two columns (search + actions span
+   full width, actions share the row 50/50); content padding and cell
+   padding tighten. Tap targets stay 44px — only whitespace shrinks. */
+@media (max-width: 639px) {
+    #content-scroll > div {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .module-toolbar--resident {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .module-toolbar--resident > :first-child,
+    .module-toolbar--resident > :nth-child(4),
+    .module-toolbar--resident > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .module-toolbar--resident > :last-child .btn {
+        flex: 1;
+    }
+
+    .table-scroll td {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+}
+
 @media (min-width: 640px) {
     .module-toolbar {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -883,6 +929,20 @@
         min-width: 0 !important;
         font-size: 10.5pt;
         border-collapse: collapse !important;
+    }
+
+    /* Screen-only scroll caps must never clip paper: tables print whole. */
+    .table-scroll {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .table-scroll table {
+        border-collapse: collapse !important;
+    }
+
+    .table-scroll thead th {
+        position: static !important;
     }
 
     thead th,

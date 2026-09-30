@@ -8,8 +8,8 @@
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
         <div class="p-6">
-            <!-- Tabs -->
-            <div class="flex flex-wrap gap-2 mb-4">
+            <!-- Tabs: single scroll-row on phones (module-tabs pattern), wrap on sm+ -->
+            <div class="flex flex-nowrap gap-2 mb-4 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                 @foreach ($types as $key => $meta)
                     <a href="{{ route('archive.type', $key) }}" @if($type === $key) aria-current="page" @endif
                         class="inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border {{ $type === $key ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">
@@ -19,11 +19,11 @@
                 @endforeach
             </div>
 
-            <!-- Search -->
-            <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-col gap-2 sm:flex-row">
+            <!-- Search: input + button share one row at every width -->
+            <form method="GET" action="{{ route('archive.type', $type) }}" class="mb-4 flex flex-row flex-wrap gap-2">
                 <label for="archive-search" class="sr-only">Search archived {{ strtolower($types[$type]['label']) }}</label>
                 <input id="archive-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search archived {{ strtolower($types[$type]['label']) }}…"
-                    class="flex-1 min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
+                    class="flex-1 min-w-0 min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
                 <button type="submit" class="btn btn-neutral">
                     <x-icon name="funnel" class="h-4 w-4 text-slate-500" />
                     Search
@@ -45,7 +45,7 @@
                     @endif
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Archived records awaiting restore or permanent deletion</caption>
                         <thead class="bg-slate-50">
@@ -71,6 +71,7 @@
                                             <span class="font-medium text-slate-900">{{ e($record->beneficiary_name) }}</span>
                                             <span class="block text-xs text-slate-500">{{ e($record->assistance_type) }} · ₱{{ number_format((float) $record->approved_amount, 2) }}</span>
                                         @endif
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">@if ($type === 'residents'){{ e($record->purok?->name ?? 'No purok') }}@if($record->address) &middot; {{ e(Str::limit($record->address, 40)) }}@endif@elseif ($type === 'households'){{ e($record->purok?->name ?? 'No purok') }} &middot; {{ $record->num_members ?? '—' }} member{{ (int) ($record->num_members ?? 0) === 1 ? '' : 's' }}@elseif ($type === 'blotter'){{ e($record->complaint_type ?? '—') }}@else{{ e($record->program_name ?? '—') }} &middot; {{ e($record->status ?? '—') }}@endif</span>
                                     </td>
                                     <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
                                         @if ($type === 'residents')

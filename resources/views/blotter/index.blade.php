@@ -48,7 +48,7 @@
                     </x-primary-action>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Blotter case records</caption>
                         <thead class="bg-slate-50">
@@ -70,6 +70,7 @@
                                         @if ($blotter->reported_by_resident)
                                             <span class="no-print ml-1 inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">Resident-reported</span>
                                         @endif
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($blotter->accused_name ?? '—') }} &middot; {{ e($blotter->complaint_type ?? '—') }} &middot; {{ $blotter->complaint_date?->format('M j, Y') ?? '—' }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($blotter->complainant_name) }}</span>

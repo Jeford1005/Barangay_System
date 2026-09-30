@@ -31,7 +31,7 @@
                     <p class="mt-2">No certificate requests{{ request('status') ? ' with this status' : ' yet' }}.</p>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Certificate requests awaiting review</caption>
                         <thead class="bg-slate-50">
@@ -52,6 +52,7 @@
                                         @if ($req->resident?->purok)
                                             <span class="block text-xs text-slate-500">{{ e($req->resident->purok->name) }}</span>
                                         @endif
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($req->document?->title ?? '—') }} &middot; {{ e($req->purpose ?? '—') }}</span>
                                     </td>
                                     <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                                         {{ e($req->document?->title) }}

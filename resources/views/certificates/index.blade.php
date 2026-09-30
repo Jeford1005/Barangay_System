@@ -62,7 +62,7 @@
                     @endif
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Issued certificates</caption>
                         <thead class="bg-slate-50">
@@ -81,6 +81,7 @@
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="font-medium text-slate-900">{{ e($issuance->control_number) }}</span>
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($issuance->document?->title ?? '—') }} &middot; {{ e($issuance->purpose ?? '—') }} &middot; {{ $issuance->created_at?->format('M j, Y') ?? '—' }}</span>
                                     </td>
                                     <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($issuance->document?->title) }}</span>

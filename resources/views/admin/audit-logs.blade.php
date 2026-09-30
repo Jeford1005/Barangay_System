@@ -112,7 +112,7 @@
                     @endif
                 </div>
             @else
-                <div class="overflow-x-auto">
+                <div class="table-scroll">
                     <table class="min-w-full divide-y divide-slate-200 audit-table">
                         <caption class="sr-only">System audit log entries</caption>
                         <thead class="bg-slate-50">
@@ -130,6 +130,7 @@
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-500" title="{{ $log->occurred_at->format('M j, Y g:i:s A') }}">
                                         {{ $log->occurred_at->format('M j, Y g:i A') }}
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($log->ip_address ?? '—') }} &middot; {{ e(\Illuminate\Support\Str::limit($log->user_agent ?? '—', 30)) }}</span>
                                     </td>
                                     <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
