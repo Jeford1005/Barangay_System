@@ -145,6 +145,12 @@ SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
 SESSION_PATH=/
 SESSION_DOMAIN=null
+# Required on any HTTPS production host — browsers drop the session cookie
+# without it. Keep HTTP_ONLY=true and SAME_SITE=lax unless you have a
+# cross-site reason to change them (see .env.example + config/session.php).
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
 
 BROADCAST_CONNECTION=log
 FILESYSTEM_DISK=local
@@ -217,6 +223,13 @@ php artisan config:clear && php artisan route:clear && php artisan view:clear
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
+> **File-store disk growth.** With `CACHE_STORE=file`, entries accumulate under
+> `storage/framework/cache/data`. The `cache:clear` in the deploy sequence above
+> prunes the stale files; if the host stays on the file driver long-term, repeat
+> `php artisan cache:clear` on each deploy so the directory does not grow
+> unbounded. (`SESSION_DRIVER`/`CACHE_STORE`/`QUEUE_CONNECTION` on `database`
+> avoid this entirely — see section 3.)
+
 Two things you do **not** need:
 
 - `php artisan storage:link` — resident photos live on the *private* `local` disk
@@ -243,6 +256,12 @@ the rest of the app — onto a free cPanel account with no terminal and no SSH.
 * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+> **Windows (XAMPP) alternative — no cron available.** Use Task Scheduler to run
+> the same command every minute (see README for the full snippet):
+> `schtasks /create /tn "BarangayApp schedule:run" /tr "php C:\path\to\app\artisan schedule:run" /sc minute /mo 1`.
+> Every job in `routes/console.php` carries `withoutOverlapping()->onOneServer()`,
+> so a slow run never double-fires when the next minute ticks over.
+
 What it runs, from `routes/console.php`:
 
 | Time | Task |
@@ -250,7 +269,7 @@ What it runs, from `routes/console.php`:
 | 02:00 daily | `data:quality-audit` — data integrity report |
 | 02:30 daily | `queue:prune-batches --hours=168` |
 | 03:00 daily | **Database backup job** |
-| 03:30 daily | `queue:prune --hours=24` |
+| 03:30 daily | `queue:prune-failed --hours=24` |
 | Hourly at :15 | `system:health --json` |
 
 Without cron, none of these run — no audit, no backups, and `failed_jobs`/`jobs` tables

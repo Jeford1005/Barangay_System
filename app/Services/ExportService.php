@@ -32,6 +32,14 @@ class ExportService
     /** Number of records held in memory at a time while streaming. */
     public const CHUNK_SIZE = 500;
 
+    /**
+     * Timezone used for every exported date/datetime cell.
+     *
+     * The application timezone may be UTC in some environments, so exports
+     * convert explicitly instead of relying on the runtime default.
+     */
+    private const EXPORT_TIMEZONE = 'Asia/Manila';
+
     /** @var array<string, string> */
     private const DATASET_FILENAMES = [
         'residents' => 'residents',
@@ -224,7 +232,7 @@ class ExportService
         $filename = sprintf(
             '%s-%s.csv',
             self::DATASET_FILENAMES[$dataset],
-            now()->format('Y-m-d'),
+            now(self::EXPORT_TIMEZONE)->format('Y-m-d'),
         );
 
         return response()->stream(function () use ($query, $dataset, $headers): void {
@@ -372,7 +380,8 @@ class ExportService
             $query->where('status', $status);
         }
 
-        return $query;
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
     private function householdsQuery(Request $request): Builder
@@ -390,7 +399,8 @@ class ExportService
             $query->where('purok_id', $request->integer('purok_id'));
         }
 
-        return $query;
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
     private function blotterQuery(Request $request): Builder
@@ -412,7 +422,8 @@ class ExportService
             $query->where('status', $status);
         }
 
-        return $query;
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
     private function welfareQuery(Request $request): Builder
@@ -434,7 +445,8 @@ class ExportService
             $query->where('assistance_type', $assistanceType);
         }
 
-        return $query;
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
     private function certificatesQuery(Request $request): Builder
@@ -463,7 +475,8 @@ class ExportService
             $query->where('document_id', $request->integer('document_id'));
         }
 
-        return $query;
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
     private function search(Request $request): ?string
@@ -640,7 +653,7 @@ class ExportService
             $blotter->complaint_type,
             $blotter->complaint_subtype,
             $this->date($blotter->complaint_date),
-            $this->date($blotter->complaint_time, 'H:i'),
+            $this->time($blotter->complaint_time),
             $blotter->alleged_offense,
             $blotter->status,
             $blotter->disposition,
@@ -707,18 +720,69 @@ class ExportService
         ];
     }
 
+    /**
+     * Format a calendar date/datetime cell in the export timezone.
+     *
+     * Date-only casts hydrate at midnight, so converting midnight UTC to
+     * Asia/Manila (+08:00, no DST) keeps the same calendar day while making
+     * the zone explicit when the runtime config is UTC.
+     */
     private function date(mixed $value, string $format = 'Y-m-d'): string
     {
         if ($value === null || $value === '') {
             return '';
         }
 
-        return $value instanceof DateTimeInterface ? $value->format($format) : (string) $value;
+        if ($value instanceof DateTimeInterface) {
+            return $this->inExportTimezone($value)->format($format);
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Format a TIME (wall-clock) cell with no timezone shift.
+     *
+     * TIME columns carry no zone information; converting them would invent
+     * an offset. Keep the stored wall-clock value and normalize `H:i:s`
+     * strings to `H:i`.
+     */
+    private function time(mixed $value, string $format = 'H:i'): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            return $value->format($format);
+        }
+
+        $text = trim((string) $value);
+
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $text, $matches) === 1) {
+            return sprintf('%02d:%02d', (int) $matches[1], (int) $matches[2]);
+        }
+
+        return $text;
     }
 
     private function dateTime(mixed $value): string
     {
         return $this->date($value, 'Y-m-d H:i:s');
+    }
+
+    /**
+     * Convert a timestamp to the export timezone without mutating the source
+     * model attribute.
+     */
+    private function inExportTimezone(DateTimeInterface $value): DateTimeInterface
+    {
+        if ($value instanceof \Carbon\CarbonInterface) {
+            return $value->copy()->setTimezone(self::EXPORT_TIMEZONE);
+        }
+
+        return \DateTimeImmutable::createFromInterface($value)
+            ->setTimezone(new \DateTimeZone(self::EXPORT_TIMEZONE));
     }
 
     private function money(mixed $value): string

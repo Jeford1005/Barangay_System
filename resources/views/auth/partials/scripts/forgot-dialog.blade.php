@@ -47,7 +47,7 @@
             modal.addEventListener('keydown', (event) => {
                 if (event.key !== 'Tab') return;
 
-                const focusables = modal.querySelectorAll('button:not([disabled]), input:not([disabled]), a[href]');
+                const focusables = modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])');
                 if (!focusables.length) return;
 
                 const first = focusables[0];

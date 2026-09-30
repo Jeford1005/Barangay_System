@@ -42,13 +42,14 @@ class ResidentBlotterController extends Controller
 
         $validated = $request->validate([
             'complaint_type' => 'required|string|max:100',
-            'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
             'accused_name' => 'required|string|max:255',
             'alleged_offense' => 'required|string|max:2000',
         ], [
             'complaint_type.required' => 'Tell us what kind of complaint this is.',
             'complaint_date.required' => 'Give the date the incident happened.',
             'complaint_date.before_or_equal' => 'The incident date cannot be in the future.',
+            'complaint_date.after_or_equal' => 'The incident date must be on or after 1900-01-01.',
             'accused_name.required' => 'Name the person or party involved in the incident.',
             'alleged_offense.required' => 'Describe what happened.',
         ]);

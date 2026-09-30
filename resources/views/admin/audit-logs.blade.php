@@ -114,14 +114,15 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 audit-table">
+                        <caption class="sr-only">System audit log entries</caption>
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">When</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actor</th>
-                                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Subject</th>
-                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">IP Address</th>
-                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Device</th>
+                                <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">When</th>
+                                <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>
+                                <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actor</th>
+                                <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Subject</th>
+                                <th scope="col" class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">IP Address</th>
+                                <th scope="col" class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Device</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">

@@ -39,14 +39,15 @@
             <div class="overflow-x-auto mb-6">
                 <h3 class="text-sm font-semibold text-slate-900 mb-2">Cases by Complaint Type</h3>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <caption class="sr-only">Cases by complaint type</caption>
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Complaint Type</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Open</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Pending</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Resolved</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Dismissed</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Complaint Type</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Open</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Pending</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Resolved</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Dismissed</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
@@ -69,10 +70,11 @@
             <div class="overflow-x-auto mb-6">
                 <h3 class="text-sm font-semibold text-slate-900 mb-2">Monthly Trend</h3>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <caption class="sr-only">Monthly case trend</caption>
                     <thead class="bg-slate-50">
                         <tr>
                             @foreach ($months as $month => $count)
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">{{ $month }}</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">{{ $month }}</th>
                             @endforeach
                         </tr>
                     </thead>

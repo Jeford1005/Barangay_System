@@ -35,7 +35,7 @@
             <div class="w-full">
                 <label for="user-status" class="sr-only">Filter by status</label>
                 <select id="user-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
-                    <option value="">All Status</option>
+                    <option value="">All statuses</option>
                     @foreach (\App\Models\User::statusFilterOptions() as $optionValue => $optionLabel)
                         <option value="{{ $optionValue }}" @selected($status === $optionValue)>{{ $optionLabel }}</option>
                     @endforeach

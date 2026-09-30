@@ -98,7 +98,7 @@
                         </div>
 
                         <div class="flex shrink-0 flex-col gap-2 lg:w-64">
-                            <form method="POST" action="{{ route('admin.approvals.approve', $applicant) }}">
+                            <form method="POST" action="{{ route('admin.approvals.approve', $applicant) }}" data-confirm="Approve this application? The applicant will be notified by email." data-confirm-title="Approve application" data-confirm-accept="Approve" data-confirm-tone="primary" data-confirm-icon="check-circle">
                                 @csrf
                                 <button type="submit"
                                     class="w-full btn btn-primary">
@@ -142,12 +142,13 @@
             <h2 class="mb-3 mt-10 text-lg font-semibold tracking-tight">Recent decisions</h2>
             <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <caption class="sr-only">Recent account decisions</caption>
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th class="px-4 py-3">Applicant</th>
-                            <th class="px-4 py-3">Decision</th>
-                            <th class="px-4 py-3">Reviewed by</th>
-                            <th class="px-4 py-3">When</th>
+<th scope="col" class="px-4 py-3">Applicant</th>
+                            <th scope="col" class="px-4 py-3">Decision</th>
+                            <th scope="col" class="px-4 py-3">Reviewed by</th>
+                            <th scope="col" class="px-4 py-3">When</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">

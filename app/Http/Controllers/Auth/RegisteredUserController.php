@@ -51,8 +51,8 @@ class RegisteredUserController extends Controller
             'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'address' => ['required', 'string', 'max:255'],
-            'purok_id' => ['nullable', 'integer', 'exists:puroks,id'],
-            'household_id' => ['nullable', 'integer', 'exists:households,id'],
+            'purok_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', 'exists:puroks,id'],
+            'household_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', 'exists:households,id'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
             'email.unique' => 'An account with this email already exists.',

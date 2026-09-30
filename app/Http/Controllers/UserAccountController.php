@@ -252,7 +252,7 @@ class UserAccountController extends Controller
         abort_unless($user->user_type === 'resident', 422, 'Only resident accounts can link resident profiles.');
 
         $validated = $request->validate([
-            'resident_id' => ['required', 'integer', 'exists:residents,id'],
+            'resident_id' => ['required', 'integer', 'min:1', 'max:4294967295', 'exists:residents,id'],
         ], [
             'resident_id.required' => 'Choose a resident profile to link.',
             'resident_id.exists' => 'The selected resident profile is no longer available.',

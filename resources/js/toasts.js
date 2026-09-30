@@ -134,7 +134,7 @@
             el.className =
                 'toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95 ' +
                 (colors[type] || 'border-slate-200');
-            el.setAttribute('role', 'status');
+            el.setAttribute('role', type === 'error' ? 'alert' : 'status');
             el.innerHTML =
                 '<p class="flex-1 text-sm font-medium text-slate-800"></p>' +
                 '<button type="button" class="shrink-0 rounded-md p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Dismiss">' +

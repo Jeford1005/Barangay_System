@@ -86,6 +86,8 @@ class CertificateController extends Controller
             'document_id' => [
                 'required',
                 'integer',
+                'min:1',
+                'max:4294967295',
                 Rule::exists('documents', 'id')
                     ->where('status', 'Active')
                     ->whereIn('document_type', ['Certificate', 'Clearance']),
@@ -93,6 +95,8 @@ class CertificateController extends Controller
             'resident_id' => [
                 'required',
                 'integer',
+                'min:1',
+                'max:4294967295',
                 Rule::exists('residents', 'id')->where('status', 'Active'),
             ],
             'purpose' => 'required|string|max:255',

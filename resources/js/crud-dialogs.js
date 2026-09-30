@@ -324,6 +324,7 @@
             var p = document.createElement('p');
             p.id = errorId;
             p.className = 'crud-error mt-1.5 text-sm text-red-600';
+            p.setAttribute('role', 'alert');
             p.textContent = Array.isArray(entry[1]) ? entry[1][0] : entry[1];
             (input.closest('label') || input).insertAdjacentElement('afterend', p);
         });

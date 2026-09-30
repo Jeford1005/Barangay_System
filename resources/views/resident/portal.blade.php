@@ -195,7 +195,7 @@
                 </div>
                 <button type="submit"
                     class="btn btn-primary w-full">
-                    Save Changes
+                    Save changes
                 </button>
             </form>
 

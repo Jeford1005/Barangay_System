@@ -364,8 +364,8 @@ class ReportController extends Controller
     private function dateRange(Request $request, int $defaultMonths = 0): array
     {
         $validated = $request->validate([
-            'from' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'from' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:1900-01-01'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:1900-01-01'],
         ]);
 
         if (! empty($validated['from']) && ! empty($validated['to']) && $validated['to'] < $validated['from']) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Concerns\Searchable;
+use App\Models\AuditLog;
 use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
@@ -87,6 +88,15 @@ class HouseholdController extends Controller
             DB::commit();
             Cache::forget('auth.household-options');
 
+            AuditLog::record(
+                'household.created',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['household_id' => $household->id, 'household_code' => $household->household_code],
+            );
+
             return redirect()->route('households.index')
                 ->with('success', 'Household created successfully.');
         } catch (ValidationException $e) {
@@ -140,6 +150,15 @@ class HouseholdController extends Controller
             DB::commit();
             Cache::forget('auth.household-options');
 
+            AuditLog::record(
+                'household.updated',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['household_id' => $household->id, 'household_code' => $household->household_code],
+            );
+
             // A head change is never silent: name who was demoted and who
             // now leads the household.
             $message = 'Household updated successfully.';
@@ -166,15 +185,27 @@ class HouseholdController extends Controller
         }
     }
 
-    public function destroy(Household $household)
+    public function destroy(Request $request, Household $household)
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $householdId = $household->getKey();
+        $householdCode = $household->household_code;
 
         DB::beginTransaction();
         try {
             $household->delete();
             DB::commit();
             Cache::forget('auth.household-options');
+
+            AuditLog::record(
+                'household.deleted',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['household_id' => $householdId, 'household_code' => $householdCode],
+            );
 
             return redirect()->route('households.index')
                 ->with('success', 'Household deleted successfully.');
@@ -189,7 +220,7 @@ class HouseholdController extends Controller
     {
         $rules = [
             'household_code' => 'required|string|max:20|unique:households,household_code',
-            'purok_id' => 'nullable|integer|exists:puroks,id',
+            'purok_id' => 'nullable|integer|min:1|max:4294967295|exists:puroks,id',
             'sitio' => 'nullable|string|max:100',
             'street' => 'nullable|string|max:150',
             'barangay' => 'nullable|string|max:100',
@@ -208,7 +239,7 @@ class HouseholdController extends Controller
             // Capped well below the unsigned-int ceiling so a crafted value
             // cannot inflate member counts toward 4B.
             'num_members' => 'required|integer|min:1|max:50',
-            'head_of_household_id' => ['nullable', 'integer', Rule::exists('residents', 'id')->where('status', 'Active')],
+            'head_of_household_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('residents', 'id')->where('status', 'Active')],
             'status' => 'required|in:Occupied,Vacant,Under Construction',
             'remarks' => 'nullable|string|max:1000',
         ];

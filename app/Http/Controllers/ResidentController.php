@@ -369,6 +369,8 @@ class ResidentController extends Controller
         return $request->validate($this->validateResidentFields($residentId), [
             'phone_number.regex' => 'The phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'blood_type.regex' => 'Enter a valid blood type such as O+, A-, or AB+.',
+            'birth_date.before_or_equal' => 'The birth date cannot be in the future.',
+            'birth_date.after_or_equal' => 'The birth date must be on or after 1900-01-01.',
             'purok_id.integer' => 'Please select a purok from the list.',
             'purok_id.exists' => 'The selected purok is no longer available. Please choose another.',
             'household_id.integer' => 'Please select a household from the list.',
@@ -398,7 +400,7 @@ class ResidentController extends Controller
             'last_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'suffix' => 'nullable|string|max:10',
-            'birth_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'birth_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
             'birthplace' => 'nullable|string|max:150',
             'sex' => 'required|in:Male,Female,Other',
             'civil_status' => 'required|in:Single,Married,Divorced,Widowed,Separated',
@@ -415,10 +417,12 @@ class ResidentController extends Controller
             'residency_status' => ['nullable', 'string', 'max:50', Rule::in($allowedResidency)],
             'voter_status' => 'nullable|boolean',
             'is_household_head' => 'nullable|boolean',
-            'purok_id' => 'nullable|integer|exists:puroks,id',
+            'purok_id' => 'nullable|integer|min:1|max:4294967295|exists:puroks,id',
             'household_id' => [
                 'nullable',
                 'integer',
+                'min:1',
+                'max:4294967295',
                 Rule::exists('households', 'id')
                     ->whereNull('deleted_at')
                     ->whereIn('status', ['Occupied', 'Under Construction']),

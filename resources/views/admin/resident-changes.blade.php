@@ -34,12 +34,13 @@
 
     <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="min-w-[900px] divide-y divide-slate-200">
+            <caption class="sr-only">Resident correction requests</caption>
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                    <th class="px-4 py-3">Resident</th>
-                    <th class="px-4 py-3">Requested changes</th>
-                    <th class="px-4 py-3">Submitted</th>
-                    <th class="px-4 py-3">Review</th>
+                    <th scope="col" class="px-4 py-3">Resident</th>
+                    <th scope="col" class="px-4 py-3">Requested changes</th>
+                    <th scope="col" class="px-4 py-3">Submitted</th>
+                    <th scope="col" class="px-4 py-3">Review</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -78,7 +79,7 @@
                                         data-confirm-title="Approve correction"
                                         data-confirm-accept="Approve" data-confirm-tone="primary" data-confirm-icon="check-circle">
                                         @csrf
-                                        <input name="review_note" maxlength="1000" placeholder="Approval note (optional)" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 text-xs focus:border-emerald-500 focus:ring-sky-600">
+                                        <input name="review_note" maxlength="1000" placeholder="Approval note (optional)" aria-label="Approval note (optional)" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 text-xs focus:border-emerald-500 focus:ring-sky-600">
                                         <button type="submit" class="btn btn-primary btn-row">Approve</button>
                                     </form>
                                     <form method="POST" action="{{ route('admin.resident-changes.reject', $change) }}" class="flex gap-2"
@@ -86,7 +87,7 @@
                                         data-confirm-title="Reject correction"
                                         data-confirm-accept="Reject" data-confirm-icon="x-circle">
                                         @csrf
-                                        <input name="review_note" required maxlength="1000" placeholder="Reason required" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 text-xs focus:border-red-500 focus:ring-red-500">
+                                        <input name="review_note" required maxlength="1000" placeholder="Reason required" aria-label="Reason for rejection (required)" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-300 text-xs focus:border-red-500 focus:ring-red-500">
                                         <button type="submit" class="btn btn-danger btn-row">Reject</button>
                                     </form>
                                 </div>

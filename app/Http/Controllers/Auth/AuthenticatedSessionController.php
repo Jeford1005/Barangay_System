@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AuditLog;
 use App\Models\Household;
 use App\Models\Purok;
 use Illuminate\Http\RedirectResponse;
@@ -42,6 +43,15 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        AuditLog::record(
+            'auth.login',
+            $user?->id,
+            $user?->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['user_type' => $user?->user_type],
+        );
+
         // Role-aware landing: residents go to their own portal; office users
         // (administrators and staff) go to the management dashboard.
         $default = $user->user_type === 'resident'
@@ -56,11 +66,24 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Capture the identity first: after logout there is no user left to
+        // attribute the event to.
+        $userId = Auth::id();
+        $userEmail = Auth::user()?->email;
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        AuditLog::record(
+            'auth.logout',
+            $userId,
+            $userEmail,
+            $request->ip(),
+            $request->userAgent(),
+        );
 
         return redirect('/');
     }

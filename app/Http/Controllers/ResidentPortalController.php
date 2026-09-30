@@ -130,6 +130,18 @@ class ResidentPortalController extends Controller
             throw $e;
         }
 
+        // The phone/address save itself is accountable too: photo and email
+        // changes already log their own events inside the transaction, but a
+        // plain contact edit would otherwise leave no trail.
+        AuditLog::record(
+            'resident.contact_updated',
+            $user->id,
+            $user->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['resident_id' => $resident->id],
+        );
+
         if ($emailChanged) {
             $user->notify(new ResidentEmailChangedNotification($oldEmail, $newEmail));
         }

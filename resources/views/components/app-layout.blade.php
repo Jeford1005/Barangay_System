@@ -60,7 +60,7 @@
                 </a>
                 <button type="button" id="sidebar-minimize"
                     class="sidebar-toggle ml-auto hidden lg:inline-flex"
-                    title="Minimize sidebar" aria-label="Minimize sidebar">
+                    title="Minimize sidebar" aria-label="Minimize sidebar" aria-expanded="true" aria-controls="sidebar">
                     <svg class="h-4 w-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m11 18-6-6 6-6M18 18l-6-6 6-6"/></svg>
                 </button>
                 {{-- Mobile: close the drawer --}}
@@ -274,6 +274,7 @@
                 var label = mini ? 'Expand sidebar' : 'Minimize sidebar';
                 btn.title = label;
                 btn.setAttribute('aria-label', label);
+                btn.setAttribute('aria-expanded', mini ? 'false' : 'true');
                 try { localStorage.setItem('sidebar-min', mini ? '1' : '0'); } catch (e) {}
             }
 

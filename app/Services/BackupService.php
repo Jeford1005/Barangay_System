@@ -78,7 +78,14 @@ class BackupService
             throw new RuntimeException('The database backup could not be created.');
         }
 
-        $this->pruneOldBackups();
+        // Pruning must never fail the backup that was just written: the new
+        // file is already complete, so a prune error is reported to the log
+        // and the backup is still returned.
+        try {
+            $this->pruneOldBackups();
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return $this->describe($target);
     }
@@ -358,9 +365,23 @@ class BackupService
             return [];
         }
 
-        return collect(File::files($this->directory()))
+        try {
+            $files = File::files($this->directory());
+        } catch (Throwable $exception) {
+            // The maintenance page must degrade, never 500, when the backup
+            // directory cannot be read.
+            report($exception);
+
+            return [];
+        }
+
+        return collect($files)
             ->filter(fn ($file) => preg_match(self::FILENAME_PATTERN, $file->getFilename()) === 1)
-            ->map(fn ($file) => $this->describe($file->getPathname()))
+            // A planted symlink must never be listed for download: path()
+            // would refuse it, so advertising it would only offer a 404.
+            ->reject(fn ($file) => $file->isLink())
+            ->map(fn ($file) => $this->safeDescribe($file->getPathname()))
+            ->filter()
             ->sortByDesc('created_at')
             ->values()
             ->all();
@@ -377,20 +398,46 @@ class BackupService
         $path = $this->directory().DIRECTORY_SEPARATOR.$name;
         abort_unless(File::isFile($path), 404);
 
+        // isFile() follows symlinks, so check explicitly: a planted link
+        // must never turn the download/delete routes into a file reader.
+        abort_if(is_link($path), 404);
+
         return $path;
     }
 
     public function delete(string $name): void
     {
-        File::delete($this->path($name));
+        $path = $this->path($name);
+
+        File::delete($path);
+
+        // File::delete() only returns false — without this check a failed
+        // delete would redirect with a success toast for a file that is
+        // still on disk.
+        if (File::exists($path) || is_link($path)) {
+            throw new RuntimeException(sprintf(
+                'The backup "%s" could not be deleted.',
+                basename($path)
+            ));
+        }
     }
 
     private function pruneOldBackups(): void
     {
         $keep = max(1, $this->keep);
-        collect($this->all())
-            ->slice($keep)
-            ->each(fn (array $backup) => File::delete($this->path($backup['name'])));
+        $victims = array_slice($this->all(), $keep);
+
+        // Oldest first, so that if a delete fails halfway the survivors are
+        // the newer backups. Each failure is reported and the rest still
+        // run — one bad file must not abort the whole prune, and the prune
+        // must never fail the backup that triggered it.
+        foreach (array_reverse($victims) as $backup) {
+            try {
+                $this->delete($backup['name']);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     /**
@@ -403,5 +450,23 @@ class BackupService
             'size' => File::size($path),
             'created_at' => File::lastModified($path),
         ];
+    }
+
+    /**
+     * Describe one backup file, or null when its stats cannot be read. A
+     * file deleted between the listing and the stat must degrade to a
+     * skipped row — reported to the log — never a 500.
+     *
+     * @return array{name: string, size: int, created_at: int}|null
+     */
+    private function safeDescribe(string $path): ?array
+    {
+        try {
+            return $this->describe($path);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
     }
 }

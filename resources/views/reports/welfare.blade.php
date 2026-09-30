@@ -40,11 +40,12 @@
                 <div class="overflow-x-auto">
                     <h3 class="text-sm font-semibold text-slate-900 mb-2">By Assistance Type</h3>
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <caption class="sr-only">Welfare totals by assistance type</caption>
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Type</th>
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Count</th>
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Type</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Count</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200">
@@ -64,11 +65,12 @@
                 <div class="overflow-x-auto">
                     <h3 class="text-sm font-semibold text-slate-900 mb-2">By Program</h3>
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <caption class="sr-only">Welfare totals by program</caption>
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Count</th>
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Count</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200">
@@ -89,14 +91,15 @@
             <div class="overflow-x-auto">
                 <h3 class="text-sm font-semibold text-slate-900 mb-2">Beneficiary List</h3>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <caption class="sr-only">Welfare beneficiary list</caption>
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Beneficiary</th>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Assistance</th>
-                            <th class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
-                            <th class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Requested</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Beneficiary</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Assistance</th>
+                            <th scope="col" class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
+                            <th scope="col" class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Requested</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">

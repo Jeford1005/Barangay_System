@@ -33,7 +33,7 @@
     @foreach ($toasts as $toast)
         <div class="toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95
             {{ ['success' => 'border-emerald-200', 'error' => 'border-red-200', 'warning' => 'border-amber-200'][$toast['type']] ?? 'border-slate-200' }}"
-            role="status">
+            @if ($toast['type'] === 'error') role="alert" @else role="status" @endif>
             <span class="mt-0.5 shrink-0">
                 @if ($toast['type'] === 'success')
                     <svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
@@ -111,7 +111,7 @@
             };
             var el = document.createElement('div');
             el.className = 'toast pointer-events-auto w-full flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur bg-white/95 ' + (colors[type] || 'border-slate-200');
-            el.setAttribute('role', 'status');
+            el.setAttribute('role', type === 'error' ? 'alert' : 'status');
             el.innerHTML =
                 '<p class="flex-1 text-sm font-medium text-slate-800"></p>' +
                 '<button type="button" class="shrink-0 rounded-md p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Dismiss">' +

@@ -28,8 +28,8 @@ class ResidentRecordChangeController extends Controller
             'occupation' => ['nullable', 'string', 'max:100'],
             'religion' => ['nullable', 'string', 'max:100'],
             'residency_status' => ['nullable', 'string', 'max:50'],
-            'purok_id' => ['nullable', 'integer', Rule::exists('puroks', 'id')],
-            'household_id' => ['nullable', 'integer', Rule::exists('households', 'id')],
+            'purok_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('puroks', 'id')],
+            'household_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('households', 'id')],
             'notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'purok_id.exists' => 'The selected purok is no longer available.',

@@ -33,14 +33,15 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200">
+                        <caption class="sr-only">Certificate requests awaiting review</caption>
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resident</th>
-                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
-                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Submitted</th>
-                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resident</th>
+                                <th scope="col" class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
+                                <th scope="col" class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
+                                <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Submitted</th>
+                                <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -73,6 +74,7 @@
                                         @if (auth()->user()?->hasPermission('certificate-requests.decide') && $req->status === 'Pending')
                                             <div class="inline-flex items-center gap-2">
                                                 <form method="POST" action="{{ route('admin.certificate-requests.approve', $req) }}" class="inline-flex items-center gap-2"
+                                                    data-confirm="Approve this certificate request? A certificate will be issued." data-confirm-title="Approve request" data-confirm-accept="Approve" data-confirm-tone="primary" data-confirm-icon="check-circle"
                                                     onsubmit="if(this.fee && this.fee.value === '') this.fee.disabled = true;">
                                                     @csrf
                                                     <label for="certificate-fee-{{ $req->id }}" class="sr-only">Optional fee for {{ $req->document?->title }}</label>
@@ -85,7 +87,7 @@
                                                 <details class="relative inline-block text-left">
                                                     <summary class="btn btn-outline-danger list-none">Reject…</summary>
                                                     <div class="relative z-10 mt-2 w-72 rounded-lg border border-slate-200 bg-white p-3 text-left shadow-lg">
-                                                        <form method="POST" action="{{ route('admin.certificate-requests.reject', $req) }}">
+                                                        <form method="POST" action="{{ route('admin.certificate-requests.reject', $req) }}" data-confirm="Reject this certificate request? The reason will be emailed to the resident." data-confirm-title="Reject request" data-confirm-accept="Reject" data-confirm-icon="x-circle">
                                                             @csrf
                                                             <label for="certificate-rejection-{{ $req->id }}" class="block text-xs font-medium text-slate-600 mb-1">Reason (sent to the resident by email)</label>
                                                             <textarea id="certificate-rejection-{{ $req->id }}" name="rejection_reason" required rows="3" maxlength="1000" placeholder="e.g. Requires a barangay hearing first"

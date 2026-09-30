@@ -47,7 +47,7 @@
                 </div>
                 <button type="submit"
                     class="btn btn-primary w-full">
-                    Submit Request
+                    Submit request
                 </button>
                 <p class="text-xs text-slate-500">One pending request per certificate type. The fee, if any, is paid when you claim the certificate at the barangay hall.</p>
             </form>
@@ -109,7 +109,7 @@
                                             data-confirm-dismiss="Keep"
                                             data-confirm-icon="x-mark">
                                             @csrf
-                                            <button type="submit" class="btn btn-outline-danger">Cancel request</button>
+                                            <button type="submit" class="btn btn-outline-danger">Cancel</button>
                                         </form>
                                     @endif
                                 </div>

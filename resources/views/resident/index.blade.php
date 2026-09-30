@@ -35,7 +35,7 @@
                 <div class="min-w-0">
                     <label for="resident-status" class="sr-only">Filter by status</label>
                     <select id="resident-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
-                        <option value="">All Status</option>
+                        <option value="">All statuses</option>
                         <option value="Active" @selected(request('status') === 'Active')>Active</option>
                         <option value="Archived" @selected(request('status') === 'Archived')>Archived</option>
                     </select>
@@ -121,7 +121,7 @@
                                                 <button type="submit" class="btn btn-outline-warning btn-row {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Archive</button>
                                             </form>
                                         @elseif (auth()->user()?->isAdmin())
-                                            <form method="POST" action="{{ route('residents.restore', $resident->id) }}">
+                                            <form method="POST" action="{{ route('residents.restore', $resident->id) }}" data-confirm="Restore this resident? They will return to the active list." data-confirm-title="Restore resident" data-confirm-accept="Restore" data-confirm-tone="primary" data-confirm-icon="archive-box">
                                                 @csrf
                                                 <button type="submit" class="btn btn-outline btn-row {{ auth()->user()?->isStaff() ? 'hidden' : '' }}">Restore</button>
                                             </form>

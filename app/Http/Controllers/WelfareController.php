@@ -190,7 +190,7 @@ class WelfareController extends Controller
     private function validateWelfare(Request $request, ?Welfare $welfare = null): array
     {
         $validated = $request->validate([
-            'beneficiary_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
+            'beneficiary_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('residents', 'id')],
             'beneficiary_name' => 'required_without:beneficiary_id|nullable|string|max:255',
             'beneficiary_address' => 'nullable|string|max:255',
             'beneficiary_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
@@ -200,14 +200,20 @@ class WelfareController extends Controller
             'requested_amount' => 'required|numeric|decimal:0,2|gt:0|max:99999999.99',
             'approved_amount' => 'nullable|numeric|decimal:0,2|min:0|max:99999999.99',
             'status' => 'required|in:Requested,Under Review,Approved,Denied,Released',
-            'request_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-            'approval_date' => 'nullable|date_format:Y-m-d|before_or_equal:today',
-            'release_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:approval_date',
+            'request_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
+            'approval_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
+            'release_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01|after_or_equal:approval_date',
             'remarks' => 'nullable|string|max:2000',
         ], [
             'beneficiary_phone.regex' => 'The beneficiary phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'beneficiary_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',
             'beneficiary_id.exists' => 'The selected resident is no longer available. Please choose another.',
+            'request_date.before_or_equal' => 'The request date cannot be in the future.',
+            'request_date.after_or_equal' => 'The request date must be on or after 1900-01-01.',
+            'approval_date.before_or_equal' => 'The approval date cannot be in the future.',
+            'approval_date.after_or_equal' => 'The approval date must be on or after 1900-01-01.',
+            'release_date.before_or_equal' => 'The release date cannot be in the future.',
+            'release_date.after_or_equal' => 'The release date must be on or after the approval date and 1900-01-01.',
         ]);
 
         $residentId = $validated['beneficiary_id'] ?? null;
@@ -228,16 +234,16 @@ class WelfareController extends Controller
         // Workflow integrity: money needs an approval date, release needs a date.
         if ($validated['status'] === 'Approved') {
             $request->validate([
-                'approval_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-                'approved_amount' => 'required|numeric|decimal:0,2|gt:0',
+                'approval_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
+                'approved_amount' => 'required|numeric|decimal:0,2|gt:0|max:99999999.99',
             ]);
         }
 
         if ($validated['status'] === 'Released') {
             $request->validate([
-                'approval_date' => 'required|date_format:Y-m-d|before_or_equal:today',
-                'approved_amount' => 'required|numeric|decimal:0,2|gt:0',
-                'release_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:approval_date',
+                'approval_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
+                'approved_amount' => 'required|numeric|decimal:0,2|gt:0|max:99999999.99',
+                'release_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01|after_or_equal:approval_date',
             ]);
         }
 

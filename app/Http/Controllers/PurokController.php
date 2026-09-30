@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Concerns\Searchable;
 use App\Models\Purok;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -54,6 +55,15 @@ class PurokController extends Controller
             DB::commit();
             Cache::forget('auth.purok-options');
 
+            AuditLog::record(
+                'purok.created',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['purok_id' => $purok->id, 'name' => $purok->name, 'code' => $purok->code],
+            );
+
             return redirect()->route('puroks.index')
                 ->with('success', 'Purok created successfully.');
         } catch (\Throwable $e) {
@@ -91,6 +101,15 @@ class PurokController extends Controller
             DB::commit();
             Cache::forget('auth.purok-options');
 
+            AuditLog::record(
+                'purok.updated',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['purok_id' => $locked->id, 'name' => $locked->name, 'code' => $locked->code],
+            );
+
             return redirect()->route('puroks.index')
                 ->with('success', 'Purok updated successfully.');
         } catch (\Throwable $e) {
@@ -100,9 +119,13 @@ class PurokController extends Controller
         }
     }
 
-    public function destroy(Purok $purok)
+    public function destroy(Request $request, Purok $purok)
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
+
+        $purokId = $purok->getKey();
+        $purokName = $purok->name;
+        $purokCode = $purok->code;
 
         // The occupancy check and the delete run in one transaction with the
         // row locked and the check repeated inside: a resident or household
@@ -125,6 +148,15 @@ class PurokController extends Controller
         }
 
         Cache::forget('auth.purok-options');
+
+        AuditLog::record(
+            'purok.deleted',
+            Auth::id(),
+            Auth::user()?->email,
+            $request->ip(),
+            $request->userAgent(),
+            ['purok_id' => $purokId, 'name' => $purokName, 'code' => $purokCode],
+        );
 
         return redirect()->route('puroks.index')
             ->with('success', 'Purok deleted successfully.');

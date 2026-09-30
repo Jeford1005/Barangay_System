@@ -29,15 +29,16 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <caption class="sr-only">Population by purok, age bracket, and sex</caption>
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Purok</th>
+                            <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Purok</th>
                             @foreach ($brackets as $bracket)
-                                <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase hidden print:table-cell md:table-cell">{{ $bracket['label'] }}</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase hidden print:table-cell md:table-cell">{{ $bracket['label'] }}</th>
                             @endforeach
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Male</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Female</th>
-                            <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Male</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Female</th>
+                            <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">

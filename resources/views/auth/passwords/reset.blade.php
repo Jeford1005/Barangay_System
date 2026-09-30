@@ -21,6 +21,9 @@
 @include('components.bare-url')
 </head>
 <body class="min-h-dvh bg-slate-200 text-slate-900 antialiased">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-sky-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+        Skip to new password form
+    </a>
     {{-- The seal, oversized and held at a whisper — the same backdrop the
          sign-in page opens on, so every unauthenticated route reads as one
          system. Fixed, so it stays put when the form scrolls. --}}
@@ -29,7 +32,7 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
-    <main class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
+    <main id="main-content" class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="mx-auto w-full max-w-md">
             {{-- Card --}}
             <div class="rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">

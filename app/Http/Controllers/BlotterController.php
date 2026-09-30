@@ -201,25 +201,25 @@ class BlotterController extends Controller
     private function validateBlotter(Request $request, ?Blotter $blotter = null): array
     {
         $rules = [
-            'complainant_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
+            'complainant_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('residents', 'id')],
             'complainant_name' => 'required_without:complainant_id|nullable|string|max:255',
             'complainant_address' => 'nullable|string|max:255',
             'complainant_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
-            'accused_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
+            'accused_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('residents', 'id')],
             'accused_name' => 'required_without:accused_id|nullable|string|max:255',
             'accused_address' => 'nullable|string|max:255',
             'accused_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'complaint_type' => 'required|string|max:100',
             'complaint_subtype' => 'nullable|string|max:100',
-            'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today',
+            'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01',
             'complaint_time' => 'nullable|date_format:H:i',
             'alleged_offense' => 'required|string|max:2000',
             'status' => 'required|in:Open,Pending,Resolved,Dismissed',
             'disposition' => 'nullable|string|max:2000',
-            'disposition_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:complaint_date',
+            'disposition_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01|after_or_equal:complaint_date',
             'arrest_made' => 'required|in:Yes,No',
             'investigator' => 'nullable|string|max:255',
-            'officer_id' => ['nullable', 'integer', Rule::exists('officials', 'id')->where('status', 'Active')],
+            'officer_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', Rule::exists('officials', 'id')->where('status', 'Active')],
             'remarks' => 'nullable|string|max:2000',
         ];
 
@@ -232,6 +232,10 @@ class BlotterController extends Controller
             'accused_id.exists' => 'The selected resident is no longer available. Please choose another.',
             'officer_id.integer' => 'Please select a handling officer from the list, or leave it blank.',
             'officer_id.exists' => 'The selected officer is no longer available. Please choose another.',
+            'complaint_date.before_or_equal' => 'The complaint date cannot be in the future.',
+            'complaint_date.after_or_equal' => 'The complaint date must be on or after 1900-01-01.',
+            'disposition_date.before_or_equal' => 'The disposition date cannot be in the future.',
+            'disposition_date.after_or_equal' => 'The disposition date must be on or after the complaint date and 1900-01-01.',
         ]);
 
         $currentResidentIds = $blotter
@@ -256,7 +260,7 @@ class BlotterController extends Controller
         if (in_array($validated['status'], ['Resolved', 'Dismissed'], true)) {
             $request->validate([
                 'disposition' => 'required|string|max:2000',
-                'disposition_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:complaint_date',
+                'disposition_date' => 'required|date_format:Y-m-d|before_or_equal:today|after_or_equal:1900-01-01|after_or_equal:complaint_date',
             ]);
         }
 
