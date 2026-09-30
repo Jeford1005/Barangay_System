@@ -19,7 +19,7 @@
     </div>
 
     <div class="grid gap-5 lg:grid-cols-[1fr_20rem]">
-        <div class="table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
+        <x-data-table class="rounded-xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-[800px] divide-y divide-slate-200 text-sm">
                 <caption class="sr-only">Certificate document catalog</caption>
                 <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th scope="col" class="px-4 py-3">Code</th><th scope="col" class="px-4 py-3">Title</th><th scope="col" class="px-4 py-3">Type</th><th scope="col" class="px-4 py-3">Fee</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Issued</th><th scope="col" class="no-print px-4 py-3 text-right">Actions</th></tr></thead>
@@ -52,7 +52,7 @@
                 </tbody>
             </table>
             <div class="border-t border-slate-200 px-4 py-3">{{ $documents->withQueryString()->links() }}</div>
-        </div>
+        </x-data-table>
 
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Catalog rules</h2>

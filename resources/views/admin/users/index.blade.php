@@ -54,7 +54,7 @@
                 <p class="mt-1 text-sm text-slate-500">Try clearing the filters or check the Account Approvals queue.</p>
             </div>
         @else
-            <div class="table-scroll">
+            <x-data-table>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">User accounts</caption>
                     <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -104,8 +104,7 @@
                             </tr>
                         @endforeach
                     </tbody>
-                </table>
-            </div>
+                </table></x-data-table>
             <div class="border-t border-slate-200 px-4 py-3">{{ $users->withQueryString()->links() }}</div>
         @endif
     </div>

@@ -749,33 +749,46 @@
     }
 }
 
-/* Phones (<640px): reclaim ~90px so a short list fits the viewport with
-   no page scroll. Filters pair into two columns (search + actions span
-   full width, actions share the row 50/50); content padding and cell
-   padding tighten. Tap targets stay 44px — only whitespace shrinks. */
+/* Phones (<640px): every module toolbar becomes a one-row horizontal
+   swipe strip instead of a stacked block — no wrap, snap points, filters
+   min 200px wide. Dropdowns already auto-submit; there is no Filter
+   button. Tap targets keep 44px — only the layout direction changes. */
 @media (max-width: 639px) {
     #content-scroll > div {
         padding-top: 1rem;
         padding-bottom: 1rem;
     }
 
-    .module-toolbar--resident {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .module-toolbar {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 0.5rem;
     }
 
-    .module-toolbar--resident > :first-child,
-    .module-toolbar--resident > :nth-child(4),
-    .module-toolbar--resident > :last-child {
-        grid-column: 1 / -1;
+    .module-toolbar > * {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
     }
 
-    .module-toolbar--resident > :last-child .btn {
-        flex: 1;
+    .module-toolbar > div:not(:last-child) {
+        min-width: 200px;
     }
 
     .table-scroll td {
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
+    }
+
+    /* Resident maximize: page gutters 16px → 8px by stretching the page
+       cards, and compact cells halve their gutters. */
+    .resident-max {
+        margin-inline: -0.5rem;
+    }
+
+    .table-compact td {
+        padding-inline: 0.5rem;
     }
 }
 

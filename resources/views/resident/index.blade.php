@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<div class="space-y-4">
+<div class="space-y-4 resident-max">
     <x-module-tabs type="residents" />
     <div class="module-toolbar-sticky module-toolbar-sticky--bare no-print">
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -75,7 +75,7 @@
                 @endif
             </div>
         @else
-            <div class="table-scroll">
+            <x-data-table compact>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">Resident records</caption>
                     <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -99,7 +99,7 @@
                             @endphp
                             <tr class="hover:bg-slate-50">
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-500 print:table-cell md:table-cell">{{ ($residents->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
-                                <td class="min-w-[180px] px-4 py-3">
+                                <td class="px-4 py-3">
                                     <span class="font-medium text-slate-900">{{ $resident->last_name }}, {{ $resident->first_name }} {{ $resident->suffix }}</span>
                                     <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ $resident->phone_number ?? '—' }} &middot; {{ $resident->household?->household_code ?? '—' }}</span>
                                 </td>
@@ -131,8 +131,7 @@
                             </tr>
                         @endforeach
                     </tbody>
-                </table>
-            </div>
+                </table></x-data-table>
             <div class="border-t border-slate-200 px-4 py-3">{{ $residents->withQueryString()->links() }}</div>
         @endif
     </div>

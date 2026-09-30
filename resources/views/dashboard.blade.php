@@ -8,34 +8,34 @@
 
     {{-- Scale: what this barangay holds. Every card is a link - a number you
          cannot go anywhere from is a dead end, not a statistic. --}}
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <a href="{{ route('residents.index') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+    <div class="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="{{ route('residents.index') }}" class="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Residents</p>
                 <x-icon name="residents" class="h-6 w-6 text-sky-600" />
             </div>
-            <p class="mt-2 text-3xl font-bold text-slate-900">{{ $residentCount }}</p>
+            <p class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{{ $residentCount }}</p>
         </a>
-        <a href="{{ route('households.index') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+        <a href="{{ route('households.index') }}" class="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Households</p>
                 <x-icon name="households" class="h-6 w-6 text-sky-600" />
             </div>
-            <p class="mt-2 text-3xl font-bold text-slate-900">{{ $householdCount }}</p>
+            <p class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{{ $householdCount }}</p>
         </a>
-        <a href="{{ route('puroks.index') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+        <a href="{{ route('puroks.index') }}" class="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Puroks</p>
                 <x-icon name="puroks" class="h-6 w-6 text-sky-600" />
             </div>
-            <p class="mt-2 text-3xl font-bold text-slate-900">{{ $purokCount }}</p>
+            <p class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{{ $purokCount }}</p>
         </a>
-        <a href="{{ route('certificates.index') }}" class="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+        <a href="{{ route('certificates.index') }}" class="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Certificates issued</p>
                 <x-icon name="document-text" class="h-6 w-6 text-sky-600" />
             </div>
-            <p class="mt-2 text-3xl font-bold text-slate-900">{{ $issuedTotal }}</p>
+            <p class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{{ $issuedTotal }}</p>
         </a>
     </div>
 

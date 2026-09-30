@@ -61,7 +61,7 @@
                     @endif
                 </div>
             @else
-                <div class="table-scroll">
+                <x-data-table>
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Welfare assistance requests</caption>
                         <thead class="sticky top-0 z-10 bg-slate-50">
@@ -134,8 +134,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $welfares->withQueryString()->links() }}
-                </div>
+                    {{ $welfares->withQueryString()->links() }}</x-data-table>
             @endif
         </div>
     </div>

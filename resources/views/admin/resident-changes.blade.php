@@ -32,7 +32,7 @@
         </form>
     </div>
 
-    <div class="table-scroll rounded-xl border border-slate-200 bg-white shadow-sm">
+    <x-data-table class="rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="min-w-[900px] divide-y divide-slate-200">
             <caption class="sr-only">Resident correction requests</caption>
             <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -98,8 +98,7 @@
                     <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">No {{ $status === 'All' ? '' : strtolower($status).' ' }}correction requests.</td></tr>
                 @endforelse
             </tbody>
-        </table>
-    </div>
+        </table></x-data-table>
     {{ $changes->withQueryString()->links() }}
 </div>
 @endsection

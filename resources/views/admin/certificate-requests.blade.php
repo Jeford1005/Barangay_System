@@ -31,7 +31,7 @@
                     <p class="mt-2">No certificate requests{{ request('status') ? ' with this status' : ' yet' }}.</p>
                 </div>
             @else
-                <div class="table-scroll">
+                <x-data-table>
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Certificate requests awaiting review</caption>
                         <thead class="sticky top-0 z-10 bg-slate-50">
@@ -120,8 +120,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $requests->withQueryString()->links() }}
-                </div>
+                    {{ $requests->withQueryString()->links() }}</x-data-table>
             @endif
         </div>
     </div>

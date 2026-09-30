@@ -45,7 +45,7 @@
                     @endif
                 </div>
             @else
-                <div class="table-scroll">
+                <x-data-table>
                     <table class="min-w-full divide-y divide-slate-200">
                         <caption class="sr-only">Archived records awaiting restore or permanent deletion</caption>
                         <thead class="sticky top-0 z-10 bg-slate-50">
@@ -117,8 +117,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                    {{ $records->withQueryString()->links() }}
-                </div>
+                    {{ $records->withQueryString()->links() }}</x-data-table>
             @endif
         </div>
     </div>
