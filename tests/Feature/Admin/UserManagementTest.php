@@ -9,6 +9,7 @@ use App\Notifications\AccountAccessChangedNotification;
 use App\Notifications\ResetPasswordCodeNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -410,5 +411,84 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($resident)->get('/admin/audit-logs')->assertRedirect(route('dashboard'));
         $this->actingAs($resident)->get('/admin/mail-health')->assertRedirect(route('dashboard'));
+    }
+
+    public function test_admin_can_create_another_admin_from_the_directory(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.create'))
+            ->assertOk()
+            ->assertSee('Add account')
+            ->assertSee('Administrator');
+
+        $response = $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Second Admin',
+            'email' => 'second.admin@barangay.local',
+            'password' => 'secret-admin-1',
+            'password_confirmation' => 'secret-admin-1',
+            'user_type' => 'admin',
+        ]);
+
+        $created = User::where('email', 'second.admin@barangay.local')->firstOrFail();
+        $this->assertSame('admin', $created->user_type);
+        $this->assertSame('approved', $created->status);
+        $this->assertTrue(Hash::check('secret-admin-1', $created->password));
+
+        $response->assertRedirect(route('admin.users.show', $created));
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'account.created',
+        ]);
+
+        // The new admin can actually sign in.
+        $this->post('/logout');
+        $this->post('/login', [
+            'email' => 'second.admin@barangay.local',
+            'password' => 'secret-admin-1',
+            'user_type' => 'office',
+        ])->assertRedirect(route('dashboard'));
+    }
+
+    public function test_only_admins_can_create_accounts(): void
+    {
+        $payload = [
+            'name' => 'Sneaky Staff',
+            'email' => 'sneaky@barangay.local',
+            'password' => 'secret-staff-1',
+            'password_confirmation' => 'secret-staff-1',
+            'user_type' => 'admin',
+        ];
+
+        $this->post(route('admin.users.store'), $payload)->assertRedirect(route('login'));
+
+        $staff = User::factory()->staff()->create();
+        $this->actingAs($staff)->post(route('admin.users.store'), $payload)->assertRedirect(route('dashboard'));
+        $this->actingAs($staff)->get(route('admin.users.create'))->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseMissing('users', ['email' => 'sneaky@barangay.local']);
+    }
+
+    public function test_account_creation_rejects_duplicates_and_weak_passwords(): void
+    {
+        $admin = User::factory()->admin()->create();
+        User::factory()->staff()->create(['email' => 'taken@barangay.local']);
+
+        $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Copy Cat',
+            'email' => 'taken@barangay.local',
+            'password' => 'secret-copy-1',
+            'password_confirmation' => 'secret-copy-1',
+            'user_type' => 'staff',
+        ])->assertSessionHasErrors('email');
+
+        $this->actingAs($admin)->post(route('admin.users.store'), [
+            'name' => 'Weak Pass',
+            'email' => 'weak@barangay.local',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+            'user_type' => 'staff',
+        ])->assertSessionHasErrors('password');
     }
 }

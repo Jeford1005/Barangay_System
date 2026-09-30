@@ -1,6 +1,9 @@
 <x-app-layout>
 @section('page_header')
     <x-page-header title="User Accounts" subtitle="{{ $users->total() }} account{{ $users->total() === 1 ? '' : 's' }} in the directory">
+        <x-slot:actions>
+            <x-primary-action :href="route('admin.users.create')">Add account</x-primary-action>
+        </x-slot:actions>
     </x-page-header>
 @endsection
 

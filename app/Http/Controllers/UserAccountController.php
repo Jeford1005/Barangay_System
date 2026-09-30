@@ -12,6 +12,7 @@ use App\Services\PasswordResetCodeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -53,6 +54,49 @@ class UserAccountController extends Controller
         $pendingCount = User::where('user_type', 'resident')->where('status', 'pending')->count();
 
         return view('admin.users.index', compact('users', 'pendingCount', 'search', 'role', 'status'));
+    }
+
+    /**
+     * Let an administrator create any account tier — including another
+     * administrator — without leaving the directory. Group middleware
+     * already restricts both routes to admins.
+     */
+    public function create(): View
+    {
+        return view('admin.users.create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'user_type' => ['required', Rule::in(['admin', 'staff', 'official', 'resident'])],
+        ]);
+
+        $user = DB::transaction(function () use ($validated) {
+            $account = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'status' => 'approved',
+            ]);
+
+            // user_type is deliberately not fillable: privileged keys are
+            // only ever assigned explicitly, never mass-assigned.
+            $account->user_type = $validated['user_type'];
+            $account->save();
+
+            return $account;
+        });
+
+        $this->recordAudit($request, $user, 'account.created', [
+            'user_type' => $user->user_type,
+        ]);
+
+        return redirect()->route('admin.users.show', $user)
+            ->with('success', "Account for {$user->name} created with {$user->user_type} access.");
     }
 
     public function show(User $user): View

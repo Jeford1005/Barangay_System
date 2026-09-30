@@ -162,6 +162,12 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     // User account directory and access management (admin only)
     Route::middleware('admin')->prefix('admin/users')->name('admin.users.')->group(function () {
         Route::get('/', [UserAccountController::class, 'index'])->name('index');
+        // Creation lives above the {user} show route so /create never
+        // resolves as a user id.
+        Route::get('/create', [UserAccountController::class, 'create'])->name('create');
+        Route::post('/', [UserAccountController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('store');
         Route::post('/{user}/resident-profile-from-application', [UserAccountController::class, 'createResidentFromApplication'])->name('resident-profile-from-application');
         Route::post('/{user}/resident-unlink', [UserAccountController::class, 'unlinkResident'])->name('resident-unlink');
         // Link/role/identity edits accept both PATCH and PUT so proxied or
