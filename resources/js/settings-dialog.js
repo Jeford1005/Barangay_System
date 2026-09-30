@@ -10,8 +10,8 @@
  *     ?embed=1, which strips the app chrome but keeps scripts, toasts and
  *     the confirm/error dialogs, so forms, filters and downloads inside the
  *     pane behave exactly as they do on the page;
- *   - the dialog's left nav and the settings page's section list are the
- *     same Blade component (x-settings-nav), so they cannot drift.
+ *   - the left nav is one Blade component (x-settings-nav), so the section
+ *     list cannot drift from the routes it links;
  *
  * Element hooks use the data-settings-dialog-* namespace so they can never
  * collide with the form attributes the confirm engine reads.
@@ -77,7 +77,7 @@
 
     // Follow the iframe: highlight the longest nav entry that prefixes the
     // shown path, so /admin/users/5 keeps "User Accounts" active and
-    // /admin/settings/maintenance beats the Overview entry.
+    // /admin/settings/maintenance stays on System Maintenance.
     function markActive(path) {
         var d = node();
         if (!d || !path) return;

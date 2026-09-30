@@ -10,7 +10,7 @@
 @endsection
 
 @section('content')
-<x-settings-shell current="approvals">
+<x-settings-shell>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div class="space-y-4">

@@ -423,59 +423,13 @@
     }
 }
 
-.settings-tabs {
-    scrollbar-width: none;
-}
-
-.settings-tabs::-webkit-scrollbar {
-    display: none;
-}
-
-.settings-tab {
-    display: flex;
-    min-width: 190px;
-    align-items: center;
-    gap: 0.625rem;
-    border-left: 2px solid transparent;
-    border-radius: 0.375rem;
-    padding: 0.625rem 0.625rem;
-    color: #64748b;
-    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
-}
-
-.settings-tab:hover {
-    background: #f8fafc;
-    color: #334155;
-}
-
+/* settings-dialog.js marks the rail's active section by toggling this class
+   on the dialog's nav links - the last user of the settings tab styles, since
+   full settings pages no longer render a section strip. */
 .settings-tab-active {
     border-left-color: #0284c7;
     background: #f0f9ff;
     color: #0369a1;
-}
-
-.settings-tab-icon {
-    display: flex;
-    height: 1.75rem;
-    width: 1.75rem;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.375rem;
-    background: #fff;
-    color: #64748b;
-}
-
-.settings-tab-active .settings-tab-icon {
-    border-color: #bae6fd;
-    color: #0284c7;
-}
-
-@media (min-width: 1024px) {
-    .settings-tab {
-        min-width: 0;
-    }
 }
 
 /* ------------------------------------------------------------------

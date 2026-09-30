@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<x-settings-shell current="maintenance">
+<x-settings-shell>
     @if ($errors->any())
         <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
             <ul class="list-disc space-y-1 pl-5">

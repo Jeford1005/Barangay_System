@@ -75,6 +75,24 @@ class SettingsTest extends TestCase
             ->assertSee('data-settings-frame', false);
     }
 
+    public function test_full_settings_pages_render_content_without_a_section_strip(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        // The dialog's rail owns section navigation, so a deep link into a
+        // settings section gets the section itself and nothing extra - the
+        // old page-level tab strip no longer renders on any settings page.
+        $this->actingAs($admin)
+            ->get('/admin/users')
+            ->assertOk()
+            ->assertDontSee('settings-tabs', false);
+
+        $this->actingAs($admin)
+            ->get('/admin/approvals')
+            ->assertOk()
+            ->assertDontSee('settings-tabs', false);
+    }
+
     public function test_embed_mode_renders_settings_content_without_app_chrome(): void
     {
         $admin = User::factory()->admin()->create();

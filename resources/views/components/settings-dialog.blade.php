@@ -36,7 +36,7 @@
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18 18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
-                <x-settings-nav variant="rail" />
+                <x-settings-nav />
             </div>
 
             <div class="flex min-h-0 min-w-0 flex-1 flex-col">

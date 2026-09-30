@@ -4,7 +4,7 @@
 @endsection
 
 @section('content')
-<x-settings-shell current="audit">
+<x-settings-shell>
 <div class="max-w-6xl mx-auto audit-page">
     <div class="bg-white rounded-xl shadow overflow-hidden">
 

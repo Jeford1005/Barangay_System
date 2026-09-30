@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<x-settings-shell current="mail">
+<x-settings-shell>
 <div class="max-w-3xl mx-auto">
     <div class="bg-white rounded-xl shadow overflow-hidden">
 

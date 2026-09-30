@@ -1,10 +1,8 @@
-@props([
-    'current' => null,
-    'variant' => 'page',
-])
-
 @php
-    // No Overview hub: this list IS the settings home, in both variants.
+    // The settings dialog's section list - the single source for labels,
+    // hints, icons and routes. Full settings pages carry only their content:
+    // this rail is the section navigation (embed mode proves it), so there is
+    // no second, page-level copy that could drift from it.
     $sections = [
         [
             'key' => 'users',
@@ -49,17 +47,14 @@
     ];
 @endphp
 
-{{-- Shared section navigation: the settings page's light sidebar and the
-     settings dialog's dark rail render this same list, so the two can never
-     drift. variant="rail" wears the app's own nav-row language (slate-900
-     surface, sky active marker); the default variant keeps the page shell. --}}
-@if ($variant === 'rail')
+{{-- Dark section rail: slate-900 surface in the sidebar's nav-row language.
+     The server marks the entry matching the parent page's route; once the
+     dialog is open, settings-dialog.js re-marks it as the frame navigates
+     (settings-tab-active). --}}
 <nav class="flex flex-1 gap-1 overflow-x-auto p-2 md:flex-col md:overflow-x-visible md:overflow-y-auto" aria-label="Settings sections">
     @foreach ($sections as $section)
         @php
-            $isCurrent = $current
-                ? $current === $section['key']
-                : request()->routeIs($section['pattern']);
+            $isCurrent = request()->routeIs($section['pattern']);
         @endphp
         <a href="{{ route($section['route']) }}" data-section-label="{{ $section['label'] }}" @if($isCurrent) aria-current="page" @endif class="nav-row shrink-0 {{ $isCurrent ? 'nav-row-active' : '' }}">
             <span class="nav-icon"><x-icon :name="$section['icon']" class="h-[18px] w-[18px]" /></span>
@@ -70,21 +65,3 @@
         </a>
     @endforeach
 </nav>
-@else
-<nav class="settings-tabs mt-3 flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible" aria-label="Settings sections">
-    @foreach ($sections as $section)
-        @php
-            $isCurrent = $current
-                ? $current === $section['key']
-                : request()->routeIs($section['pattern']);
-        @endphp
-        <a href="{{ route($section['route']) }}" @if($isCurrent) aria-current="page" @endif class="settings-tab {{ $isCurrent ? 'settings-tab-active' : '' }}">
-            <span class="settings-tab-icon"><x-icon :name="$section['icon']" class="h-4 w-4" /></span>
-            <span class="min-w-0">
-                <span class="block truncate text-sm font-medium">{{ $section['label'] }}</span>
-                <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $section['hint'] }}</span>
-            </span>
-        </a>
-    @endforeach
-</nav>
-@endif

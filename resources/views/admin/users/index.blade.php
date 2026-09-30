@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-<x-settings-shell current="users">
+<x-settings-shell>
 <div class="space-y-4">
     <form method="GET" action="{{ route('admin.users.index') }}" class="module-toolbar-sticky rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <div class="flex flex-col gap-3 lg:flex-row lg:flex-nowrap lg:items-center">
