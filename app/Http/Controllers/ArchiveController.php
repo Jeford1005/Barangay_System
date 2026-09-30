@@ -77,6 +77,16 @@ class ArchiveController extends Controller
             $record = $model::onlyTrashed()->whereKey($id)->lockForUpdate()->firstOrFail();
             $record->restore();
 
+            // Residents carry an Archived status alongside the soft-delete;
+            // restoring must reactivate both, or the record returns to the
+            // active list wearing an Archived badge. (Never unsuspends the
+            // portal account — that stays on the explicit reactivate flow.)
+            // Other types' statuses are independent of trash: leave them.
+            if ($type === 'residents') {
+                $record->status = 'Active';
+                $record->save();
+            }
+
             $this->audit($request, 'archive.restored', $type, $this->describe($type, $record));
         });
 
