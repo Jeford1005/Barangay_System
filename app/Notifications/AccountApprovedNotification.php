@@ -25,6 +25,6 @@ class AccountApprovedNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Your barangay account has been approved')
-            ->view('emails.account-approved', ['userName' => $this->userName]);
+            ->view('emails.account-approved', ['userName' => $this->userName ?: 'Resident']);
     }
 }

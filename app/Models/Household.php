@@ -59,7 +59,9 @@ class Household extends Model
 
     public function purok()
     {
-        return $this->belongsTo(Purok::class);
+        // A purok may be archived while its households stay on record; keep
+        // showing the purok instead of dropping the relation to null.
+        return $this->belongsTo(Purok::class)->withTrashed();
     }
 
     public function head()
@@ -95,9 +97,33 @@ class Household extends Model
                 return;
             }
 
+            // Trashing a household must not leave a live head pointer
+            // behind: the row stays (with its members) but it no longer
+            // selects a head, and the former head no longer claims headship
+            // of a trashed household. The guard on household_id keeps a
+            // stale pointer (head since moved away) from demoting the
+            // wrong headship. Restore starts from a clean slate; the head
+            // is reassigned explicitly afterwards.
+            $headId = $household->getOriginal('head_of_household_id') ?? $household->head_of_household_id;
+
+            if ($headId !== null) {
+                $household->head_of_household_id = null;
+
+                Resident::query()
+                    ->whereKey($headId)
+                    ->where('household_id', $household->getKey())
+                    ->update(['is_household_head' => false, 'updated_at' => now()]);
+            }
+
             $code = (string) ($household->getOriginal('household_code') ?? $household->household_code);
 
             if ($code === '' || str_contains($code, self::DELETED_MARKER)) {
+                // The tombstone is skipped on this path, but the head-pointer
+                // clearing above must still persist.
+                if ($household->isDirty()) {
+                    $household->saveQuietly();
+                }
+
                 return;
             }
 

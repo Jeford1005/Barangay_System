@@ -8,7 +8,7 @@
     <div style="max-width:600px;margin:0 auto;padding:32px 16px;">
         <div style="background:#171717;color:#fff;padding:20px 24px;font-weight:700;">Barangay Management System</div>
         <div style="background:#fff;padding:28px 24px;border:1px solid #e5e5e5;border-top:0;">
-            <p>Hello {{ $userName }},</p>
+            <p>Hello {{ $userName ?: 'Resident' }},</p>
 
             @if ($change === 'suspended')
                 <p>Your barangay account has been suspended.</p>

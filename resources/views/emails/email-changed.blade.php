@@ -10,5 +10,5 @@ Reset password
 @endcomponent
 
 Thanks,<br>
-{{ config('app.name') }}
+Barangay Management System
 @endcomponent

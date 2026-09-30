@@ -27,7 +27,7 @@ class AccountRejectedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Your barangay account application was not approved')
             ->view('emails.account-rejected', [
-                'userName' => $this->userName,
+                'userName' => $this->userName ?: 'Resident',
                 'reason' => $this->reason,
             ]);
     }

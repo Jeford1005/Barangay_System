@@ -104,11 +104,11 @@ class ArchiveController extends Controller
                     throw ValidationException::withMessages(['archive' => $blocker]);
                 }
 
-                $this->detachResidentReferences($type, $record);
+                $detached = $this->detachResidentReferences($type, $record);
                 $description = $this->describe($type, $record);
                 $record->forceDelete();
 
-                $this->audit($request, 'archive.purged', $type, $description);
+                $this->audit($request, 'archive.purged', $type, $description, ['detached' => $detached]);
 
                 return $description;
             });
@@ -132,11 +132,14 @@ class ArchiveController extends Controller
                 return 'This resident is linked to a user account. Unlink the account from the user record before purging the profile.';
             }
 
-            $issuances = CertificateIssuance::withTrashed()->where('resident_id', $record->getKey())->count();
-            $requests = CertificateRequest::query()->where('resident_id', $record->getKey())->count();
+            $issuances = CertificateIssuance::query()->where('resident_id', $record->getKey())->count();
+            $requests = CertificateRequest::query()
+                ->where('resident_id', $record->getKey())
+                ->where('status', 'Pending')
+                ->count();
 
             if ($issuances > 0 || $requests > 0) {
-                return "This resident has certificate history ({$issuances} issuance(s), {$requests} request(s)) that must be kept for accountability. Archive the profile instead.";
+                return "This resident has certificate history ({$issuances} issuance(s), {$requests} pending request(s)) that must be kept for accountability. Archive the profile instead.";
             }
         }
 
@@ -160,21 +163,32 @@ class ArchiveController extends Controller
      * Relying solely on the database FK leaves orphans on stores where FK
      * enforcement is off, and purging a household must also release its
      * already-archived members instead of stranding them on a deleted id.
+     * Returns the per-column detached row counts so the purge audit entry
+     * records exactly which references were cut.
+     *
+     * @return array<string, int>
      */
-    private function detachResidentReferences(string $type, Model $record): void
+    private function detachResidentReferences(string $type, Model $record): array
     {
+        $detached = [];
+
         if ($type === 'residents') {
             $key = $record->getKey();
 
-            Blotter::withTrashed()->where('complainant_id', $key)->update(['complainant_id' => null]);
-            Blotter::withTrashed()->where('accused_id', $key)->update(['accused_id' => null]);
-            Welfare::withTrashed()->where('beneficiary_id', $key)->update(['beneficiary_id' => null]);
-            Household::withTrashed()->where('head_of_household_id', $key)->update(['head_of_household_id' => null]);
+            $detached['blotter.complainant_id'] = Blotter::withTrashed()->where('complainant_id', $key)->update(['complainant_id' => null]);
+            $detached['blotter.accused_id'] = Blotter::withTrashed()->where('accused_id', $key)->update(['accused_id' => null]);
+            $detached['welfare.beneficiary_id'] = Welfare::withTrashed()->where('beneficiary_id', $key)->update(['beneficiary_id' => null]);
+            $detached['households.head_of_household_id'] = Household::withTrashed()->where('head_of_household_id', $key)->update(['head_of_household_id' => null]);
         }
 
         if ($type === 'households') {
-            Resident::withTrashed()->where('household_id', $record->getKey())->update(['household_id' => null]);
+            // Detached members keep no head flag: the household is gone, so
+            // a lingering is_household_head=true would claim headship of
+            // nothing (the data-quality audit flags exactly that shape).
+            $detached['residents.household_id'] = Resident::withTrashed()->where('household_id', $record->getKey())->update(['household_id' => null, 'is_household_head' => false]);
         }
+
+        return $detached;
     }
 
     private function trashedQuery(string $type, Request $request): Builder
@@ -234,7 +248,7 @@ class ArchiveController extends Controller
         };
     }
 
-    private function audit(Request $request, string $event, string $type, string $description): void
+    private function audit(Request $request, string $event, string $type, string $description, array $extra = []): void
     {
         AuditLog::record(
             $event,
@@ -242,7 +256,7 @@ class ArchiveController extends Controller
             Auth::user()?->email,
             $request->ip(),
             $request->userAgent(),
-            ['type' => $type, 'record' => $description],
+            array_merge(['type' => $type, 'record' => $description], $extra),
         );
     }
 }

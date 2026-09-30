@@ -32,7 +32,7 @@
                     {{-- Body --}}
                     <tr>
                         <td style="padding: 32px;">
-                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">You're approved, {{ $userName }}!</h1>
+                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">You're approved, {{ $userName ?: 'Resident' }}!</h1>
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #525252;">
                                 Your resident account for the Barangay Management System has been
                                 approved by the barangay office. You can now sign in with the email
@@ -42,7 +42,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
                                     <td align="center" style="background-color: #2563eb; border-radius: 8px;">
-                                        <a href="{{ url('/login') }}" style="display: inline-block; padding: 12px 24px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">Sign in to your account</a>
+                                        <a href="{{ route('login') }}" style="display: inline-block; padding: 12px 24px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">Sign in to your account</a>
                                     </td>
                                 </tr>
                             </table>

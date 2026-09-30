@@ -35,7 +35,18 @@ class BackupService
     public function __construct(
         private readonly ?string $directory = null,
         private readonly int $keep = 10,
+        private readonly ?int $maxAgeDays = null,
     ) {}
+
+    /**
+     * Maximum backup age in days. Files older than this are pruned alongside
+     * the count cap (newest file is always spared). Configurable via
+     * BACKUP_MAX_AGE_DAYS; default 90 days.
+     */
+    public function maxAgeDays(): int
+    {
+        return max(1, $this->maxAgeDays ?? (int) env('BACKUP_MAX_AGE_DAYS', 90));
+    }
 
     public function directory(): string
     {
@@ -425,7 +436,22 @@ class BackupService
     private function pruneOldBackups(): void
     {
         $keep = max(1, $this->keep);
-        $victims = array_slice($this->all(), $keep);
+        $cutoff = now()->subDays($this->maxAgeDays())->timestamp;
+
+        // all() is newest-first. A file is a victim when it falls outside
+        // the count cap OR is older than the age cap. The single newest file
+        // is always spared so an age threshold can never strand zero backups.
+        $victims = [];
+
+        foreach ($this->all() as $index => $backup) {
+            if ($index === 0) {
+                continue;
+            }
+
+            if ($index >= $keep || $backup['created_at'] < $cutoff) {
+                $victims[] = $backup;
+            }
+        }
 
         // Oldest first, so that if a delete fails halfway the survivors are
         // the newer backups. Each failure is reported and the rest still

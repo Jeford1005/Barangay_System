@@ -37,7 +37,7 @@ class AccountAccessChangedNotification extends Notification implements ShouldQue
         return (new MailMessage)
             ->subject($subject)
             ->view('emails.account-access-changed', [
-                'userName' => $this->userName,
+                'userName' => $this->userName ?: 'Resident',
                 'change' => $this->change,
                 'fromRole' => $this->fromRole,
                 'toRole' => $this->toRole,

@@ -64,7 +64,9 @@ class Resident extends Model
 
     public function purok()
     {
-        return $this->belongsTo(Purok::class, 'purok_id');
+        // A purok may be archived while its residents stay on record; keep
+        // showing the purok instead of dropping the relation to null.
+        return $this->belongsTo(Purok::class, 'purok_id')->withTrashed();
     }
 
     public function household()

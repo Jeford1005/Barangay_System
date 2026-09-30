@@ -36,3 +36,10 @@ Schedule::command('system:health --json')
     ->hourlyAt(15)
     ->withoutOverlapping()
     ->onOneServer();
+
+// Audit rows older than the retention window (default 365 days, floor 30)
+// are pruned; recent rows are never touched.
+Schedule::command('audit:prune-logs')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer();

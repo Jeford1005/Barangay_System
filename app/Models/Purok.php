@@ -5,10 +5,11 @@ namespace App\Models;
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Purok extends Model
 {
-    use HasFactory, Searchable;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $fillable = [
         'name',

@@ -54,7 +54,11 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            // Shipped default is rotation: `single` is one ever-growing file
+            // that keeps PII forever, so the default stack keeps the `daily`
+            // channel (LOG_DAILY_DAYS, default 14). Override per-environment
+            // with LOG_STACK in `.env`.
+            'channels' => explode(',', (string) env('LOG_STACK', 'daily')),
             'ignore_exceptions' => false,
         ],
 

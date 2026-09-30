@@ -76,9 +76,12 @@ class PasswordResetCodeController extends Controller
         // send, so the endpoint never reveals whether an account exists.
         // The attempt is logged internally for abuse monitoring.
         if (! $user) {
+            // Abuse monitoring only: the text log keeps hashes, never the raw
+            // email or IP. The DB audit row is intentionally not written for
+            // unknown addresses (see test_requests_for_unknown_emails…).
             Log::info('password_reset.code_requested_unknown', [
-                'email' => $email,
-                'ip' => $request->ip(),
+                'email_hash' => self::piiHash($email),
+                'ip_hash' => self::piiHash((string) $request->ip()),
             ]);
 
             $generic = 'If an account exists for that email address, a 6-character reset code has been sent. It expires in '.PasswordResetCodeService::CODE_TTL_MINUTES.' minutes.';
@@ -121,10 +124,12 @@ class PasswordResetCodeController extends Controller
             $this->resetCodes->issue($user);
         } catch (\Throwable $exception) {
             report($exception);
+            // The DB audit row keeps the account link; the text log keeps
+            // hashes only so raw emails/IPs never sit in laravel.log.
             Log::warning('password_reset.code_send_failed', [
                 'user_id' => $user->id,
-                'email' => $user->email,
-                'ip' => $request->ip(),
+                'email_hash' => self::piiHash((string) $user->email),
+                'ip_hash' => self::piiHash((string) $request->ip()),
             ]);
 
             AuditLog::record(
@@ -419,6 +424,16 @@ class PasswordResetCodeController extends Controller
         }
 
         return max(0, self::RESEND_COOLDOWN_SECONDS - (now()->timestamp - $sentAt));
+    }
+
+    /**
+     * One-way hash for PII that reaches the text log (emails, IPs). Keeps
+     * abuse correlation possible without persisting raw identifiers in
+     * laravel.log. DB audit rows are unaffected.
+     */
+    private static function piiHash(string $value): string
+    {
+        return hash('sha256', mb_strtolower(trim($value)));
     }
 
     /**

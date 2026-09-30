@@ -30,17 +30,17 @@ class CertificateRequestDecisionNotification extends Notification implements Sho
 
         if ($this->approved) {
             return (new MailMessage)
-                ->subject("Your {$title} request has been approved")
+                ->subject("Your {$title} request #{$request->id} has been approved")
                 ->view('emails.certificate-request-approved', [
-                    'userName' => $notifiable->name,
+                    'userName' => $notifiable->name ?: 'Resident',
                     'request' => $request,
                 ]);
         }
 
         return (new MailMessage)
-            ->subject("Your {$title} request was not approved")
+            ->subject("Your {$title} request #{$request->id} was not approved")
             ->view('emails.certificate-request-rejected', [
-                'userName' => $notifiable->name,
+                'userName' => $notifiable->name ?: 'Resident',
                 'request' => $request,
                 'reason' => $request->rejection_reason,
             ]);

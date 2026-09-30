@@ -8,6 +8,44 @@ use Illuminate\Database\Eloquent\Model;
 class AuditLog extends Model
 {
     use Searchable;
+
+    /**
+     * Placeholder stored wherever a sensitive value was redacted out of the
+     * recorded properties. The DB audit row stays queryable (event, actor,
+     * subject, filters) without keeping secrets.
+     */
+    public const REDACTED = '[REDACTED]';
+
+    /**
+     * Property keys that must never be persisted verbatim: credentials,
+     * tokens and one-time codes. Matched case-insensitively against the
+     * exact key name (so `household_code`, `case_number` and other business
+     * codes keep working).
+     */
+    private const SENSITIVE_KEYS = [
+        'password',
+        'password_confirmation',
+        'current_password',
+        'new_password',
+        'passwd',
+        'pass',
+        'token',
+        'remember_token',
+        'secret',
+        'client_secret',
+        'api_key',
+        'apikey',
+        'access_token',
+        'refresh_token',
+        'reset_token',
+        'code',
+        'reset_code',
+        'verification_code',
+        'otp',
+        'pin',
+        'authorization',
+        'private_key',
+    ];
     protected $fillable = [
         'occurred_at',
         'user_id',
@@ -97,13 +135,51 @@ class AuditLog extends Model
                 'event' => $event,
                 'ip_address' => $ip,
                 'user_agent' => $userAgent !== null ? mb_substr($userAgent, 0, 500) : null,
-                'properties' => $properties,
+                'properties' => self::redactProperties($properties),
             ]);
         } catch (\Throwable $e) {
             report($e);
 
             return null;
         }
+    }
+
+    /**
+     * Recursively replace sensitive values (passwords, tokens, secrets,
+     * one-time codes) with self::REDACTED. Non-sensitive keys — including
+     * rejection/suspension `reason` text, export `filters`, names and case
+     * numbers — pass through untouched so accountability is preserved.
+     *
+     * @param  array<string, mixed>  $properties
+     * @return array<string, mixed>
+     */
+    public static function redactProperties(array $properties): array
+    {
+        foreach ($properties as $key => $value) {
+            if (is_array($value)) {
+                $properties[$key] = self::redactProperties($value);
+
+                continue;
+            }
+
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $normalized = strtolower((string) $key);
+
+            if (
+                in_array($normalized, self::SENSITIVE_KEYS, true)
+                || str_contains($normalized, 'password')
+                || str_contains($normalized, 'secret')
+                || str_contains($normalized, '_token')
+                || $normalized === 'token'
+            ) {
+                $properties[$key] = self::REDACTED;
+            }
+        }
+
+        return $properties;
     }
 
     public static function recordWithSubject(
@@ -136,7 +212,7 @@ class AuditLog extends Model
                 'event' => $event,
                 'ip_address' => $ip,
                 'user_agent' => $userAgent !== null ? mb_substr($userAgent, 0, 500) : null,
-                'properties' => $properties,
+                'properties' => self::redactProperties($properties),
             ]);
         } catch (\Throwable $e) {
             report($e);

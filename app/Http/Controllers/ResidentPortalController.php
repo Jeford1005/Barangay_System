@@ -11,6 +11,7 @@ use App\Models\ResidentRecordChange;
 use App\Notifications\ResidentEmailChangedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -144,6 +145,16 @@ class ResidentPortalController extends Controller
 
         if ($emailChanged) {
             $user->notify(new ResidentEmailChangedNotification($oldEmail, $newEmail));
+
+            // Warn the previous inbox too: without this, an account takeover
+            // via email change is invisible to the original owner. Mail
+            // failure must never 500 the already-committed change.
+            try {
+                Notification::route('mail', $oldEmail)
+                    ->notify(new ResidentEmailChangedNotification($oldEmail, $newEmail));
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         if ($newPhoto && $oldPhoto) {

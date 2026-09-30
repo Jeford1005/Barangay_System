@@ -150,7 +150,9 @@ class PurokCrudTest extends TestCase
         $response->assertRedirect('/puroks')
             ->assertSessionHas('success');
 
-        $this->assertModelMissing($purok);
+        // Puroks soft-delete: the row is retained with deleted_at so
+        // trashed child lookups still resolve.
+        $this->assertSoftDeleted($purok);
     }
 
     public function test_destroy_is_blocked_when_a_household_is_attached(): void

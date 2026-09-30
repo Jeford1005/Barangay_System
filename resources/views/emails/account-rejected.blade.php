@@ -32,7 +32,7 @@
                     {{-- Body --}}
                     <tr>
                         <td style="padding: 32px;">
-                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">Hello {{ $userName }},</h1>
+                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">Hello {{ $userName ?: 'Resident' }},</h1>
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #525252;">
                                 After review, the barangay office was unable to approve your
                                 resident account application at this time.
@@ -40,7 +40,7 @@
 
                             <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;">
                                 <div style="font-size: 12px; font-weight: 600; color: #991b1b; margin-bottom: 4px;">REASON</div>
-                                <div style="font-size: 14px; line-height: 1.6; color: #7f1d1d;">{{ $reason }}</div>
+                                <div style="font-size: 14px; line-height: 1.6; color: #7f1d1d;">{{ $reason ?: 'No reason was provided. Please contact the barangay office for details.' }}</div>
                             </div>
 
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #525252;">

@@ -32,31 +32,31 @@
                     {{-- Body --}}
                     <tr>
                         <td style="padding: 32px;">
-                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">Good news, {{ $userName }}!</h1>
+                            <h1 style="margin: 0 0 8px; font-size: 20px; font-weight: 600; color: #171717;">Good news, {{ $userName ?: 'Resident' }}!</h1>
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #525252;">
                                 Your request for a <strong>{{ $request->document->title }}</strong>
-                                (purpose: {{ $request->purpose }}) has been approved.
+                                (Request #{{ $request->id }}, purpose: {{ $request->purpose }}) has been approved.
                                 Your certificate is ready for release at the barangay hall.
                             </p>
 
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; margin-bottom: 20px;">
                                 <tr>
                                     <td style="padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #14532d;">
-                                        <strong>Control No.:</strong> {{ $request->issuance?->control_number ?? '—' }}<br>
-                                        <strong>Copies:</strong> {{ $request->copies }}<br>
-                                        <strong>Fee:</strong> @if ((float) ($request->issuance?->fee ?? 0) > 0) <x-money :amount="$request->issuance->fee" /> (pay at the counter) @else Free of charge @endif
+                                        <strong>Control No.:</strong> {{ $request->issuance?->control_number ?? 'issuance record unavailable' }}<br>
+                                        <strong>Copies:</strong> {{ $request->issuance?->copies ?? $request->copies }}<br>
+                                        <strong>Total fee:</strong> @if ((float) ($request->issuance?->fee ?? 0) > 0) <x-money :amount="$request->issuance->fee" /> @else Free of charge @endif
                                     </td>
                                 </tr>
                             </table>
 
                             <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #525252;">
-                                Please bring a valid ID when claiming. Certificates are valid for six (6) months from issuance.
+                                Please bring a valid ID when claiming.
                             </p>
 
                             <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                                 <tr>
                                     <td align="center" style="background-color: #16a34a; border-radius: 8px;">
-                                        <a href="{{ url('/my') }}" style="display: inline-block; padding: 12px 24px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">View my requests</a>
+                                        <a href="{{ route('resident.requests') }}" style="display: inline-block; padding: 12px 24px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none;">View my requests</a>
                                     </td>
                                 </tr>
                             </table>
