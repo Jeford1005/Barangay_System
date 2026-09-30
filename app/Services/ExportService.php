@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\Blotter;
 use App\Models\CertificateIssuance;
+use App\Models\Concerns\Searchable;
 use App\Models\Household;
 use App\Models\Resident;
 use App\Models\Welfare;
@@ -298,8 +299,9 @@ class ExportService
 
         $search = mb_substr((string) $value, 0, self::MAX_SEARCH_LENGTH);
         $search = strip_tags($search);
+        $search = Searchable::normalizeSearchTerm($search, self::MAX_SEARCH_LENGTH);
 
-        return $search === '' ? null : $search;
+        return $search === '' || $search === null ? null : $search;
     }
 
     /**
@@ -352,15 +354,9 @@ class ExportService
         $search = $this->search($request);
 
         if ($search !== null) {
-            $fullNameSql = $query->getModel()->getConnection()->getDriverName() === 'sqlite'
-                ? "first_name || ' ' || last_name"
-                : "CONCAT(first_name, ' ', last_name)";
-
-            $query->where(function (Builder $query) use ($search, $fullNameSql): void {
-                $query->where('first_name', 'like', '%'.$search.'%')
-                    ->orWhere('last_name', 'like', '%'.$search.'%')
-                    ->orWhereRaw($fullNameSql.' LIKE ?', ['%'.$search.'%']);
-            });
+            // Separate column matches (no CONCAT) with LIKE-escaping inside
+            // the shared scope, mirroring the residents index.
+            $query->search($search, ['first_name', 'last_name']);
         }
 
         if ($request->filled('purok_id')) {
@@ -385,11 +381,9 @@ class ExportService
         $search = $this->search($request);
 
         if ($search !== null) {
-            $query->where(function (Builder $query) use ($search): void {
-                $query->where('household_code', 'like', '%'.$search.'%')
-                    ->orWhere('street', 'like', '%'.$search.'%')
-                    ->orWhere('barangay', 'like', '%'.$search.'%');
-            });
+            // Same contains semantics as the households index; the shared
+            // scope escapes wildcards and adds the ESCAPE clause.
+            $query->search($search, ['household_code', 'street', 'barangay']);
         }
 
         if ($request->filled('purok_id')) {
@@ -405,12 +399,12 @@ class ExportService
         $search = $this->search($request);
 
         if ($search !== null) {
-            $query->where(function (Builder $query) use ($search): void {
-                $query->where('case_number', 'like', '%'.$search.'%')
-                    ->orWhere('complainant_name', 'like', '%'.$search.'%')
-                    ->orWhere('accused_name', 'like', '%'.$search.'%')
-                    ->orWhere('complaint_type', 'like', '%'.$search.'%');
-            });
+            // Same contains semantics as the blotter index; the shared
+            // scope escapes wildcards and adds the ESCAPE clause.
+            $query->search(
+                $search,
+                ['case_number', 'complainant_name', 'accused_name', 'complaint_type']
+            );
         }
 
         $status = $this->inputString($request, 'status');
@@ -427,10 +421,7 @@ class ExportService
         $search = $this->search($request);
 
         if ($search !== null) {
-            $query->where(function (Builder $query) use ($search): void {
-                $query->where('beneficiary_name', 'like', '%'.$search.'%')
-                    ->orWhere('program_name', 'like', '%'.$search.'%');
-            });
+            $query->search($search, ['beneficiary_name', 'program_name']);
         }
 
         $status = $this->inputString($request, 'status');
@@ -453,12 +444,12 @@ class ExportService
         $search = $this->search($request);
 
         if ($search !== null) {
+            // Same contains semantics as the certificates index; resident
+            // names go through the shared scope on the related query.
             $query->where(function (Builder $query) use ($search): void {
-                $query->where('control_number', 'like', '%'.$search.'%')
-                    ->orWhere('purpose', 'like', '%'.$search.'%')
+                $query->search($search, ['control_number', 'purpose'])
                     ->orWhereHas('resident', function (Builder $residentQuery) use ($search): void {
-                        $residentQuery->where('first_name', 'like', '%'.$search.'%')
-                            ->orWhere('last_name', 'like', '%'.$search.'%');
+                        $residentQuery->search($search, ['first_name', 'last_name']);
                     });
             });
         }

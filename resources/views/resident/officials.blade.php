@@ -18,7 +18,7 @@
                     {{-- No photo route exists for officials yet, so the directory
                          shows initials rather than a path nothing would serve. --}}
                     <span aria-hidden="true" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-                        {{ strtoupper(mb_substr($official->first_name, 0, 1) . mb_substr($official->last_name, 0, 1)) }}
+                        {{ strtoupper(mb_substr($official->first_name ?? '', 0, 1) . mb_substr($official->last_name ?? '', 0, 1)) ?: '—' }}
                     </span>
                     <div class="min-w-0 flex-1">
                         <p class="text-base font-semibold text-slate-900">{{ $official->full_name }}</p>
@@ -27,7 +27,7 @@
                             <dt class="font-medium text-slate-500">Office</dt>
                             <dd class="text-slate-700">{{ $official->office }}</dd>
                             <dt class="font-medium text-slate-500">Term</dt>
-                            <dd class="text-slate-700">{{ $official->term_start->format('M j, Y') }} – {{ $official->term_end->format('M j, Y') }}</dd>
+                            <dd class="text-slate-700">{{ $official->term_start?->format('M j, Y') ?? '—' }} – {{ $official->term_end?->format('M j, Y') ?? '—' }}</dd>
                         </dl>
                     </div>
                 </li>

@@ -202,7 +202,7 @@
             <img src="{{ asset('images/bidduang-seal.png') }}" alt="Barangay Bidduang official seal">
             <div class="lines">
                 <div class="rep">Republic of the Philippines</div>
-                <div class="rep">Province of&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;· Municipality/City of&nbsp;&nbsp;&nbsp;—</div>
+                <div class="rep">Province of ____________________ · Municipality/City of ____________________</div>
                 <div class="brgy">Barangay Bidduang</div>
                 <div class="office">Office of the Barangay — Records Section</div>
             </div>

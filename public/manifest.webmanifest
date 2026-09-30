@@ -1,0 +1,52 @@
+{
+  "name": "Barangay Management System",
+  "short_name": "Barangay",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/images/seal-square.png",
+      "sizes": "148x148",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/bidduang-seal-circle.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/bidduang-seal.png",
+      "sizes": "198x148",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/seal-square.png",
+      "sizes": "148x148",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/bidduang-seal-circle.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/images/bidduang-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

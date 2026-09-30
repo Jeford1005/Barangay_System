@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CertificateIssuance extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
 
     /**
      * Width of `certificate_issuances.control_number` after the 2026-09-30

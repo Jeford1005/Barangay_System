@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Concerns\Searchable;
 use App\Models\Document;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,16 +15,16 @@ class CertificateTypeController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = mb_substr(strip_tags((string) $request->input('search', '')), 0, 100);
+        $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->input('search', '')), 0, 100)) ?? '';
         $status = (string) $request->input('status', '');
 
         $documents = Document::query()
             ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('code', 'like', "%{$search}%")
-                        ->orWhere('title', 'like', "%{$search}%")
-                        ->orWhere('category', 'like', "%{$search}%");
-                });
+                // Same contains semantics as before; escaping and quote
+                // normalization now live in the shared scope. `code` keeps
+                // contains matching so partial-code lookups (e.g. `ILT`
+                // matching a longer code) behave like every other index.
+                $query->search($search, ['code', 'title', 'category']);
             })
             ->when(in_array($status, ['Active', 'Inactive', 'Draft'], true), fn ($query) => $query->where('status', $status))
             ->withCount(['issuances'])

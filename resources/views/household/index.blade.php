@@ -55,8 +55,8 @@
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Household Code</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purok</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Head</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Members</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Head</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Members</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -71,10 +71,10 @@
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $household->purok ? $household->purok->name : 'N/A' }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $household->head ? $household->head->last_name . ', ' . $household->head->first_name : 'N/A' }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $household->num_members }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">

@@ -18,7 +18,7 @@ class ResidentContactUpdateRequest extends FormRequest
         $userId = $this->user()?->id;
 
         return [
-            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'address' => ['required', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:max_width=4096,max_height=4096'],
             'email' => [
@@ -36,7 +36,8 @@ class ResidentContactUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone_number.regex' => 'The phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'phone_number.regex' => 'The phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
+            'email.confirmed' => 'The email confirmation does not match.',
         ];
     }
 }

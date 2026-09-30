@@ -21,20 +21,12 @@ class ResidentController extends Controller
     {
         $query = Resident::with(['purok', 'household']);
 
-        // Search - using parameterized queries via Eloquent. LIKE wildcards
-        // in the input are escaped so `%` and `_` only ever match literally.
+        // Search - shared scope: separate column matches (no CONCAT, so the
+        // name indexes stay usable) with LIKE-escaping and quote
+        // normalization handled inside.
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
-            $escaped = self::escapeLike($search);
-            $like = '%'.$escaped.'%';
-            $fullNameSql = $query->getConnection()->getDriverName() === 'sqlite'
-                ? "first_name || ' ' || last_name"
-                : 'CONCAT(first_name, " ", last_name)';
-            $query->where(function ($q) use ($like, $fullNameSql) {
-                $q->whereRaw("first_name LIKE ? ESCAPE '\\'", [$like])
-                    ->orWhereRaw("last_name LIKE ? ESCAPE '\\'", [$like])
-                    ->orWhereRaw($fullNameSql." LIKE ? ESCAPE '\\'", [$like]);
-            });
+            $query->search($search, ['first_name', 'last_name']);
         }
 
         // Filter by purok
@@ -62,16 +54,6 @@ class ResidentController extends Controller
 
         return view('resident.index', compact('residents', 'puroks', 'households'))
             ->with('i', ($page - 1) * $residents->perPage());
-    }
-
-    /**
-     * Escape LIKE wildcards so user input only ever matches literally.
-     * To be used with an explicit `ESCAPE '\\'` clause (portable across
-     * MySQL and SQLite).
-     */
-    private static function escapeLike(string $value): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     /**
@@ -385,7 +367,7 @@ class ResidentController extends Controller
     private function validateResident(Request $request, $residentId = null)
     {
         return $request->validate($this->validateResidentFields($residentId), [
-            'phone_number.regex' => 'The phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'phone_number.regex' => 'The phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'blood_type.regex' => 'Enter a valid blood type such as O+, A-, or AB+.',
             'purok_id.integer' => 'Please select a purok from the list.',
             'purok_id.exists' => 'The selected purok is no longer available. Please choose another.',
@@ -426,7 +408,7 @@ class ResidentController extends Controller
             'occupation' => 'nullable|string|max:100',
             'spouse_name' => 'nullable|string|max:100',
             'blood_type' => ['nullable', 'string', 'max:5', 'regex:/^(?:A|B|AB|O)[+-]?$/i'],
-            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'email' => ['nullable', 'string', 'email', 'max:150', Rule::unique('residents', 'email')->ignore($residentId)->whereNull('deleted_at')],
             'address' => 'nullable|string|max:255',
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:max_width=4096,max_height=4096'],

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -10,7 +11,7 @@ use Illuminate\Validation\Rules\Unique;
 
 class Resident extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $table = 'residents';
 

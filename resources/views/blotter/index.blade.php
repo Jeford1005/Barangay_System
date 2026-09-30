@@ -54,9 +54,9 @@
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Case No.</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Complainant</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Respondent</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Complaint</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Respondent</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Complaint</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -73,14 +73,14 @@
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($blotter->complainant_name) }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($blotter->accused_name) }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4">
                                         <span class="text-sm text-slate-500">{{ e(Str::limit($blotter->complaint_type, 40)) }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
-                                        <span class="text-sm text-slate-500">{{ $blotter->complaint_date->format('M j, Y') }}</span>
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-slate-500">{{ $blotter->complaint_date?->format('M j, Y') ?? '—' }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         @php

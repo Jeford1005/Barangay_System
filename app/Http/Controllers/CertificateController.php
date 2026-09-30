@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\CertificateIssuance;
+use App\Models\Concerns\Searchable;
 use App\Models\Document;
 use App\Models\Official;
 use App\Models\Resident;
@@ -23,7 +24,7 @@ class CertificateController extends Controller
             ->latest('id');
 
         if ($request->filled('search')) {
-            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
             $like = '%'.self::escapeLike($search).'%';
             $query->where(function ($q) use ($like) {
                 $q->whereRaw("control_number LIKE ? ESCAPE '\\'", [$like])

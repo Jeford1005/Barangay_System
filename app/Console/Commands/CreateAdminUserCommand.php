@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -33,9 +34,11 @@ class CreateAdminUserCommand extends Command
 
     public function handle(): int
     {
-        $name = $this->option('name') ?: env('ADMIN_NAME');
-        $email = $this->option('email') ?: env('ADMIN_EMAIL');
-        $password = $this->option('password') ?: env('ADMIN_PASSWORD');
+        // Env::get() reads $_ENV/$_SERVER directly, so bootstrap secrets keep
+        // working when the config cache is warm (env() returns null there).
+        $name = $this->option('name') ?: Env::get('ADMIN_NAME');
+        $email = $this->option('email') ?: Env::get('ADMIN_EMAIL');
+        $password = $this->option('password') ?: Env::get('ADMIN_PASSWORD');
 
         $name = $name ?: $this->ask('Administrator name');
         $email = $email ?: $this->ask('Administrator email');

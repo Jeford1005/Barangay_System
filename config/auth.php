@@ -96,6 +96,9 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            // 60 minutes is the framework default and a sensible TTL here:
+            // long enough for email delivery delays, short enough that a
+            // leaked token is only briefly useful.
             'expire' => 60,
             'throttle' => 60,
         ],

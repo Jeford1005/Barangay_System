@@ -80,14 +80,14 @@
                     <caption class="sr-only">Resident records</caption>
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">#</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">#</th>
                             <th scope="col" class="px-4 py-3 font-medium">Name</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Sex</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Civil status</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Birth date</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Contact</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Sex</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Civil status</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Birth date</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Contact</th>
                             <th scope="col" class="px-4 py-3 font-medium">Purok</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Household</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Household</th>
                             <th scope="col" class="px-4 py-3 font-medium">Status</th>
                             <th scope="col" class="no-print px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
@@ -98,17 +98,17 @@
                                 $isActive = $resident->status === 'Active';
                             @endphp
                             <tr class="hover:bg-slate-50">
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-500 md:table-cell">{{ ($residents->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-500 print:table-cell md:table-cell">{{ ($residents->firstItem() ?? 0) + $loop->iteration - 1 }}</td>
                                 <td class="min-w-[180px] px-4 py-3">
                                     <span class="font-medium text-slate-900">{{ $resident->last_name }}, {{ $resident->first_name }} {{ $resident->suffix }}</span>
                                     <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ $resident->phone_number ?? '—' }} &middot; {{ $resident->household?->household_code ?? '—' }}</span>
                                 </td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->sex }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->civil_status }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->birth_date?->format('M d, Y') ?? '—' }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->phone_number ?? '—' }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->sex }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->civil_status }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->birth_date?->format('M d, Y') ?? '—' }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->phone_number ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ $resident->purok?->name ?? '—' }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $resident->household?->household_code ?? '—' }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $resident->household?->household_code ?? '—' }}</td>
                                 <td class="whitespace-nowrap px-4 py-3">
                                     <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">{{ $resident->status }}</span>
                                 </td>

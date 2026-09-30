@@ -48,7 +48,7 @@ class RegisteredUserController extends Controller
             'birth_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after_or_equal:1900-01-01'],
             'sex' => ['required', 'in:Male,Female,Other'],
             'civil_status' => ['required', 'in:Single,Married,Divorced,Widowed,Separated'],
-            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'phone_number' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'address' => ['required', 'string', 'max:255'],
             'purok_id' => ['nullable', 'integer', 'exists:puroks,id'],
@@ -56,7 +56,8 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
             'email.unique' => 'An account with this email already exists.',
-            'phone_number.regex' => 'The phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'password.confirmed' => 'The password confirmation does not match.',
+            'phone_number.regex' => 'The phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'purok_id.integer' => 'Please select a purok from the list, or leave it blank.',
             'purok_id.exists' => 'The selected purok is no longer available. Please choose another.',
             'household_id.integer' => 'Please select a household from the list, or leave it blank.',

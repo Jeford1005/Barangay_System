@@ -147,7 +147,10 @@ class AdminExportTest extends TestCase
         ]);
 
         $householdResponse = $this->export('households', [
-            'search' => 'FILTER',
+            // A code prefix: household_code is prefix-matched (sargable) while
+            // street/barangay stay contains-matched, so this hits MATCH under
+            // either semantic and still proves the purok filter combines.
+            'search' => 'HH-FILTER',
             'purok_id' => $purok->id,
         ]);
         $this->assertSame([(string) $matchingHousehold->id], array_column($this->dataRows($householdResponse), 0));

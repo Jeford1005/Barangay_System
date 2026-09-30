@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Blotter;
 use App\Models\CertificateIssuance;
 use App\Models\CertificateRequest;
+use App\Models\Concerns\Searchable;
 use App\Models\Household;
 use App\Models\Resident;
 use App\Models\Welfare;
@@ -178,7 +179,7 @@ class ArchiveController extends Controller
 
     private function trashedQuery(string $type, Request $request): Builder
     {
-        $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+        $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
         $like = '%'.self::escapeLike($search).'%';
 
         return match ($type) {

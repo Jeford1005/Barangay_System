@@ -191,7 +191,7 @@
             <img src="{{ asset('images/bidduang-seal.png') }}" alt="Barangay Bidduang official seal">
             <div class="lines">
                 <div class="rep">Republic of the Philippines</div>
-                <div class="rep">Province of&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;· Municipality/City of&nbsp;&nbsp;&nbsp;—</div>
+                <div class="rep">Province of ____________________ · Municipality/City of ____________________</div>
                 <div class="brgy">Barangay Bidduang</div>
                 <div class="office">Office of the Punong Barangay</div>
             </div>
@@ -220,7 +220,7 @@
 
             <p class="body">This is to certify that <b class="name">{{ $r->full_name }}</b>,
                 {{ $r->age }} years of age,
-                {{ strtolower($r->civil_status ?? 'single') }},
+                {{ $r->civil_status ? strtolower($r->civil_status) : '—' }},
                 and a bona fide resident of Barangay Bidduang
                 @if ($r->purok)
                     ({{ e($r->purok->name) }})@endif
@@ -243,7 +243,7 @@
 
             <p class="body">This is to certify that <b class="name">{{ $r->full_name }}</b>,
                 {{ $r->age }} years of age,
-                {{ strtolower($r->civil_status ?? 'single') }},
+                {{ $r->civil_status ? strtolower($r->civil_status) : '—' }},
                 is a <b>bona fide resident</b> of Barangay Bidduang
                 @if ($r->purok)
                     , {{ e($r->purok->name) }}@endif
@@ -265,7 +265,7 @@
 
             <p class="body">This is to certify that <b class="name">{{ $r->full_name }}</b>,
                 {{ $r->age }} years of age,
-                {{ strtolower($r->civil_status ?? 'single') }},
+                {{ $r->civil_status ? strtolower($r->civil_status) : '—' }},
                 residing in Barangay Bidduang
                 @if ($r->purok)
                     , {{ e($r->purok->name) }}@endif

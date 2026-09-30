@@ -85,7 +85,7 @@
                         <tr>
                             <td>{{ $case->case_number }}</td>
                             <td>{{ Str::limit($case->complaint_type, 60) }}</td>
-                            <td>{{ $case->complaint_date->format('M j, Y') }}</td>
+                            <td>{{ $case->complaint_date?->format('M j, Y') ?? '—' }}</td>
                             <td>{{ $case->status }}</td>
                         </tr>
                     @endforeach

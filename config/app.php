@@ -82,7 +82,9 @@ return [
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    // Faker's en_PH provider is available (verified), so factories and
+    // seeders generate Philippine names, addresses and phone formats.
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_PH'),
 
     /*
     |--------------------------------------------------------------------------
@@ -115,6 +117,10 @@ return [
     | allow maintenance mode to be controlled across multiple machines.
     |
     | Supported drivers: "file", "cache"
+    |
+    | This deployment keeps the "file" driver on purpose: it needs no
+    | database table, cache server, or worker, so `php artisan down` works
+    | even when the database/cache itself is the thing being serviced.
     |
     */
 

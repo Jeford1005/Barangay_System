@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Document extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
 
     /**
      * Width of `documents.code` after the 2026-09-30 widening (was 8; the

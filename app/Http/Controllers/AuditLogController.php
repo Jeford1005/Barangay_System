@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Concerns\Searchable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -44,30 +45,20 @@ class AuditLogController extends Controller
 
         if ($request->filled('actor')) {
             $actor = mb_substr(strip_tags((string) $request->input('actor')), 0, 100);
-            $query->where(function ($builder) use ($actor) {
-                $builder->where('actor_email', 'like', "%{$actor}%")
-                    ->orWhere('user_email', 'like', "%{$actor}%");
-            });
+            $query->search($actor, ['actor_email', 'user_email']);
         }
 
         if ($request->filled('subject')) {
             $subject = mb_substr(strip_tags((string) $request->input('subject')), 0, 100);
-            $query->where(function ($builder) use ($subject) {
-                $builder->where('subject_label', 'like', "%{$subject}%")
-                    ->orWhere('user_email', 'like', "%{$subject}%");
-            });
+            $query->search($subject, ['subject_label', 'user_email']);
         }
 
         if ($request->filled('search')) {
             $search = mb_substr(strip_tags((string) $request->search), 0, 100);
             $query->where(function ($q) use ($search) {
-                $q->where('user_email', 'like', '%'.$search.'%')
-                    ->orWhere('actor_email', 'like', '%'.$search.'%')
-                    ->orWhere('subject_label', 'like', '%'.$search.'%')
-                    ->orWhere('subject_type', 'like', '%'.$search.'%')
-                    ->orWhere('ip_address', 'like', '%'.$search.'%');
+                $q->search($search, ['user_email', 'actor_email', 'subject_label', 'subject_type', 'ip_address']);
 
-                if (ctype_digit($search)) {
+                if (ctype_digit((string) Searchable::normalizeSearchTerm($search))) {
                     $id = (int) $search;
                     $q->orWhere('subject_id', $id)
                         ->orWhere('actor_id', $id)
@@ -76,8 +67,7 @@ class AuditLogController extends Controller
 
                 // Actor names live on the users table, not the log row.
                 $q->orWhereHas('actor', function ($builder) use ($search) {
-                    $builder->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('email', 'like', '%'.$search.'%');
+                    $builder->search($search, ['name', 'email']);
                 });
             });
         }

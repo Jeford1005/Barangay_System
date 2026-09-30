@@ -50,7 +50,7 @@
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Record</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Deleted</th>
                                 <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -71,7 +71,7 @@
                                             <span class="block text-xs text-slate-500">{{ e($record->assistance_type) }} · ₱{{ number_format((float) $record->approved_amount, 2) }}</span>
                                         @endif
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
                                         @if ($type === 'residents')
                                             {{ e($record->purok?->name ?? 'No purok') }}@if($record->address) · {{ e(Str::limit($record->address, 40)) }}@endif
                                         @elseif ($type === 'households')

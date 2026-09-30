@@ -48,7 +48,7 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-slate-900">{{ $case->case_number }} · {{ $case->complaint_type }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Filed {{ $case->created_at->format('M j, Y g:i A') }} · incident on {{ $case->complaint_date->format('M j, Y') }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Filed {{ $case->created_at?->format('M j, Y g:i A') ?? '—' }} · incident on {{ $case->complaint_date?->format('M j, Y') ?? '—' }}</p>
                                 @if ($case->disposition)
                                     <p class="mt-2 text-sm text-slate-700">Office note: {{ $case->disposition }}</p>
                                 @endif

@@ -36,8 +36,8 @@
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resident</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Submitted</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
@@ -52,11 +52,11 @@
                                             <span class="block text-xs text-slate-500">{{ e($req->resident->purok->name) }}</span>
                                         @endif
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                                         {{ e($req->document?->title) }}
                                         <span class="block text-xs text-slate-500">{{ $req->copies }} cop{{ $req->copies === 1 ? 'y' : 'ies' }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">{{ e(Str::limit($req->purpose, 40)) }}</td>
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">{{ e(Str::limit($req->purpose, 40)) }}</td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ $req->created_at->format('M j, Y') }}</td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium

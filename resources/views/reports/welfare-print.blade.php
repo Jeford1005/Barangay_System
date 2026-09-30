@@ -88,7 +88,7 @@
                             <td>{{ $record->program_name }}</td>
                             <td class="num">{{ number_format((float) $record->approved_amount, 2) }}</td>
                             <td>{{ $record->status }}</td>
-                            <td>{{ $record->request_date->format('M j, Y') }}</td>
+                            <td>{{ $record->request_date?->format('M j, Y') ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

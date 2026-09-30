@@ -67,8 +67,8 @@
                             <th scope="col" class="px-4 py-3 font-medium">User</th>
                             <th scope="col" class="px-4 py-3 font-medium">Role</th>
                             <th scope="col" class="px-4 py-3 font-medium">Status</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Linked resident</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">Registered</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Linked resident</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Registered</th>
                             <th scope="col" class="no-print px-4 py-3 text-right font-medium">Actions</th>
                         </tr>
                     </thead>
@@ -96,8 +96,8 @@
                                 <td class="px-4 py-3">
                                     <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $statusClasses }}">{{ $displayStatus }}</span>
                                 </td>
-                                <td class="hidden px-4 py-3 text-slate-600 md:table-cell">{{ $user->residentProfile?->full_name ?? '—' }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $user->created_at?->format('M j, Y') }}</td>
+                                <td class="hidden px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $user->residentProfile?->full_name ?? '—' }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $user->created_at?->format('M j, Y') }}</td>
                                 <td class="no-print px-4 py-3 text-right">
                                     @if ($user->status === 'pending' && $user->user_type === 'resident')
                                         <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline btn-row">Review</a>

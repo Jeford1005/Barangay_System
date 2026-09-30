@@ -83,34 +83,40 @@
 
         <x-form.actions cancel-href="{{ route('certificates.index') }}" submit-label="Issue & Print" />
     </form>
+
+    {{-- Inline script lives INSIDE the card so the CRUD dialog fragment
+         (which swaps only the card's first child into .crud-dialog-body)
+         carries it along; crud-dialogs.js re-creates scripts found in the
+         inserted fragment so the fee/requirements sync runs in-dialog. --}}
+    <script>
+        // Live fee default + requirements hint while the clerk picks a type.
+        (function () {
+            var select = document.getElementById('document_id');
+            var fee = document.getElementById('fee');
+            var hint = document.getElementById('requirements-hint');
+            if (!select) return;
+
+            function sync() {
+                var opt = select.options[select.selectedIndex];
+                if (!opt || !opt.value) {
+                    if (fee) fee.value = '';
+                    if (hint) hint.classList.add('hidden');
+                    return;
+                }
+                if (fee) fee.placeholder = parseFloat(opt.dataset.fee || 0).toFixed(2);
+                if (hint) {
+                    if (opt.dataset.requirements) {
+                        hint.textContent = 'Requirements: ' + opt.dataset.requirements.split('\n').join(', ');
+                        hint.classList.remove('hidden');
+                    } else {
+                        hint.classList.add('hidden');
+                    }
+                }
+            }
+            select.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 </div>
-
-<script>
-    // Live fee default + requirements hint while the clerk picks a type.
-    (function () {
-        var select = document.getElementById('document_id');
-        var fee = document.getElementById('fee');
-        var hint = document.getElementById('requirements-hint');
-        if (!select) return;
-
-        function sync() {
-            var opt = select.options[select.selectedIndex];
-            if (!opt || !opt.value) {
-                if (fee) fee.value = '';
-                hint.classList.add('hidden');
-                return;
-            }
-            if (fee) fee.placeholder = parseFloat(opt.dataset.fee || 0).toFixed(2);
-            if (opt.dataset.requirements) {
-                hint.textContent = 'Requirements: ' + opt.dataset.requirements.split('\n').join(', ');
-                hint.classList.remove('hidden');
-            } else {
-                hint.classList.add('hidden');
-            }
-        }
-        select.addEventListener('change', sync);
-        sync();
-    })();
-</script>
 @endsection
 </x-app-layout>

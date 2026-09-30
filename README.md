@@ -45,6 +45,9 @@ npm install
 # Copy environment file
 cp .env.example .env
 
+# On Windows PowerShell (where `cp` does not exist):
+#   Copy-Item .env.example .env
+
 # Generate application key (if not already set)
 php artisan key:generate
 ```
@@ -227,6 +230,11 @@ Application logs are stored in `storage/logs/laravel.log`
 chmod -R 775 storage bootstrap/cache
 ```
 
+On Windows / XAMPP there is no `chmod` — give `storage/` and
+`bootstrap/cache/` write access to the Apache user instead (File Explorer →
+right-click → Properties → Security → Edit), or run your terminal as
+Administrator if the folders were created by another user.
+
 ### Clear Cache
 
 ```bash
@@ -234,6 +242,14 @@ php artisan config:clear
 php artisan cache:clear
 php artisan view:clear
 php artisan route:clear
+```
+
+After changing `.env` on a server, rebuild in the same order — clear first,
+then cache (see [Production Deployment](#production-deployment)):
+
+```bash
+php artisan config:clear && php artisan route:clear && php artisan view:clear
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
 ### Database Issues
@@ -256,6 +272,7 @@ Quick version — the four things that break first:
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build          # public/build/ is NOT in git — required
 php artisan migrate --force
+php artisan config:clear && php artisan route:clear && php artisan view:clear
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 

@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -57,25 +56,32 @@ class DataQualityAuditCommand extends Command
         ['table' => 'resident_record_changes', 'column' => 'reviewed_by', 'target' => 'users', 'label' => 'reviewer'],
     ];
 
+    /**
+     * Enum-like columns with their allowed values and nullability.
+     *
+     * NULL is only reported as a violation for NOT NULL columns; nullable
+     * columns skip NULL per column semantics instead of false-positive
+     * flagging it.
+     */
     private const ENUM_FIELDS = [
-        ['table' => 'users', 'column' => 'user_type', 'allowed' => ['admin', 'staff', 'official', 'resident']],
-        ['table' => 'users', 'column' => 'status', 'allowed' => ['pending', 'approved', 'rejected']],
-        ['table' => 'residents', 'column' => 'sex', 'allowed' => ['Male', 'Female', 'Other']],
-        ['table' => 'residents', 'column' => 'civil_status', 'allowed' => ['Single', 'Married', 'Divorced', 'Widowed', 'Separated']],
-        ['table' => 'residents', 'column' => 'status', 'allowed' => ['Active', 'Archived']],
-        ['table' => 'households', 'column' => 'house_type', 'allowed' => ['Single', 'Duplex', 'Apartment', 'Townhouse', 'Other']],
-        ['table' => 'households', 'column' => 'ownership', 'allowed' => ['Owned', 'Rented', 'Leased', 'Occupied']],
-        ['table' => 'households', 'column' => 'status', 'allowed' => ['Occupied', 'Vacant', 'Under Construction']],
-        ['table' => 'blotter', 'column' => 'status', 'allowed' => ['Open', 'Pending', 'Resolved', 'Dismissed']],
-        ['table' => 'blotter', 'column' => 'arrest_made', 'allowed' => ['Yes', 'No']],
-        ['table' => 'welfare', 'column' => 'assistance_type', 'allowed' => ['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other']],
-        ['table' => 'welfare', 'column' => 'status', 'allowed' => ['Requested', 'Under Review', 'Approved', 'Denied', 'Released']],
-        ['table' => 'documents', 'column' => 'document_type', 'allowed' => ['Certificate', 'Permit', 'Clearance', 'ID', 'Other']],
-        ['table' => 'documents', 'column' => 'status', 'allowed' => ['Active', 'Inactive', 'Draft']],
-        ['table' => 'certificate_requests', 'column' => 'status', 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
-        ['table' => 'certificate_issuances', 'column' => 'status', 'allowed' => ['Issued', 'Voided']],
-        ['table' => 'resident_applications', 'column' => 'status', 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
-        ['table' => 'resident_record_changes', 'column' => 'status', 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
+        ['table' => 'users', 'column' => 'user_type', 'nullable' => false, 'allowed' => ['admin', 'staff', 'official', 'resident']],
+        ['table' => 'users', 'column' => 'status', 'nullable' => false, 'allowed' => ['pending', 'approved', 'rejected']],
+        ['table' => 'residents', 'column' => 'sex', 'nullable' => false, 'allowed' => ['Male', 'Female', 'Other']],
+        ['table' => 'residents', 'column' => 'civil_status', 'nullable' => false, 'allowed' => ['Single', 'Married', 'Divorced', 'Widowed', 'Separated']],
+        ['table' => 'residents', 'column' => 'status', 'nullable' => false, 'allowed' => ['Active', 'Archived']],
+        ['table' => 'households', 'column' => 'house_type', 'nullable' => false, 'allowed' => ['Single', 'Duplex', 'Apartment', 'Townhouse', 'Other']],
+        ['table' => 'households', 'column' => 'ownership', 'nullable' => false, 'allowed' => ['Owned', 'Rented', 'Leased', 'Occupied']],
+        ['table' => 'households', 'column' => 'status', 'nullable' => false, 'allowed' => ['Occupied', 'Vacant', 'Under Construction']],
+        ['table' => 'blotter', 'column' => 'status', 'nullable' => false, 'allowed' => ['Open', 'Pending', 'Resolved', 'Dismissed']],
+        ['table' => 'blotter', 'column' => 'arrest_made', 'nullable' => false, 'allowed' => ['Yes', 'No']],
+        ['table' => 'welfare', 'column' => 'assistance_type', 'nullable' => false, 'allowed' => ['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other']],
+        ['table' => 'welfare', 'column' => 'status', 'nullable' => false, 'allowed' => ['Requested', 'Under Review', 'Approved', 'Denied', 'Released']],
+        ['table' => 'documents', 'column' => 'document_type', 'nullable' => false, 'allowed' => ['Certificate', 'Permit', 'Clearance', 'ID', 'Other']],
+        ['table' => 'documents', 'column' => 'status', 'nullable' => false, 'allowed' => ['Active', 'Inactive', 'Draft']],
+        ['table' => 'certificate_requests', 'column' => 'status', 'nullable' => false, 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
+        ['table' => 'certificate_issuances', 'column' => 'status', 'nullable' => false, 'allowed' => ['Issued', 'Voided']],
+        ['table' => 'resident_applications', 'column' => 'status', 'nullable' => false, 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
+        ['table' => 'resident_record_changes', 'column' => 'status', 'nullable' => false, 'allowed' => ['Pending', 'Approved', 'Rejected', 'Cancelled']],
     ];
 
     private const PHONE_FIELDS = [
@@ -170,25 +176,28 @@ class DataQualityAuditCommand extends Command
                 continue;
             }
 
-            $rows = DB::table($foreignKey['table'])
+            // Streamed in chunks so large tables are never loaded into memory
+            // at once; only the two inspected columns are selected.
+            DB::table($foreignKey['table'])
                 ->whereNotNull($foreignKey['column'])
                 ->whereNotIn($foreignKey['column'], function ($query) use ($foreignKey): void {
                     $query->select('id')->from($foreignKey['target']);
                 })
                 ->orderBy('id')
-                ->get(['id', $foreignKey['column']]);
-
-            foreach ($rows as $row) {
-                $findings[] = sprintf(
-                    '%s.%s: %s id=%d references missing %s id=%s',
-                    $foreignKey['table'],
-                    $foreignKey['column'],
-                    rtrim($foreignKey['table'], 's'),
-                    $row->id,
-                    $foreignKey['label'],
-                    self::formatValue($row->{$foreignKey['column']}),
-                );
-            }
+                ->select('id', $foreignKey['column'])
+                ->chunk(2000, function ($rows) use (&$findings, $foreignKey): void {
+                    foreach ($rows as $row) {
+                        $findings[] = sprintf(
+                            '%s.%s: %s id=%d references missing %s id=%s',
+                            $foreignKey['table'],
+                            $foreignKey['column'],
+                            rtrim($foreignKey['table'], 's'),
+                            $row->id,
+                            $foreignKey['label'],
+                            self::formatValue($row->{$foreignKey['column']}),
+                        );
+                    }
+                });
         }
 
         return $findings;
@@ -229,7 +238,7 @@ class DataQualityAuditCommand extends Command
         }
 
         $findings = [];
-        $approvedWithoutActiveProfile = DB::table('users as u')
+        DB::table('users as u')
             ->leftJoin('residents as r', 'r.user_id', '=', 'u.id')
             ->where('u.user_type', 'resident')
             ->where('u.status', 'approved')
@@ -239,80 +248,87 @@ class DataQualityAuditCommand extends Command
                     ->orWhereNotNull('r.deleted_at');
             })
             ->orderBy('u.id')
-            ->get(['u.id', 'u.email']);
+            ->select('u.id')
+            ->chunk(2000, function ($users) use (&$findings): void {
+                foreach ($users as $user) {
+                    $findings[] = sprintf(
+                        'users: approved resident account id=%d has no active resident profile',
+                        $user->id,
+                    );
+                }
+            });
 
-        foreach ($approvedWithoutActiveProfile as $user) {
-            $findings[] = sprintf(
-                'users: approved resident account id=%d has no active resident profile',
-                $user->id,
-            );
-        }
-
-        $nonResidentLinks = DB::table('residents as r')
+        DB::table('residents as r')
             ->join('users as u', 'u.id', '=', 'r.user_id')
             ->where('u.user_type', '!=', 'resident')
             ->orderBy('r.id')
-            ->get(['r.id', 'r.user_id', 'u.user_type']);
-
-        foreach ($nonResidentLinks as $resident) {
-            $findings[] = sprintf(
-                'residents.user_id: resident id=%d is linked to non-resident account id=%d',
-                $resident->id,
-                $resident->user_id,
-            );
-        }
+            ->select('r.id', 'r.user_id')
+            ->chunk(2000, function ($residents) use (&$findings): void {
+                foreach ($residents as $resident) {
+                    $findings[] = sprintf(
+                        'residents.user_id: resident id=%d is linked to non-resident account id=%d',
+                        $resident->id,
+                        $resident->user_id,
+                    );
+                }
+            });
 
         return $findings;
     }
 
     private function findHouseholdHeadIssues(): array
     {
-        $households = DB::table('households')
-            ->orderBy('id')
-            ->get(['id', 'head_of_household_id']);
-        $residentsById = DB::table('residents')
-            ->orderBy('id')
-            ->get(['id', 'household_id', 'is_household_head'])
-            ->keyBy('id');
-        $householdsById = $households->keyBy('id');
+        if (! Schema::hasTable('households') || ! Schema::hasTable('residents')) {
+            return [];
+        }
+
         $findings = [];
         $householdsByHead = [];
 
-        foreach ($households as $household) {
-            if ($household->head_of_household_id === null) {
-                continue;
-            }
+        // Streamed in chunks with point lookups so neither table is ever
+        // loaded into memory at once.
+        DB::table('households')
+            ->orderBy('id')
+            ->select('id', 'head_of_household_id')
+            ->chunk(2000, function ($households) use (&$findings, &$householdsByHead): void {
+                foreach ($households as $household) {
+                    if ($household->head_of_household_id === null) {
+                        continue;
+                    }
 
-            $headId = (int) $household->head_of_household_id;
-            $householdsByHead[$headId][] = (int) $household->id;
-            $head = $residentsById->get($headId);
+                    $headId = (int) $household->head_of_household_id;
+                    $householdsByHead[$headId][] = (int) $household->id;
+                    $head = DB::table('residents')
+                        ->where('id', $headId)
+                        ->first(['id', 'household_id', 'is_household_head']);
 
-            // A missing head is already reported as an orphaned foreign key.
-            if ($head === null) {
-                continue;
-            }
+                    // A missing head is already reported as an orphaned foreign key.
+                    if ($head === null) {
+                        continue;
+                    }
 
-            $assignedHouseholdId = $head->household_id === null
-                ? null
-                : (int) $head->household_id;
+                    $assignedHouseholdId = $head->household_id === null
+                        ? null
+                        : (int) $head->household_id;
 
-            if ($assignedHouseholdId !== (int) $household->id) {
-                $findings[] = sprintf(
-                    'households.head_of_household_id: household id=%d selects resident id=%d, but that resident household_id=%s',
-                    $household->id,
-                    $headId,
-                    self::formatValue($head->household_id),
-                );
-            }
+                    if ($assignedHouseholdId !== (int) $household->id) {
+                        $findings[] = sprintf(
+                            'households.head_of_household_id: household id=%d selects resident id=%d, but that resident household_id=%s',
+                            $household->id,
+                            $headId,
+                            self::formatValue($head->household_id),
+                        );
+                    }
 
-            if (! self::databaseBoolean($head->is_household_head)) {
-                $findings[] = sprintf(
-                    'residents.is_household_head: household id=%d selects resident id=%d, but the resident is not marked as a household head',
-                    $household->id,
-                    $headId,
-                );
-            }
-        }
+                    if (! self::databaseBoolean($head->is_household_head)) {
+                        $findings[] = sprintf(
+                            'residents.is_household_head: household id=%d selects resident id=%d, but the resident is not marked as a household head',
+                            $household->id,
+                            $headId,
+                        );
+                    }
+                }
+            });
 
         foreach ($householdsByHead as $headId => $householdIds) {
             if (count($householdIds) < 2) {
@@ -326,44 +342,51 @@ class DataQualityAuditCommand extends Command
             );
         }
 
-        foreach ($residentsById as $resident) {
-            if (! self::databaseBoolean($resident->is_household_head)) {
-                continue;
-            }
+        DB::table('residents')
+            ->orderBy('id')
+            ->select('id', 'household_id', 'is_household_head')
+            ->chunk(2000, function ($residents) use (&$findings): void {
+                foreach ($residents as $resident) {
+                    if (! self::databaseBoolean($resident->is_household_head)) {
+                        continue;
+                    }
 
-            $householdId = $resident->household_id === null
-                ? null
-                : (int) $resident->household_id;
+                    $householdId = $resident->household_id === null
+                        ? null
+                        : (int) $resident->household_id;
 
-            if ($householdId === null) {
-                $findings[] = sprintf(
-                    'residents.is_household_head: resident id=%d is marked as a household head without a household',
-                    $resident->id,
-                );
+                    if ($householdId === null) {
+                        $findings[] = sprintf(
+                            'residents.is_household_head: resident id=%d is marked as a household head without a household',
+                            $resident->id,
+                        );
 
-                continue;
-            }
+                        continue;
+                    }
 
-            $household = $householdsById->get($householdId);
+                    $household = DB::table('households')
+                        ->where('id', $householdId)
+                        ->first(['id', 'head_of_household_id']);
 
-            if ($household === null) {
-                $findings[] = sprintf(
-                    'residents.is_household_head: resident id=%d is marked as a household head but household id=%d does not exist',
-                    $resident->id,
-                    $householdId,
-                );
+                    if ($household === null) {
+                        $findings[] = sprintf(
+                            'residents.is_household_head: resident id=%d is marked as a household head but household id=%d does not exist',
+                            $resident->id,
+                            $householdId,
+                        );
 
-                continue;
-            }
+                        continue;
+                    }
 
-            if ((int) $household->head_of_household_id !== (int) $resident->id) {
-                $findings[] = sprintf(
-                    'residents.is_household_head: resident id=%d is marked as the head of household id=%d, but the household does not select that resident',
-                    $resident->id,
-                    $householdId,
-                );
-            }
-        }
+                    if ((int) $household->head_of_household_id !== (int) $resident->id) {
+                        $findings[] = sprintf(
+                            'residents.is_household_head: resident id=%d is marked as the head of household id=%d, but the household does not select that resident',
+                            $resident->id,
+                            $householdId,
+                        );
+                    }
+                }
+            });
 
         return $findings;
     }
@@ -377,27 +400,34 @@ class DataQualityAuditCommand extends Command
                 continue;
             }
 
-            $rows = DB::table($field['table'])
+            // Streamed in chunks with a narrow column select; NULL is skipped
+            // for nullable columns per column semantics.
+            DB::table($field['table'])
                 ->orderBy('id')
-                ->get(['id', $field['column']]);
+                ->select('id', $field['column'])
+                ->chunk(2000, function ($rows) use (&$findings, $field): void {
+                    foreach ($rows as $row) {
+                        $value = $row->{$field['column']};
 
-            foreach ($rows as $row) {
-                $value = $row->{$field['column']};
+                        if ($value === null && ($field['nullable'] ?? false)) {
+                            continue;
+                        }
 
-                if ($value !== null && in_array($value, $field['allowed'], true)) {
-                    continue;
-                }
+                        if ($value !== null && in_array($value, $field['allowed'], true)) {
+                            continue;
+                        }
 
-                $findings[] = sprintf(
-                    '%s.%s: %s id=%d has invalid value %s (allowed: %s)',
-                    $field['table'],
-                    $field['column'],
-                    rtrim($field['table'], 's'),
-                    $row->id,
-                    self::formatValue($value),
-                    implode(', ', $field['allowed']),
-                );
-            }
+                        $findings[] = sprintf(
+                            '%s.%s: %s id=%d has invalid value %s (allowed: %s)',
+                            $field['table'],
+                            $field['column'],
+                            rtrim($field['table'], 's'),
+                            $row->id,
+                            self::formatValue($value),
+                            implode(', ', $field['allowed']),
+                        );
+                    }
+                });
         }
 
         return $findings;
@@ -408,63 +438,69 @@ class DataQualityAuditCommand extends Command
         $findings = [];
 
         foreach (self::PHONE_FIELDS as $field) {
-            foreach ($this->fieldRows($field['table'], $field['column']) as $row) {
-                if ($row->{$field['column']} === null) {
-                    continue;
-                }
+            $this->eachFieldRow($field['table'], $field['column'], function ($rows) use (&$findings, $field): void {
+                foreach ($rows as $row) {
+                    if ($row->{$field['column']} === null) {
+                        continue;
+                    }
 
-                if (! self::isValidPhone($row->{$field['column']})) {
-                    $findings[] = sprintf(
-                        '%s.%s: %s id=%d has invalid phone value %s',
-                        $field['table'],
-                        $field['column'],
-                        rtrim($field['table'], 's'),
-                        $row->id,
-                        self::formatValue($row->{$field['column']}),
-                    );
+                    if (! self::isValidPhone($row->{$field['column']})) {
+                        $findings[] = sprintf(
+                            '%s.%s: %s id=%d has invalid phone value %s',
+                            $field['table'],
+                            $field['column'],
+                            rtrim($field['table'], 's'),
+                            $row->id,
+                            self::formatValue($row->{$field['column']}),
+                        );
+                    }
                 }
-            }
+            });
         }
 
         foreach (self::EMAIL_FIELDS as $field) {
-            foreach ($this->fieldRows($field['table'], $field['column']) as $row) {
-                $value = $row->{$field['column']};
+            $this->eachFieldRow($field['table'], $field['column'], function ($rows) use (&$findings, $field): void {
+                foreach ($rows as $row) {
+                    $value = $row->{$field['column']};
 
-                if ($field['nullable'] && $value === null) {
-                    continue;
-                }
+                    if ($field['nullable'] && $value === null) {
+                        continue;
+                    }
 
-                if (! is_string($value) || mb_strlen($value) > $field['max'] || filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
-                    $findings[] = sprintf(
-                        '%s.%s: %s id=%d has invalid email value %s',
-                        $field['table'],
-                        $field['column'],
-                        rtrim($field['table'], 's'),
-                        $row->id,
-                        self::formatValue($value),
-                    );
+                    if (! is_string($value) || mb_strlen($value) > $field['max'] || filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+                        $findings[] = sprintf(
+                            '%s.%s: %s id=%d has invalid email value %s',
+                            $field['table'],
+                            $field['column'],
+                            rtrim($field['table'], 's'),
+                            $row->id,
+                            self::formatValue($value),
+                        );
+                    }
                 }
-            }
+            });
         }
 
         foreach (self::ZIP_FIELDS as $field) {
-            foreach ($this->fieldRows($field['table'], $field['column']) as $row) {
-                $value = $row->{$field['column']};
+            $this->eachFieldRow($field['table'], $field['column'], function ($rows) use (&$findings, $field): void {
+                foreach ($rows as $row) {
+                    $value = $row->{$field['column']};
 
-                if ($value === null) {
-                    continue;
-                }
+                    if ($value === null) {
+                        continue;
+                    }
 
-                if (! is_string($value) || preg_match('/^\d{4,10}$/D', $value) !== 1) {
-                    $findings[] = sprintf(
-                        '%s.%s: household id=%d has invalid ZIP value %s',
-                        $field['table'],
-                        $field['column'],
-                        $row->id,
-                        self::formatValue($value),
-                    );
+                    if (! is_string($value) || preg_match('/^\d{4,10}$/D', $value) !== 1) {
+                        $findings[] = sprintf(
+                            '%s.%s: household id=%d has invalid ZIP value %s',
+                            $field['table'],
+                            $field['column'],
+                            $row->id,
+                            self::formatValue($value),
+                        );
+                    }
                 }
-            }
+            });
         }
 
         return $findings;
@@ -480,40 +516,51 @@ class DataQualityAuditCommand extends Command
 
     private function findDuplicateCodeGroups(string $table, string $column): array
     {
-        $rows = DB::table($table)
-            ->orderBy('id')
-            ->get(['id', $column]);
-        $groups = [];
-
-        foreach ($rows as $row) {
-            $value = $row->{$column};
-            $key = $value === null ? "\0null" : (string) $value;
-            $groups[$key][] = (int) $row->id;
+        if (! Schema::hasTable($table)) {
+            return [];
         }
 
         $findings = [];
 
-        foreach ($groups as $value => $ids) {
-            if (count($ids) < 2) {
-                continue;
-            }
+        // Only duplicated non-NULL values are reported: NULL means "no code",
+        // so grouping NULLs together would be a false positive.
+        DB::table($table)
+            ->select($column)
+            ->whereNotNull($column)
+            ->groupBy($column)
+            ->havingRaw('COUNT(*) > 1')
+            ->orderBy($column)
+            ->chunk(500, function ($rows) use ($table, $column, &$findings): void {
+                foreach ($rows as $row) {
+                    $value = $row->{$column};
+                    $ids = DB::table($table)
+                        ->where($column, $value)
+                        ->orderBy('id')
+                        ->pluck('id');
 
-            $findings[] = sprintf(
-                '%s.%s: code %s is used by %s ids %s',
-                $table,
-                $column,
-                $value === "\0null" ? self::formatValue(null) : self::formatValue($value),
-                rtrim($table, 's'),
-                implode(', ', $ids),
-            );
-        }
+                    $findings[] = sprintf(
+                        '%s.%s: code %s is used by %s ids %s',
+                        $table,
+                        $column,
+                        self::formatValue($value),
+                        rtrim($table, 's'),
+                        implode(', ', $ids->all()),
+                    );
+                }
+            });
 
         return $findings;
     }
 
     private function findCertificateRequestsForInactiveResidents(): array
     {
-        $rows = DB::table('certificate_requests')
+        if (! Schema::hasTable('certificate_requests') || ! Schema::hasTable('residents')) {
+            return [];
+        }
+
+        $findings = [];
+
+        DB::table('certificate_requests')
             ->join('residents', 'residents.id', '=', 'certificate_requests.resident_id')
             ->where(function ($query): void {
                 $query->whereNull('residents.status')
@@ -521,45 +568,50 @@ class DataQualityAuditCommand extends Command
                     ->orWhereNotNull('residents.deleted_at');
             })
             ->orderBy('certificate_requests.id')
-            ->get([
+            ->select([
                 'certificate_requests.id as request_id',
                 'certificate_requests.resident_id',
                 'residents.status',
                 'residents.deleted_at',
-            ]);
-        $findings = [];
+            ])
+            ->chunk(2000, function ($rows) use (&$findings): void {
+                foreach ($rows as $row) {
+                    $reasons = [];
 
-        foreach ($rows as $row) {
-            $reasons = [];
+                    if ($row->status !== 'Active') {
+                        $reasons[] = 'status is '.self::formatValue($row->status);
+                    }
 
-            if ($row->status !== 'Active') {
-                $reasons[] = 'status is '.self::formatValue($row->status);
-            }
+                    if ($row->deleted_at !== null) {
+                        $reasons[] = 'resident is soft-deleted';
+                    }
 
-            if ($row->deleted_at !== null) {
-                $reasons[] = 'resident is soft-deleted';
-            }
-
-            $findings[] = sprintf(
-                'certificate_requests.resident_id: request id=%d links resident id=%d, but %s',
-                $row->request_id,
-                $row->resident_id,
-                implode(' and ', $reasons),
-            );
-        }
+                    $findings[] = sprintf(
+                        'certificate_requests.resident_id: request id=%d links resident id=%d, but %s',
+                        $row->request_id,
+                        $row->resident_id,
+                        implode(' and ', $reasons),
+                    );
+                }
+            });
 
         return $findings;
     }
 
-    private function fieldRows(string $table, string $column): Collection
+    /**
+     * Stream a table's id + column pairs in chunks so large tables are never
+     * loaded into memory at once.
+     */
+    private function eachFieldRow(string $table, string $column, callable $callback): void
     {
         if (! Schema::hasTable($table)) {
-            return collect();
+            return;
         }
 
-        return DB::table($table)
+        DB::table($table)
             ->orderBy('id')
-            ->get(['id', $column]);
+            ->select('id', $column)
+            ->chunk(2000, $callback);
     }
 
     private static function isValidPhone(mixed $value): bool

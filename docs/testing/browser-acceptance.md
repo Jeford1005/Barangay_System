@@ -8,6 +8,34 @@ npm run test:browser
 
 The suite starts `php artisan serve` when `http://127.0.0.1:8000/up` is not already available. Set `BROWSER_BASE_URL` to test another environment. Browser binaries must be installed separately with `npx playwright install chromium`.
 
+On Windows PowerShell, environment variables use a different syntax than bash:
+
+```powershell
+$env:BROWSER_BASE_URL = 'http://127.0.0.1:8000'
+npm run test:browser
+```
+
+The same applies to the audit scripts' variables (`AUDIT_USER`,
+`AUDIT_PASS`, `AUDIT_ROLE`, `PAGES`), e.g.
+`$env:AUDIT_ROLE = 'resident'; npm run audit:app`.
+
+## Clean tree required
+
+`playwright.config.js` sets `reuseExistingServer: true` and the suite is
+chromium-only. That means a stale server or a dirty working tree silently
+pollutes results:
+
+- **Stop any existing `php artisan serve` first** (or point `BROWSER_BASE_URL`
+  at a server you started deliberately from the current checkout). Otherwise
+  the run tests whatever old code that server booted with, not your tree.
+- **Start from a clean tree** (`git status --short` shows nothing you did not
+  intend). Uncommitted view/route/config edits change what the browser sees;
+  untracked scratch files do not affect the run but make failures harder to
+  attribute.
+- The gate is **chromium-only, desktop-only** — a mobile-viewport regression
+  (e.g. an off-canvas sidebar offset) passes here and is caught instead by
+  `npm run audit:responsive`, `npm run audit:targets` and `npm run audit:app`.
+
 The current automated gate covers the public login shell, landmark presence, a serious/critical axe scan, and the liveness endpoint. Authenticated acceptance cases for account linking, household/head forms, resident self-service, archive behavior, print output, and mobile overflow should be run against a disposable seeded database before deployment. Do not run the suite against production data.
 
 ## Confirmation dialogs

@@ -13,7 +13,7 @@
                 <h3 class="text-base font-semibold text-slate-900">Population Report</h3>
                 <x-icon name="residents" class="h-6 w-6 text-sky-600" />
             </div>
-            <p class="mt-2 text-sm text-slate-500 flex-1">Active residents by purok with sex and age-bracket breakdown (children, youth, adults, seniors), plus registered voters.</p>
+            <p class="mt-2 text-sm text-slate-500 flex-1">Active residents by purok with sex and age-bracket breakdown (children, minors, youth, adults, middle-aged, seniors), plus registered voters.</p>
             <span class="mt-4 text-sm font-medium text-sky-700">Open report →</span>
         </a>
 

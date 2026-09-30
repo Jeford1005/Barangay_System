@@ -189,7 +189,7 @@
             <img src="{{ asset('images/bidduang-seal.png') }}" alt="Barangay Bidduang official seal">
             <div class="lines">
                 <div class="rep">Republic of the Philippines</div>
-                <div class="rep">Province of&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;· Municipality/City of&nbsp;&nbsp;&nbsp;—</div>
+                <div class="rep">Province of ____________________ · Municipality/City of ____________________</div>
                 <div class="brgy">Barangay Bidduang</div>
                 <div class="office">Office of the Barangay — Blotter &amp; Records Section</div>
             </div>
@@ -240,7 +240,7 @@
             <h2>III. Incident Details</h2>
             <div class="grid grid-3">
                 <span class="field"><span class="lbl">Complaint Type</span>{{ $blotter->complaint_type }}@if (filled($blotter->complaint_subtype)) — {{ $blotter->complaint_subtype }}@endif</span>
-                <span class="field"><span class="lbl">Date of Incident</span>{{ $blotter->complaint_date->format('F j, Y') }}</span>
+                <span class="field"><span class="lbl">Date of Incident</span>{{ $blotter->complaint_date?->format('F j, Y') ?? '—' }}</span>
                 <span class="field"><span class="lbl">Time</span>@if ($blotter->complaint_time){{ $blotter->complaint_time->format('g:i A') }}@else<span class="empty">Not recorded</span>@endif</span>
             </div>
             <div class="grid" style="margin-top: 5pt;">

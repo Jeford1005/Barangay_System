@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Concerns\Searchable;
 use App\Models\Resident;
 use App\Models\ResidentApplication;
 use App\Models\User;
@@ -24,7 +25,7 @@ class UserAccountController extends Controller
 
     public function index(Request $request): View
     {
-        $search = mb_substr(trim((string) $request->input('search', '')), 0, 100);
+        $search = Searchable::normalizeSearchTerm(mb_substr(trim((string) $request->input('search', '')), 0, 100)) ?? '';
         $role = (string) $request->input('role', '');
         $status = (string) $request->input('status', '');
 

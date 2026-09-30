@@ -254,6 +254,8 @@ class PasswordResetCodeController extends Controller
             'code' => ['required', 'string', 'size:6', 'regex:'.PasswordResetCodeService::CODE_REGEX],
             'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password.confirmed' => 'The password confirmation does not match.',
         ]);
 
         $reset = DB::table('password_reset_tokens')

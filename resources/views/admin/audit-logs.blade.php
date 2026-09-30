@@ -120,8 +120,8 @@
                                 <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event</th>
                                 <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actor</th>
                                 <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Subject</th>
-                                <th class="hidden md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">IP Address</th>
-                                <th class="hidden md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Device</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">IP Address</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Device</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
@@ -142,8 +142,8 @@
                                     <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-900">
                                         {{ $log->subject_label ?? $log->user_email ?? '—' }}
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-500">{{ $log->ip_address ?? '—' }}</td>
-                                    <td class="hidden md:table-cell px-3 sm:px-4 py-3 max-w-xs truncate text-sm text-slate-500" title="{{ $log->user_agent }}">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 whitespace-nowrap text-sm text-slate-500">{{ $log->ip_address ?? '—' }}</td>
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-4 py-3 max-w-xs truncate text-sm text-slate-500" title="{{ $log->user_agent }}">
                                         {{ $log->user_agent ? \Illuminate\Support\Str::limit($log->user_agent, 60) : '—' }}
                                     </td>
                                 </tr>

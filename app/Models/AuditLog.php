@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditLog extends Model
 {
+    use Searchable;
     protected $fillable = [
         'occurred_at',
         'user_id',

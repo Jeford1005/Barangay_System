@@ -255,7 +255,7 @@
                         <tr>
                             <th scope="col" class="px-4 py-3 font-medium">Event</th>
                             <th scope="col" class="px-4 py-3 font-medium">Actor</th>
-                            <th scope="col" class="hidden px-4 py-3 font-medium md:table-cell">When</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">When</th>
                             <th scope="col" class="px-4 py-3 font-medium">Details</th>
                         </tr>
                     </thead>
@@ -267,7 +267,7 @@
                             <tr>
                                 <td class="px-4 py-3 font-medium text-slate-800">{{ $entry->event_label }}</td>
                                 <td class="px-4 py-3 text-slate-600">{{ $entry->actor_email ?? data_get($properties, 'actor_email') ?? (($entry->actor_type ?? 'guest') === 'guest' ? 'Guest' : 'System') }}</td>
-                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 md:table-cell">{{ $entry->occurred_at?->format('M j, Y g:i A') }}</td>
+                                <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $entry->occurred_at?->format('M j, Y g:i A') }}</td>
                                 <td class="px-4 py-3 text-xs text-slate-500">
                                     @if (! empty($properties['changed_fields']))
                                         Updated: {{ implode(', ', $properties['changed_fields']) }}

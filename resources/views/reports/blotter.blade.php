@@ -8,7 +8,7 @@
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
         <div class="p-6">
-            <form method="GET" action="{{ route('reports.blotter') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
+            <form method="GET" action="{{ route('reports.blotter') }}" class="no-print mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div class="flex-1">
                     <label for="blotter-report-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Incident from</label>
                     <input id="blotter-report-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}" onchange="this.form.submit()"
@@ -93,7 +93,7 @@
                         @foreach ($recent as $case)
                             <li class="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                                 <span class="font-medium text-slate-900">{{ $case->case_number }} — {{ $case->complaint_type }}</span>
-                                <span class="text-slate-500 text-xs">{{ $case->complaint_date->format('M j, Y') }} · {{ $case->status }}</span>
+                                <span class="text-slate-500 text-xs">{{ $case->complaint_date?->format('M j, Y') ?? '—' }} · {{ $case->status }}</span>
                             </li>
                         @endforeach
                     </ul>

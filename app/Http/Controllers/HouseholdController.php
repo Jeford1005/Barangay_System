@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Concerns\Searchable;
 use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
@@ -22,7 +23,7 @@ class HouseholdController extends Controller
         // Search - sanitized input. LIKE wildcards in the input are escaped
         // so `%` and `_` only ever match literally.
         if ($request->filled('search')) {
-            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
             $like = '%'.self::escapeLike($search).'%';
             $query->where(function ($q) use ($like) {
                 $q->whereRaw("household_code LIKE ? ESCAPE '\\'", [$like])

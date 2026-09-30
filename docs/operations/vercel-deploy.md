@@ -11,7 +11,7 @@ injects its credentials as environment variables:
 | Document root / routing | Caddy | `Caddyfile` |
 | Vercel project wiring | container service + catch-all rewrite | `vercel.json` |
 | Database | Neon Postgres provisioned by the **Vercel Marketplace** | env var `DATABASE_URL` (injected) |
-| Migrations + demo accounts | `docker/entrypoint.sh` on every container boot | `migrate --force`, then `db:seed --force` |
+| Migrations + demo accounts | `docker/entrypoint.sh` on every container boot | `migrate --force` (already-applied migrations are skipped), then `db:seed --force` **only when the `users` table is empty** |
 
 ## Why the first deploy failed
 
@@ -112,17 +112,20 @@ are already baked into the image.
 > check is green; `Needs attention` with a `log` driver means `MAIL_MAILER`
 > is missing from the environment.
 
-> **The container seeds on every boot.** `docker/entrypoint.sh` runs
-> `db:seed --force` once migrations finish, so a fresh database is populated
-> with `admin@barangay.local`, `staff@barangay.local`, `official@barangay.local` and
+> **The container seeds once, on a fresh database.** `docker/entrypoint.sh`
+> runs `db:seed --force` only when the `users` table is empty, so a fresh
+> database is populated with `admin@barangay.local`,
+> `staff@barangay.local`, `official@barangay.local` and
 > `resident@barangay.local`, all with the password `password`. That is
-> deliberate for a demo or stakeholder walkthrough.
+> deliberate for a demo or stakeholder walkthrough. On later boots — when
+> accounts already exist — seeding is skipped, so passwords you have changed
+> (or accounts you have deleted) stay that way.
 >
-> **Before anyone outside the classroom touches it**, delete the `db:seed`
-> line from `docker/entrypoint.sh` and create real accounts. The seeder is
+> **Before anyone outside the classroom touches it**, change every seeded
+> password (or delete the demo accounts and create real ones). The seeder is
 > built on `firstOrCreate`, so it never duplicates rows and never overwrites a
-> password you have already changed — but it will happily create
-> `password`-only accounts on a public URL if left in place.
+> password you have already changed — but on a *fresh* database it will still
+> create `password`-only accounts on a public URL.
 
 ### Why `APP_TRUSTED_PROXIES` is needed
 
@@ -179,9 +182,13 @@ a build on every commit.
 Nothing manual is required. `docker/entrypoint.sh` runs, on every container
 boot:
 
-1. `php artisan config:cache`
+1. `php artisan config:clear`, then `php artisan config:cache` — the cache is
+   rebuilt from the runtime environment on each boot, so a redeploy never
+   serves a stale cache baked into an older image layer
 2. `php artisan migrate --force` — prints `Nothing to migrate` once current
-3. `php artisan db:seed --force` — idempotent, so safe on every boot
+3. `php artisan db:seed --force` — but **only when the `users` table is
+   empty** (fresh database); otherwise seeding is skipped and existing
+   accounts and passwords are left alone
 4. `exec`s FrankenPHP
 
 A failure in step 2 or 3 logs a warning and does **not** stop the container: a

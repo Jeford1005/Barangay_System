@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Blotter;
+use App\Models\Concerns\Searchable;
 use App\Models\Official;
 use App\Models\Resident;
 use App\Services\SequenceCounter;
@@ -20,7 +21,7 @@ class BlotterController extends Controller
         $query = Blotter::query()->latest('complaint_date')->latest('id');
 
         if ($request->filled('search')) {
-            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
             $like = '%'.self::escapeLike($search).'%';
             $query->where(function ($q) use ($like) {
                 $q->whereRaw("case_number LIKE ? ESCAPE '\\'", [$like])
@@ -203,11 +204,11 @@ class BlotterController extends Controller
             'complainant_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
             'complainant_name' => 'required_without:complainant_id|nullable|string|max:255',
             'complainant_address' => 'nullable|string|max:255',
-            'complainant_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'complainant_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'accused_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
             'accused_name' => 'required_without:accused_id|nullable|string|max:255',
             'accused_address' => 'nullable|string|max:255',
-            'accused_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'accused_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'complaint_type' => 'required|string|max:100',
             'complaint_subtype' => 'nullable|string|max:100',
             'complaint_date' => 'required|date_format:Y-m-d|before_or_equal:today',
@@ -223,8 +224,8 @@ class BlotterController extends Controller
         ];
 
         $validated = $request->validate($rules, [
-            'complainant_phone.regex' => 'The complainant phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
-            'accused_phone.regex' => 'The respondent phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'complainant_phone.regex' => 'The complainant phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
+            'accused_phone.regex' => 'The respondent phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'complainant_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',
             'complainant_id.exists' => 'The selected resident is no longer available. Please choose another.',
             'accused_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',

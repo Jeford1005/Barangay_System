@@ -103,8 +103,10 @@ Worth knowing:
 
 ## 3. Production `.env`
 
-`.env.example` is the local template and ships `APP_ENV=local`, `APP_DEBUG=true`,
-`APP_URL=http://localhost`. **All three must change.** Complete production file:
+`.env.example` is the local template and ships `APP_ENV=local`,
+`APP_DEBUG=false`, `APP_URL=http://localhost`. **`APP_ENV` and `APP_URL`
+must change** (`APP_DEBUG=false` is already production-safe; keep it that
+way). Complete production file:
 
 ```env
 APP_NAME="Barangay Management System"
@@ -207,10 +209,12 @@ public host hands anyone the admin account.
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-# 7. Cache — run these LAST, and again whenever .env changes
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+# 7. Cache — run these LAST, and again whenever .env changes.
+#    Always clear BEFORE rebuilding: otherwise a stale cache survives and
+#    the new values never take effect (same order the Vercel entrypoint uses
+#    on every boot: clear, then cache).
+php artisan config:clear && php artisan route:clear && php artisan view:clear
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
 Two things you do **not** need:
@@ -559,6 +563,7 @@ git pull
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
 php artisan migrate --force
+php artisan config:clear && php artisan route:clear && php artisan view:clear
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 sudo supervisorctl restart barangay-worker:*
 ```

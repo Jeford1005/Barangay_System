@@ -67,10 +67,10 @@
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Control No.</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Certificate</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resident</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
-                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Purpose</th>
+                                <th class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
                                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th class="no-print px-3 sm:px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -81,7 +81,7 @@
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="font-medium text-slate-900">{{ e($issuance->control_number) }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-900">{{ e($issuance->document?->title) }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -90,10 +90,10 @@
                                             <span class="block text-xs text-slate-500">{{ e($issuance->resident->purok->name) }}</span>
                                         @endif
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4">
                                         <span class="text-sm text-slate-500">{{ e(Str::limit($issuance->purpose, 40)) }}</span>
                                     </td>
-                                    <td class="hidden md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
+                                    <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 whitespace-nowrap">
                                         <span class="text-sm text-slate-500">{{ $issuance->created_at->format('M j, Y') }}</span>
                                     </td>
                                     <td class="px-3 sm:px-6 py-4 whitespace-nowrap">

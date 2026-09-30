@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Concerns\Searchable;
 use App\Models\Resident;
 use App\Models\Welfare;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class WelfareController extends Controller
         $query = Welfare::query()->latest('request_date')->latest('id');
 
         if ($request->filled('search')) {
-            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
             $like = '%'.self::escapeLike($search).'%';
             $query->where(function ($q) use ($like) {
                 $q->whereRaw("beneficiary_name LIKE ? ESCAPE '\\'", [$like])
@@ -192,7 +193,7 @@ class WelfareController extends Controller
             'beneficiary_id' => ['nullable', 'integer', Rule::exists('residents', 'id')],
             'beneficiary_name' => 'required_without:beneficiary_id|nullable|string|max:255',
             'beneficiary_address' => 'nullable|string|max:255',
-            'beneficiary_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=.*\d)\+?[0-9()\-\s]+$/'],
+            'beneficiary_phone' => ['nullable', 'string', 'max:15', 'regex:/^(?=(?:.*\d){7,})\+?[0-9()\-\s]+$/'],
             'assistance_type' => 'required|in:Financial,Food,Medical,Educational,Housing,Other',
             'program_name' => 'required|string|max:255',
             'program_description' => 'nullable|string|max:2000',
@@ -204,7 +205,7 @@ class WelfareController extends Controller
             'release_date' => 'nullable|date_format:Y-m-d|before_or_equal:today|after_or_equal:approval_date',
             'remarks' => 'nullable|string|max:2000',
         ], [
-            'beneficiary_phone.regex' => 'The beneficiary phone number must contain at least one digit. Spaces, +, -, and parentheses are allowed.',
+            'beneficiary_phone.regex' => 'The beneficiary phone number must contain at least 7 digits. Spaces, +, -, and parentheses are allowed.',
             'beneficiary_id.integer' => 'Please select a registered resident from the list, or leave it blank for a walk-in.',
             'beneficiary_id.exists' => 'The selected resident is no longer available. Please choose another.',
         ]);

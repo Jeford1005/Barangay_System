@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Concerns\Searchable;
 use App\Models\Purok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,7 @@ class PurokController extends Controller
         $query = Purok::query();
 
         if ($request->filled('search')) {
-            $search = mb_substr(strip_tags((string) $request->search), 0, 100);
+            $search = Searchable::normalizeSearchTerm(mb_substr(strip_tags((string) $request->search), 0, 100)) ?? '';
             $like = '%'.self::escapeLike($search).'%';
             // Grouped so the OR never leaks past additional filters.
             $query->where(function ($q) use ($like) {

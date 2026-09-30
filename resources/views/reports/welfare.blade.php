@@ -8,7 +8,7 @@
     <div class="bg-white rounded-xl shadow overflow-hidden">
 
         <div class="p-6">
-            <form method="GET" action="{{ route('reports.welfare') }}" class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
+            <form method="GET" action="{{ route('reports.welfare') }}" class="no-print mb-6 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <div class="flex-1">
                     <label for="welfare-report-from" class="block text-xs font-medium text-slate-500 uppercase tracking-wide">Requested from</label>
                     <input id="welfare-report-from" type="date" name="from" value="{{ $from?->toDateString() }}" max="{{ now()->toDateString() }}" onchange="this.form.submit()"
@@ -93,9 +93,9 @@
                         <tr>
                             <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Beneficiary</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Assistance</th>
-                            <th class="hidden md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
+                            <th class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Program</th>
                             <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Approved (₱)</th>
-                            <th class="hidden md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                            <th class="hidden print:table-cell md:table-cell px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Requested</th>
                         </tr>
                     </thead>
@@ -109,12 +109,12 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-3 text-slate-600">{{ $record->assistance_type }}</td>
-                                <td class="hidden md:table-cell px-3 py-3 text-slate-600">{{ $record->program_name }}</td>
+                                <td class="hidden print:table-cell md:table-cell px-3 py-3 text-slate-600">{{ $record->program_name }}</td>
                                 <td class="px-3 py-3 text-right font-medium">{{ number_format((float) $record->approved_amount, 2) }}</td>
-                                <td class="hidden md:table-cell px-3 py-3">
+                                <td class="hidden print:table-cell md:table-cell px-3 py-3">
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {{ ['Requested' => 'bg-slate-100 text-slate-700', 'Under Review' => 'bg-amber-100 text-amber-800', 'Approved' => 'bg-emerald-100 text-emerald-800', 'Denied' => 'bg-red-100 text-red-800', 'Released' => 'bg-sky-100 text-sky-800'][$record->status] ?? 'bg-slate-100 text-slate-600' }}">{{ $record->status }}</span>
                                 </td>
-                                <td class="px-3 py-3 text-slate-600">{{ $record->request_date->format('M j, Y') }}</td>
+                                <td class="px-3 py-3 text-slate-600">{{ $record->request_date?->format('M j, Y') ?? '—' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">No welfare requests in this period.</td></tr>
