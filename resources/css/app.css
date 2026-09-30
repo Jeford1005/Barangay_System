@@ -728,6 +728,9 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    /* Solid on the cell itself: a stuck th composites without its thead
+       ancestor background in Chromium, so rows ghost through without this. */
+    background-color: #f8fafc;
 }
 
 /* Short windows: shrink the table cap so the header, tabs, toolbar
