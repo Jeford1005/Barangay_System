@@ -260,6 +260,7 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
                 ->name('store');
             Route::get('/{resident}/edit', [ResidentController::class, 'edit'])
                 ->middleware('permission:residents.manage')
+                ->withTrashed()
                 ->name('edit');
             // Archive/restore stay POST: the directory Blade forms submit plain
             // POST with no @method spoof, and ResidentCrudTest/StaffAccessTest/
@@ -270,9 +271,11 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
                 ->name('archive');
             Route::post('/{resident}/restore', [ResidentController::class, 'restore'])
                 ->middleware(['admin', 'throttle:30,1'])
+                ->withTrashed()
                 ->name('restore');
             Route::put('/{resident}', [ResidentController::class, 'update'])
                 ->middleware('permission:residents.manage')
+                ->withTrashed()
                 ->name('update');
         });
 
@@ -286,6 +289,7 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     // The throttle slows sequential-ID enumeration scrapes.
     Route::middleware(['auth', 'verified', 'throttle:30,1'])
         ->get('/residents/{resident}/photo', ResidentPhotoController::class)
+        ->withTrashed()
         ->name('residents.photo');
 
     Route::middleware('permission:households.view')

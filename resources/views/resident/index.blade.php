@@ -35,7 +35,7 @@
                 <div class="min-w-0">
                     <label for="resident-status" class="sr-only">Filter by status</label>
                     <select id="resident-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
-                        <option value="">All statuses</option>
+                        <option value="">All Status</option>
                         <option value="Active" @selected(request('status') === 'Active')>Active</option>
                         <option value="Archived" @selected(request('status') === 'Archived')>Archived</option>
                     </select>
@@ -75,7 +75,7 @@
                 @endif
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="table-scroll">
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <caption class="sr-only">Resident records</caption>
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">

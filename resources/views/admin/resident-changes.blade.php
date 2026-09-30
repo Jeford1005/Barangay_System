@@ -20,7 +20,7 @@
                     <label for="status" class="sr-only">Filter correction requests by status</label>
                     <select id="status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
                         @foreach (['All', 'Pending', 'Approved', 'Rejected', 'Cancelled'] as $option)
-                            <option value="{{ $option }}" @selected($status === $option)>{{ $option === 'All' ? 'All statuses' : $option }}</option>
+                            <option value="{{ $option }}" @selected($status === $option)>{{ $option === 'All' ? 'All Status' : $option }}</option>
                         @endforeach
                     </select>
                     <noscript><button class="btn btn-neutral" type="submit">Filter</button></noscript>

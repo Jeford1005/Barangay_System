@@ -85,6 +85,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Purok 3', 'code' => 'P3', 'created_by' => $admin->id],
             ['name' => 'Purok 4', 'code' => 'P4', 'created_by' => $admin->id],
             ['name' => 'Purok 5', 'code' => 'P5', 'created_by' => $admin->id],
+            ['name' => 'Purok 6', 'code' => 'P6', 'created_by' => $admin->id],
         ];
 
         foreach ($puroks as $purokData) {

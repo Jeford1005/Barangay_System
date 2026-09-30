@@ -40,9 +40,18 @@ class ResidentController extends Controller
         }
 
         // Filter by status - whitelisted so an unknown value filters nothing
-        // instead of silently returning an empty list.
-        if ($request->filled('status') && in_array($request->string('status')->toString(), ['Active', 'Archived'], true)) {
-            $query->where('status', $request->string('status')->toString());
+        // instead of silently returning an empty list. Archived residents
+        // are soft-deleted, so the Archived filter must include trashed rows
+        // (they live in the Archive module, not the active list).
+        $statusFilter = $request->filled('status')
+            && in_array($request->string('status')->toString(), ['Active', 'Archived'], true)
+            ? $request->string('status')->toString()
+            : null;
+        if ($statusFilter === 'Archived') {
+            $query->withTrashed();
+        }
+        if ($statusFilter !== null) {
+            $query->where('status', $statusFilter);
         }
 
         $residents = $query->orderBy('last_name')->paginate(20)->withQueryString();
@@ -293,6 +302,9 @@ class ResidentController extends Controller
                     DB::table('sessions')->where('user_id', $resident->user->id)->delete();
                 }
 
+                // Same as archive(): the status change also soft-deletes.
+                $resident->delete();
+
                 AuditLog::record(
                     'resident.archived',
                     Auth::id(),
@@ -302,6 +314,10 @@ class ResidentController extends Controller
                     ['resident_id' => $resident->id],
                 );
             } elseif ($restoring) {
+                // Same as restore(): the status change also clears the
+                // soft-delete (still never unsuspends the portal account).
+                $resident->restore();
+
                 AuditLog::record(
                     'resident.restored',
                     Auth::id(),
@@ -348,6 +364,10 @@ class ResidentController extends Controller
             $resident->status = 'Archived';
             $resident->updated_by = Auth::id();
             $resident->save();
+            // Status + soft-delete together: archived residents leave the
+            // active list and appear in the Archive module (Households
+            // already behave this way).
+            $resident->delete();
             $householdResidentSync->syncResidentAfterSave($resident, $previousHouseholdId);
 
             if ($resident->user) {
@@ -389,6 +409,10 @@ class ResidentController extends Controller
             $resident->status = 'Active';
             $resident->updated_by = Auth::id();
             $resident->save();
+            // Mirror archive(): restoring also clears the soft-delete so the
+            // resident returns to the active list (never silently unsuspends
+            // the portal account — that stays on the explicit reactivate flow).
+            $resident->restore();
 
             AuditLog::record(
                 'resident.restored',

@@ -29,7 +29,7 @@
                     <div class="min-w-0">
                         <label for="welfare-status" class="sr-only">Filter welfare requests by status</label>
                         <select id="welfare-status" name="status" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent">
-                            <option value="">All statuses</option>
+                            <option value="">All Status</option>
                             @foreach (['Requested', 'Under Review', 'Approved', 'Denied', 'Released'] as $status)
                                 <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>
                             @endforeach

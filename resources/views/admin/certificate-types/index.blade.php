@@ -12,7 +12,7 @@
     <div class="module-toolbar-sticky rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <form method="GET" class="flex flex-col gap-2 sm:flex-row">
             <div class="min-w-0 flex-1"><label for="document-search" class="sr-only">Search document catalog</label><input id="document-search" name="search" value="{{ $search }}" maxlength="100" placeholder="Search code, title, or category" class="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-sky-600 focus:ring-sky-600"></div>
-            <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" onchange="this.form.submit()" class="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">All statuses</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
+            <div><label for="document-status" class="sr-only">Document status</label><select id="document-status" name="status" onchange="this.form.submit()" class="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"><option value="">All Status</option>@foreach(['Active','Inactive','Draft'] as $option)<option value="{{ $option }}" @selected($status === $option)>{{ $option }}</option>@endforeach</select></div>
             <noscript><button class="btn btn-neutral" type="submit">Filter</button></noscript>
             <a href="{{ route('admin.certificate-types.create') }}" class="btn btn-primary">New document type</a>
         </form>
