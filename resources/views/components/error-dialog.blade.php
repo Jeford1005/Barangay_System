@@ -78,7 +78,7 @@
                     <button
                         type="button"
                         data-error-dialog-action
-                        class="min-h-11 rounded-lg bg-red-50 px-4 text-sm font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-sm"
+                        class="min-h-11 rounded-lg bg-red-50 px-4 text-sm font-semibold text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 transition active:scale-[.98] shadow-sm border border-red-200"
                     >
                         Retry
                     </button>
