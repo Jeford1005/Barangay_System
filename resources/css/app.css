@@ -749,6 +749,30 @@
     }
 }
 
+/* Pinned actions: the last toolbar cell (Export + primary action) sticks
+   to the scroll edge so it never looks broken-cut mid-swipe, with a fade
+   mask where scrolled filters slide underneath. All toolbars end with
+   their actions cell; without overflow both rules are invisible no-ops.
+   Cards behind toolbars are white, so the mask stays seamless. */
+.module-toolbar > :last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background-color: #fff;
+    padding-left: 0.5rem;
+}
+
+.module-toolbar > :last-child::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -0.75rem;
+    width: 0.75rem;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), #ffffff);
+    pointer-events: none;
+}
+
 /* Phones (<640px): every module toolbar becomes a one-row horizontal
    swipe strip instead of a stacked block — no wrap, snap points, filters
    min 200px wide. Dropdowns already auto-submit; there is no Filter
