@@ -60,7 +60,7 @@
                     <thead class="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                         <tr>
                             <th scope="col" class="px-4 py-3 font-medium">User</th>
-                            <th scope="col" class="px-4 py-3 font-medium">Role</th>
+                            <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Role</th>
                             <th scope="col" class="px-4 py-3 font-medium">Status</th>
                             <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Linked resident</th>
                             <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Registered</th>
@@ -82,13 +82,13 @@
                                         default => 'bg-red-100 text-red-800',
                                     };
                             @endphp
-                            <tr class="hover:bg-slate-50">
+                            <tr class="hover:bg-slate-50" data-row-href="{{ route('admin.users.show', $user) }}">
                                 <td class="px-4 py-3">
                                     <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:underline">{{ $user->name }}</a>
                                     <span class="block text-xs text-slate-500">{{ $user->email }}</span>
-                                    <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ e($user->residentProfile?->full_name ?? '—') }} &middot; {{ $user->created_at?->format('M j, Y') ?? '—' }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ $user->roleLabel() }} &middot; {{ e($user->residentProfile?->full_name ?? '—') }} &middot; {{ $user->created_at?->format('M j, Y') ?? '—' }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-slate-700">{{ $user->roleLabel() }}</td>
+                                <td class="hidden px-4 py-3 text-slate-700 print:table-cell md:table-cell">{{ $user->roleLabel() }}</td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $statusClasses }}">{{ $displayStatus }}</span>
                                 </td>

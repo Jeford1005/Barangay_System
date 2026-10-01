@@ -207,17 +207,17 @@ class RegistrationTest extends TestCase
 
     public function test_sign_up_masks_passwords_behind_toggles(): void
     {
-        // Both password fields mask by default; only the confirmation keeps
-        // a show/hide toggle so a typo can still be caught before submitting.
+        // Both password fields mask by default; each keeps a show/hide toggle
+        // so a typo can still be caught before submitting.
         $login = $this->get('/login')->getContent();
         $this->assertStringContainsString('id="register-password" type="password"', $login);
-        $this->assertStringNotContainsString('data-password-toggle="register-password"', $login);
+        $this->assertStringContainsString('data-password-toggle="register-password"', $login);
         $this->assertStringContainsString('data-password-toggle="register-password_confirmation"', $login);
 
         // Same rule on the standalone no-script sign-up page.
         $page = $this->get('/register')->getContent();
         $this->assertStringContainsString('id="password" type="password"', $page);
-        $this->assertStringNotContainsString('data-password-toggle="password"', $page);
+        $this->assertStringContainsString('data-password-toggle="password"', $page);
         $this->assertStringContainsString('data-password-toggle="password_confirmation"', $page);
     }
 
