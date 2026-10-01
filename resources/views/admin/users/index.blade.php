@@ -64,7 +64,7 @@
                             <th scope="col" class="px-4 py-3 font-medium">Status</th>
                             <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Linked resident</th>
                             <th scope="col" class="hidden px-4 py-3 font-medium print:table-cell md:table-cell">Registered</th>
-                            <th scope="col" class="no-print px-4 py-3 text-right font-medium">Actions</th>
+                            <th scope="col" class="no-print hidden px-4 py-3 text-right font-medium sm:table-cell">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -87,6 +87,11 @@
                                     <a href="{{ route('admin.users.show', $user) }}" class="inline-flex min-h-6 items-center font-medium text-sky-700 hover:underline">{{ $user->name }}</a>
                                     <span class="block text-xs text-slate-500">{{ $user->email }}</span>
                                     <span class="mt-1 block text-xs text-slate-500 md:hidden">{{ $user->roleLabel() }} &middot; {{ e($user->residentProfile?->full_name ?? '—') }} &middot; {{ $user->created_at?->format('M j, Y') ?? '—' }}</span>
+                                    @if ($user->status === 'pending' && $user->user_type === 'resident')
+                                        <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline mt-2 w-full sm:hidden">Review</a>
+                                    @else
+                                        <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline mt-2 w-full sm:hidden">View</a>
+                                    @endif
                                 </td>
                                 <td class="hidden px-4 py-3 text-slate-700 print:table-cell md:table-cell">{{ $user->roleLabel() }}</td>
                                 <td class="px-4 py-3">
@@ -94,7 +99,7 @@
                                 </td>
                                 <td class="hidden px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $user->residentProfile?->full_name ?? '—' }}</td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-slate-600 print:table-cell md:table-cell">{{ $user->created_at?->format('M j, Y') }}</td>
-                                <td class="no-print px-4 py-3 text-right">
+                                <td class="no-print hidden px-4 py-3 text-right sm:table-cell">
                                     @if ($user->status === 'pending' && $user->user_type === 'resident')
                                         <a href="{{ route('admin.approvals.index') }}" class="btn btn-outline btn-row">Review</a>
                                     @else

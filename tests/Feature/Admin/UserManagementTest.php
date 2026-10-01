@@ -491,4 +491,20 @@ class UserManagementTest extends TestCase
             'user_type' => 'staff',
         ])->assertSessionHasErrors('password');
     }
+
+    public function test_directory_action_goes_full_width_on_phones(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $html = $this->actingAs($admin)->get(route('admin.users.index'))
+            ->assertOk()
+            ->getContent();
+
+        // Desktop keeps the uniform row-width action column...
+        $this->assertStringContainsString('btn btn-outline btn-row', $html);
+        // ...while phones get a full-width twin inside the user cell and
+        // the side-squeezed column hides below sm:.
+        $this->assertStringContainsString('btn btn-outline mt-2 w-full sm:hidden', $html);
+        $this->assertStringContainsString('no-print hidden px-4 py-3 text-right sm:table-cell', $html);
+    }
 }
