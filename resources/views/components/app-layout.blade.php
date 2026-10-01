@@ -37,11 +37,13 @@
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
 </head>
-{{-- App shell: h-screen + overflow-hidden locks the viewport. The page body itself
+{{-- App shell: h-dvh + overflow-hidden locks the viewport. h-dvh (not h-screen/100vh)
+     tracks Chrome's URL bar as it shows/hides, so the pinned header and the
+     scroll container never jump or half-hide. The page body itself
      NEVER scrolls; only the #content-scroll region inside does. The sidebar is an
      icon rail: full (w-64) by default, minimized (w-[68px], icons only) via the
      rail toggle, persisted in localStorage. On mobile it is the off-canvas drawer. --}}
-<body class="bg-slate-50 text-slate-900 antialiased {{ $isFragment ? 'bg-white' : 'h-screen overflow-hidden' }}">
+<body class="bg-slate-50 text-slate-900 antialiased {{ $isFragment ? 'bg-white' : 'h-dvh overflow-hidden' }}">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[110] focus:rounded-md focus:bg-sky-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
         Skip to main content
     </a>

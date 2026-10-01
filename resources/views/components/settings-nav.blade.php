@@ -60,7 +60,7 @@
             <span class="nav-icon"><x-icon :name="$section['icon']" class="h-[18px] w-[18px]" /></span>
             <span class="min-w-0 flex-1">
                 <span class="block truncate text-sm font-medium">{{ $section['label'] }}</span>
-                <span class="mt-0.5 block truncate text-xs font-normal text-white/50">{{ $section['hint'] }}</span>
+                <span class="mt-0.5 hidden truncate text-xs font-normal text-white/50 md:block">{{ $section['hint'] }}</span>
             </span>
         </a>
     @endforeach

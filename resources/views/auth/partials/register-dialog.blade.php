@@ -8,7 +8,7 @@
 
         <div class="absolute inset-0 overflow-hidden">
             <div class="flex min-h-full items-center justify-center p-2 sm:p-4">
-                <div id="register-panel" class="modal-panel relative flex max-h-[calc(100vh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100vh-2rem)]">
+                <div id="register-panel" class="modal-panel relative flex max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
 
                 {{-- Modal header --}}
                 <div class="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-5">

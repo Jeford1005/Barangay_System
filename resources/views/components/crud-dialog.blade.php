@@ -43,7 +43,7 @@ $panelWidth = [
     {{-- Center the panel in the viewport; only the form body scrolls. --}}
     <div class="crud-dialog-viewport absolute inset-0 overflow-hidden">
         <div class="flex min-h-full items-center justify-center p-2 sm:p-4">
-            <div tabindex="-1" class="crud-dialog-panel modal-panel relative flex max-h-[calc(100vh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl focus:outline-none sm:max-h-[calc(100vh-2rem)] {{ $panelWidth }}">
+            <div tabindex="-1" class="crud-dialog-panel modal-panel relative flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl focus:outline-none sm:max-h-[calc(100dvh-2rem)] {{ $panelWidth }}">
 
                 {{-- Header --}}
                 <div class="z-10 flex shrink-0 items-start justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-6 py-5">

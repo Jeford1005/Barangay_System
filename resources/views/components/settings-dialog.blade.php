@@ -23,7 +23,7 @@
 
     <div class="pointer-events-none relative flex h-full w-full items-stretch justify-center sm:items-center sm:p-4">
         <div data-settings-dialog-panel
-             class="modal-panel pointer-events-auto flex h-full w-full flex-col overflow-hidden bg-white sm:h-[min(88vh,880px)] sm:max-w-5xl sm:rounded-xl sm:border sm:border-slate-200 sm:shadow-2xl md:flex-row">
+             class="modal-panel pointer-events-auto flex h-full w-full flex-col overflow-hidden bg-white sm:h-[min(88dvh,880px)] sm:max-w-5xl sm:rounded-xl sm:border sm:border-slate-200 sm:shadow-2xl md:flex-row">
 
             {{-- Dark rail: app sidebar language, so the dialog reads as part
                  of the product rather than a bolted-on browser prompt. --}}
