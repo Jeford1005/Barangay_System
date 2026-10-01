@@ -137,6 +137,9 @@
             <form method="POST" action="{{ route('resident.contact.update') }}" enctype="multipart/form-data" class="space-y-4 p-6">
                 @csrf
                 @method('PUT')
+                @if (session('success'))
+                    <p role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</p>
+                @endif
                 <div>
                     <label for="phone_number" class="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
                     <input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number', $resident->phone_number) }}"

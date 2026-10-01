@@ -397,7 +397,7 @@ Route::middleware(['auth', 'verified', 'permission:resident-changes.view', 'thro
 // `verified` is a future-proof no-op (see office group note above). The group
 // throttle rate-limits direct-URL bypass; write endpoints add tighter limits.
 Route::middleware(['auth', 'verified', 'resident', 'throttle:60,1'])->group(function () {
-    Route::get('/my', [ResidentPortalController::class, 'index'])->name('resident.portal');
+    Route::get('/my', [ResidentPortalController::class, 'index'])->middleware('resident.profile')->name('resident.portal');
     Route::put('/my/contact', [ResidentPortalController::class, 'updateContact'])
         ->middleware('throttle:30,1')
         ->name('resident.contact.update');
@@ -413,7 +413,7 @@ Route::middleware(['auth', 'verified', 'resident', 'throttle:60,1'])->group(func
         ->name('resident.photo.destroy');
 
     // Online certificate requests
-    Route::get('/my/requests', [ResidentCertificateRequestController::class, 'index'])->name('resident.requests');
+    Route::get('/my/requests', [ResidentCertificateRequestController::class, 'index'])->middleware('resident.profile')->name('resident.requests');
     // Ownership is enforced in the controller (request must belong to the
     // sign-in's own profile and be Approved); the throttle slows
     // sequential-ID enumeration. A `can:` gate would need a new Policy
@@ -444,12 +444,12 @@ Route::middleware(['auth', 'verified', 'resident', 'throttle:60,1'])->group(func
     // Incident reports and assistance requests. Both write straight into the
     // office's own blotter and welfare queues instead of a parallel one, so
     // there is a single queue per module for staff to work through.
-    Route::get('/my/blotter', [ResidentBlotterController::class, 'index'])->name('resident.blotter');
+    Route::get('/my/blotter', [ResidentBlotterController::class, 'index'])->middleware('resident.profile')->name('resident.blotter');
     Route::post('/my/blotter', [ResidentBlotterController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('resident.blotter.store');
 
-    Route::get('/my/welfare', [ResidentWelfareController::class, 'index'])->name('resident.welfare');
+    Route::get('/my/welfare', [ResidentWelfareController::class, 'index'])->middleware('resident.profile')->name('resident.welfare');
     Route::post('/my/welfare', [ResidentWelfareController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('resident.welfare.store');

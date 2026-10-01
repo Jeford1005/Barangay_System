@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\EnsureResidentHasProfile;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsResident;
+use App\Http\Middleware\RestoreBackUrl;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             EnsureUserIsActive::class,
+            RestoreBackUrl::class,
         ]);
 
         $middleware->append(AddSecurityHeaders::class);
@@ -41,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureUserHasPermission::class,
             'permission' => EnsureUserHasPermission::class,
             'resident' => EnsureUserIsResident::class,
+            'resident.profile' => EnsureResidentHasProfile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Resident;
 
+use App\Models\Document;
 use App\Models\Resident;
 use App\Models\User;
 use App\Notifications\ResidentEmailChangedNotification;
@@ -315,5 +316,64 @@ class ResidentPortalTest extends TestCase
         $this->actingAs($user)
             ->put('/my/contact', ['address' => ''])
             ->assertSessionHasErrors('address');
+    }
+
+    public function test_account_without_a_linked_record_gets_a_setup_screen_not_a_404(): void
+    {
+        $user = User::factory()->create(['user_type' => 'resident', 'status' => 'approved']);
+
+        // Only pages that require a linked record show the setup screen.
+        foreach (['/my', '/my/requests', '/my/blotter', '/my/welfare'] as $page) {
+            $this->actingAs($user)->get($page)
+                ->assertOk()
+                ->assertSee('Profile setup pending');
+        }
+
+        // The officials directory never needed a profile — still public to
+        // every signed-in resident.
+        $this->actingAs($user)->get('/my/officials')->assertOk();
+    }
+
+    public function test_contact_update_shows_a_persistent_success_banner(): void
+    {
+        [$user] = $this->approvedResident();
+
+        $this->actingAs($user)
+            ->put('/my/contact', ['phone_number' => '09170000002', 'address' => 'New address here'])
+            ->assertSessionHas('success');
+
+        // The banner is plain markup (not only the auto-dismissing toast),
+        // so the confirmation is still on screen whenever they look.
+        $this->actingAs($user)->get('/my')
+            ->assertOk()
+            ->assertSee('Contact details updated');
+    }
+
+    public function test_back_survives_the_pathless_address_bar(): void
+    {
+        [$user] = $this->approvedResident();
+        $document = Document::where('code', 'CLR')->firstOrFail();
+        $payload = [
+            'document_id' => $document->id,
+            'purpose' => 'Job requirement',
+            'copies' => 1,
+        ];
+
+        // Seed the session's real previous page, as a normal navigation does.
+        $this->actingAs($user)->get('/my/requests')->assertOk();
+
+        $this->actingAs($user)->post(route('resident.requests.store'), $payload);
+
+        // The duplicate hits a back() error path while sending the bare
+        // domain Referer the pathless address bar produces on every POST.
+        // It must land back on the form page — not / re-routed to the
+        // portal — with the message intact (single hop, flash survives).
+        $this->actingAs($user)
+            ->post(route('resident.requests.store'), $payload, ['HTTP_REFERER' => 'http://localhost/'])
+            ->assertRedirect('/my/requests');
+
+        $this->actingAs($user)->get('/my/requests')
+            ->assertOk()
+            ->assertSee('already have a pending request');
     }
 }

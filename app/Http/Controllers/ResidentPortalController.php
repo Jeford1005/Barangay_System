@@ -164,7 +164,7 @@ class ResidentPortalController extends Controller
             Storage::disk('public')->delete($oldPhoto);
         }
 
-        return back()->with('success', 'Contact details updated.');
+        return redirect()->route('resident.portal')->with('success', 'Contact details updated.');
     }
 
     /**

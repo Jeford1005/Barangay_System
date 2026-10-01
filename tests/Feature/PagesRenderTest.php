@@ -157,6 +157,19 @@ class PagesRenderTest extends TestCase
         $this->actingAs($user)->get('/puroks')->assertRedirect('/dashboard');
     }
 
+    public function test_analytics_link_only_renders_for_permitted_roles(): void
+    {
+        // Every fixed role holds analytics.view today; the gate exists so a
+        // future/custom role without it never clicks into a 403 page.
+        foreach (['admin', 'staff', 'official'] as $role) {
+            $user = User::factory()->create(['user_type' => $role]);
+
+            $this->actingAs($user)->get('/dashboard')
+                ->assertOk()
+                ->assertSee(route('analytics.index'), false);
+        }
+    }
+
     public function test_fragment_mode_requires_an_xhr_request(): void
     {
         $user = User::factory()->create(['user_type' => 'admin']);
