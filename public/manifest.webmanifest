@@ -25,18 +25,6 @@
       "purpose": "any"
     },
     {
-      "src": "/images/bidduang-seal.png",
-      "sizes": "198x148",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/images/seal-square.png",
-      "sizes": "148x148",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
       "src": "/images/bidduang-seal-circle.png",
       "sizes": "180x180",
       "type": "image/png",
