@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\CertificateRequest;
 use App\Models\ResidentRecordChange;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Support\Facades\Cache;
@@ -45,6 +46,13 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(JobProcessed::class, $heartbeat);
         Event::listen(JobExceptionOccurred::class, $heartbeat);
+
+        // Eager by default, lazy by exception — enforced, not just advised.
+        // Rule of thumb: inside a @foreach or a sidebar badge, eager
+        // (with()/withCount()); everywhere else, lazy. Outside production
+        // any lazy load throws, so N+1s fail verification here instead of
+        // reaching prod. Production stays fail-open (violations only log).
+        Model::preventLazyLoading(! $this->app->isProduction());
 
         // Module-tab badges (certificate requests / resident corrections) are
         // rendered on every folded-module page. Compute them once per request
