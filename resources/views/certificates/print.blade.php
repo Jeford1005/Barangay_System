@@ -217,7 +217,15 @@
 <body>
     <div class="toolbar no-print">
         <button type="button" class="primary" onclick="window.print()">Print this certificate</button>
-        <a href="{{ route('certificates.index') }}">Back to certificates</a>
+        @php
+            // This sheet has two entry points: the office print (staff with
+            // certificates.view) and the resident viewer
+            // (resident.requests.certificate). A resident following a Back
+            // link to certificates.index would land on a 403, so residents
+            // go back to their own request list instead.
+            $canBrowseCertificates = auth()->user()?->hasPermission('certificates.view') ?? false;
+        @endphp
+        <a href="{{ $canBrowseCertificates ? route('certificates.index') : route('resident.requests') }}">{{ $canBrowseCertificates ? 'Back to certificates' : 'Back to my requests' }}</a>
     </div>
 
     <div class="sheet">

@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\TotpService;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class TwoFactorController extends Controller
@@ -41,7 +44,9 @@ class TwoFactorController extends Controller
 
     /**
      * Start enrollment: mint a secret and hold it in the session until the
-     * user proves their authenticator reads it.
+     * user proves their authenticator reads it. Requires the current
+     * password first, so a walked-away session alone cannot start 2FA.
+     * The pending secret is bound to this user and expires after 15 minutes.
      */
     public function enroll(): RedirectResponse
     {
@@ -54,8 +59,18 @@ class TwoFactorController extends Controller
                 ->with('status', 'Two-factor authentication is already enabled on this account.');
         }
 
+        request()->validate([
+            'password' => ['required', 'string', 'max:72', 'current_password'],
+        ], [
+            'password.required' => 'Enter your current password to start two-factor enrollment.',
+            'password.max' => 'Your current password must not be longer than 72 characters.',
+            'password.current_password' => 'The password you entered is incorrect.',
+        ]);
+
         session([
             'two_factor.pending_secret' => app(TotpService::class)->generateSecret(),
+            'two_factor.enroll_user_id' => $user->id,
+            'two_factor.enroll_started_at' => now()->timestamp,
         ]);
 
         return redirect()
@@ -65,11 +80,26 @@ class TwoFactorController extends Controller
 
     /**
      * Finish enrollment by proving the authenticator produces valid codes.
+     * Disable-first: an already-confirmed account cannot be re-provisioned
+     * here — disabling (which requires a live factor) comes first, so a
+     * confirm call can never silently overwrite live 2FA.
      */
     public function confirm(): RedirectResponse
     {
         $user = Auth::user();
         abort_unless($user->isOfficeUser(), 403);
+
+        if ($user->hasTwoFactorEnabled()) {
+            session()->forget([
+                'two_factor.pending_secret',
+                'two_factor.enroll_user_id',
+                'two_factor.enroll_started_at',
+            ]);
+
+            return redirect()
+                ->route('two-factor.settings')
+                ->with('status', 'Two-factor authentication is already enabled on this account. Disable it first to re-enroll.');
+        }
 
         $request = request();
 
@@ -84,12 +114,34 @@ class TwoFactorController extends Controller
 
         $this->ensureConfirmIsNotRateLimited($user);
 
+        $totp = app(TotpService::class);
         $secret = session('two_factor.pending_secret');
 
-        $valid = is_string($secret) && $secret !== ''
-            && app(TotpService::class)->verify($secret, (string) $request->input('code'));
+        // Pending secrets are bound to the initiating user and expire after
+        // 15 minutes; anything else restarts enrollment instead of guessing.
+        if (! $this->pendingEnrollmentIsFresh($user)) {
+            session()->forget([
+                'two_factor.pending_secret',
+                'two_factor.enroll_user_id',
+                'two_factor.enroll_started_at',
+            ]);
 
-        if (! $valid) {
+            return back()->withErrors(['code' => 'Your enrollment session expired. Start enrollment again, then enter the current code.']);
+        }
+
+        // Strict charset: the decoder skips unknown characters, so a
+        // tampered session secret must fail here, never verify by accident.
+        $step = is_string($secret) && $totp::isValidSecret($secret)
+            ? $totp->matchedStep($secret, (string) $request->input('code'))
+            : null;
+
+        // Reject reuse of an already-consumed time-step (TOTP replay).
+        // Scoped to enrollment: the first login afterwards runs under the
+        // challenge scope, so enabling 2FA never burns the code that login
+        // needs seconds later in the same step.
+        $replayed = $step !== null && $totp->stepAlreadyUsed($this->totpReplayScope($user, 'enroll'), $step);
+
+        if ($step === null || $replayed) {
             RateLimiter::hit($this->confirmThrottleKey($user), 300);
 
             AuditLog::record(
@@ -104,9 +156,11 @@ class TwoFactorController extends Controller
             return back()->withErrors(['code' => 'That code is incorrect. Check your authenticator app and try again.']);
         }
 
+        $totp->markStepUsed($this->totpReplayScope($user, 'enroll'), $step);
+
         RateLimiter::clear($this->confirmThrottleKey($user));
 
-        $plainCodes = app(TotpService::class)->generateRecoveryCodes();
+        $plainCodes = $totp->generateRecoveryCodes();
 
         $user->forceFill([
             // The 'encrypted' cast encrypts the secret at rest.
@@ -118,7 +172,11 @@ class TwoFactorController extends Controller
             ),
         ])->save();
 
-        session()->forget('two_factor.pending_secret');
+        session()->forget([
+            'two_factor.pending_secret',
+            'two_factor.enroll_user_id',
+            'two_factor.enroll_started_at',
+        ]);
 
         AuditLog::record(
             'two_factor.enrolled',
@@ -158,19 +216,31 @@ class TwoFactorController extends Controller
         $request = request();
 
         $request->validate([
-            'code' => ['required', 'string', 'min:6', 'max:12'],
+            'code' => ['required', 'string', 'min:6', 'max:64'],
         ], [
             'code.required' => 'Enter the code from your authenticator app.',
             'code.min' => 'The code must be at least 6 characters.',
-            'code.max' => 'The code must not be longer than 12 characters.',
+            'code.max' => 'The code must not be longer than 64 characters.',
         ]);
 
         $user = User::find(session('two_factor.pending_user_id'));
 
         if (! $user || ! $user->isOfficeUser() || ! $user->hasTwoFactorEnabled()) {
-            session()->forget('two_factor.pending_user_id');
+            session()->forget(['two_factor.pending_user_id', 'two_factor.pending_remember']);
 
             return redirect()->route('login');
+        }
+
+        // Fail closed: the password passed minutes ago at most, but the
+        // account may have been suspended or unapproved since. Re-verify
+        // immediately before finalizing login; one generic message either way
+        // so the response never reveals which state changed.
+        if ($user->isSuspended() || ! $user->isApproved()) {
+            session()->forget(['two_factor.pending_user_id', 'two_factor.pending_remember']);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'This account is no longer available. Please contact the barangay office.',
+            ]);
         }
 
         $this->ensureChallengeIsNotRateLimited($user);
@@ -178,7 +248,11 @@ class TwoFactorController extends Controller
         $totp = app(TotpService::class);
         $input = (string) $request->input('code');
 
-        $passed = $totp->verify((string) $user->two_factor_secret, $input);
+        $secret = (string) $user->two_factor_secret;
+        $step = $totp::isValidSecret($secret) ? $totp->matchedStep($secret, $input) : null;
+
+        // A matching but already-consumed step is a replay, not a pass.
+        $passed = $step !== null && ! $totp->stepAlreadyUsed($this->totpReplayScope($user, 'challenge'), $step);
         $usedRecoveryHash = null;
 
         if (! $passed) {
@@ -201,6 +275,10 @@ class TwoFactorController extends Controller
             // Generic on purpose: the visitor already passed the password, so
             // this says nothing about whether the account exists.
             return back()->withErrors(['code' => 'That code is incorrect. Try again.']);
+        }
+
+        if ($step !== null) {
+            $totp->markStepUsed($this->totpReplayScope($user, 'challenge'), $step);
         }
 
         if ($usedRecoveryHash !== null) {
@@ -246,7 +324,8 @@ class TwoFactorController extends Controller
     }
 
     /**
-     * Disable 2FA after confirming the current password. Destructive, so the
+     * Disable 2FA after confirming the current password AND a live factor
+     * (authenticator code or single-use recovery code). Destructive, so the
      * view also gates the button behind data-confirm.
      */
     public function destroy(): RedirectResponse
@@ -257,13 +336,45 @@ class TwoFactorController extends Controller
         $request = request();
 
         $request->validate([
-            'password' => ['required', 'string', 'min:8', 'max:72', 'current_password'],
+            'password' => ['required', 'string', 'max:72', 'current_password', Password::min(12)->letters()->numbers()],
+            'code' => ['required', 'string', 'min:6', 'max:64'],
         ], [
             'password.required' => 'Enter your current password to disable two-factor authentication.',
-            'password.min' => 'Your current password must be at least 8 characters.',
             'password.max' => 'Your current password must not be longer than 72 characters.',
             'password.current_password' => 'The password you entered is incorrect.',
+            'code.required' => 'Enter the 6-digit code from your authenticator app (or a recovery code) to disable two-factor authentication.',
+            'code.min' => 'The code must be at least 6 characters.',
+            'code.max' => 'The code must not be longer than 64 characters.',
         ]);
+
+        if (! $user->hasTwoFactorEnabled()) {
+            return redirect()
+                ->route('two-factor.settings')
+                ->with('status', 'Two-factor authentication is not enabled on this account.');
+        }
+
+        $input = (string) $request->input('code');
+        $secret = (string) $user->two_factor_secret;
+
+        $passed = app(TotpService::class)::isValidSecret($secret)
+            && app(TotpService::class)->verify($secret, $input);
+
+        if (! $passed) {
+            $passed = $this->matchingRecoveryHash($user, $input) !== null;
+        }
+
+        if (! $passed) {
+            AuditLog::record(
+                'two_factor.verification_failed',
+                $user->id,
+                $user->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['stage' => 'disable'],
+            );
+
+            return back()->withErrors(['code' => 'That code is incorrect. Check your authenticator app and try again.']);
+        }
 
         $user->forceFill([
             'two_factor_secret' => null,
@@ -271,7 +382,11 @@ class TwoFactorController extends Controller
             'two_factor_recovery_codes' => null,
         ])->save();
 
-        session()->forget('two_factor.pending_secret');
+        session()->forget([
+            'two_factor.pending_secret',
+            'two_factor.enroll_user_id',
+            'two_factor.enroll_started_at',
+        ]);
 
         AuditLog::record(
             'two_factor.disabled',
@@ -290,7 +405,9 @@ class TwoFactorController extends Controller
     {
         $normalized = TotpService::normalizeRecoveryCode($input);
 
-        if ($normalized === '') {
+        // Capped before Hash::check: bcrypt inputs must stay small, and real
+        // recovery codes normalize to 10 characters.
+        if ($normalized === '' || strlen($normalized) > 64) {
             return null;
         }
 
@@ -301,6 +418,39 @@ class TwoFactorController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Replay scope for TOTP step consumption. Keyed by user id so one
+     * account's codes never burn another's, and by stage so confirming an
+     * enrollment never burns the code the first login needs seconds later
+     * in the same step. (Codes are secret-bound, so cross-account replay is
+     * already cryptographically impossible; this stops same-account races.)
+     */
+    private function totpReplayScope(User $user, string $stage): string
+    {
+        return 'two-factor-totp:'.$stage.':'.$user->getKey();
+    }
+
+    /**
+     * A pending enrollment is usable only by the user who started it and
+     * only within 15 minutes of minting.
+     */
+    private function pendingEnrollmentIsFresh(User $user): bool
+    {
+        $secret = session('two_factor.pending_secret');
+
+        if (! is_string($secret) || $secret === '') {
+            return false;
+        }
+
+        if ((int) session('two_factor.enroll_user_id') !== (int) $user->id) {
+            return false;
+        }
+
+        $startedAt = session('two_factor.enroll_started_at');
+
+        return is_int($startedAt) && $startedAt >= now()->subMinutes(15)->timestamp;
     }
 
     private function confirmThrottleKey(User $user): string
@@ -329,13 +479,18 @@ class TwoFactorController extends Controller
             return;
         }
 
+        event(new Lockout(request()));
+
         $seconds = RateLimiter::availableIn($key);
 
-        abort(redirect()->back()->withErrors([
+        // ValidationException renders as a redirect-back with errors, exactly
+        // like LoginRequest's throttle handling. (abort() with a redirect
+        // response 500s instead.)
+        throw ValidationException::withMessages([
             'code' => trans('auth.throttle', [
                 'seconds' => $seconds,
-                'minutes' => (int) ceil($seconds / 60),
+                'minutes' => ceil($seconds / 60),
             ]),
-        ]));
+        ]);
     }
 }

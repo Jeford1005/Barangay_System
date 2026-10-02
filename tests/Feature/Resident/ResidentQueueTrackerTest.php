@@ -201,6 +201,81 @@ class ResidentQueueTrackerTest extends TestCase
             ->assertDontSee('My clearance purpose');
     }
 
+    public function test_eta_never_drops_below_the_measured_pace(): void
+    {
+        [$user, $resident] = $this->approvedResident();
+        $document = $this->certificateDocument();
+        $made = [];
+
+        // Five pending same-type rows: the viewer files last, so they are
+        // position 5 of 5.
+        foreach (range(0, 4) as $i) {
+            $owner = $i === 4 ? $resident : Resident::factory()->create();
+            $request = CertificateRequest::create([
+                'resident_id' => $owner->id,
+                'document_id' => $document->id,
+                'purpose' => "Pace probe purpose {$i}",
+                'copies' => 1,
+                'status' => 'Pending',
+            ]);
+            $stamped = now()->subHours(5 - $i);
+            $request->created_at = $stamped;
+            $request->updated_at = $stamped;
+            $request->save();
+            $made[] = $request;
+        }
+
+        // Five decided same-type rows in the window: the measured pace is
+        // 5/30 rows a day (one row per six days), so position 5 is ~30 days
+        // out. A 1/day floor would print the ~5-day lie instead.
+        foreach (range(1, 5) as $i) {
+            CertificateRequest::create([
+                'resident_id' => Resident::factory()->create()->id,
+                'document_id' => $document->id,
+                'purpose' => "Decided pace purpose {$i}",
+                'copies' => 1,
+                'status' => 'Approved',
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get('/my/requests')
+            ->assertOk()
+            ->assertSee('Position 5 of 5')
+            ->assertSee('usually ready in ~30 days')
+            ->assertDontSee('~5 days');
+    }
+
+    public function test_blotter_variants_of_one_type_share_a_single_queue(): void
+    {
+        // Same complaint typed three ways (case, casing, padding): one
+        // queue of three, not three queues of one.
+        $variants = ['Noise Complaint', 'noise complaint', '  Noise Complaint  '];
+        $made = [];
+
+        foreach ($variants as $i => $variant) {
+            [$user, $resident] = $this->approvedResident();
+            $case = Blotter::factory()->create([
+                'complainant_id' => $resident->id,
+                'complainant_name' => $resident->full_name,
+                'reported_by_resident' => true,
+                'complaint_type' => $variant,
+                'alleged_offense' => "Loud videoke night {$i}.",
+                'status' => 'Open',
+            ]);
+            $stamped = now()->subHours(3 - $i);
+            $case->created_at = $stamped;
+            $case->updated_at = $stamped;
+            $case->save();
+            $made[] = [$user, $resident, $case];
+        }
+
+        $this->actingAs($made[1][0])
+            ->get('/my/blotter')
+            ->assertOk()
+            ->assertSee('Position 2 of 3');
+    }
+
     public function test_blotter_position_counts_same_type_open_cases(): void
     {
         $made = [];
@@ -274,8 +349,9 @@ class ResidentQueueTrackerTest extends TestCase
         [$user, $resident] = $this->approvedResident();
         $today = now()->toDateString();
 
-        // 35 waiting same-type rows: with the 1/day floor the last one is
-        // 35 days out, which must cap instead of printing "~35 days".
+        // 35 waiting same-type rows at the measured 5-in-30 pace: the last
+        // one is ~210 days out, which must cap instead of printing a
+        // day count.
         foreach (range(1, 35) as $i) {
             Welfare::factory()->create([
                 'beneficiary_id' => $resident->id,

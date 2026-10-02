@@ -29,20 +29,23 @@ class ResidentBlotterController extends Controller
         // Queue position + honest ETA per open card, counted in SQL
         // aggregates (never hydrated): same-type Open/Pending cases for
         // the position, Resolved/Dismissed cases from the last 30 days
-        // for the pace.
+        // for the pace. complaint_type is free text (no taxonomy table),
+        // so the grouping key is trim + casefold normalized — in PHP via
+        // QueueTracker::normalizeKey AND in SQL via LOWER(TRIM(…)) — or
+        // every typo/casing variant becomes its own queue of one.
         $queue = QueueTracker::lines(
             $cases->getCollection(),
-            fn (Blotter $row) => (string) $row->complaint_type,
+            fn (Blotter $row) => QueueTracker::normalizeKey($row->complaint_type),
             fn (Blotter $row) => in_array($row->status, ['Open', 'Pending'], true),
-            fn ($complaintType) => Blotter::query()
-                ->where('complaint_type', $complaintType)
+            fn ($complaintKey) => Blotter::query()
+                ->whereRaw('LOWER(TRIM(complaint_type)) = ?', [$complaintKey])
                 ->whereIn('status', ['Open', 'Pending']),
-            fn (array $complaintTypes) => Blotter::query()
-                ->whereIn('complaint_type', $complaintTypes)
+            fn (array $complaintKeys) => Blotter::query()
                 ->whereIn('status', ['Resolved', 'Dismissed'])
+                ->whereIn(DB::raw('LOWER(TRIM(complaint_type))'), $complaintKeys)
                 ->where('updated_at', '>=', now()->subDays(QueueTracker::WINDOW_DAYS))
-                ->selectRaw('complaint_type as k, COUNT(*) as c')
-                ->groupBy('complaint_type')
+                ->selectRaw('LOWER(TRIM(complaint_type)) as k, COUNT(*) as c')
+                ->groupByRaw('LOWER(TRIM(complaint_type))')
                 ->pluck('c', 'k'),
         );
 

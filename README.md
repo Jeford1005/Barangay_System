@@ -115,6 +115,10 @@ After running seeders (when implemented), use these credentials:
 - **Staff**: staff@barangay.local / barangay-2026
 - **Official**: official@barangay.local / barangay-2026
 
+New passwords (registration, password reset, admin-created accounts, `app:create-admin`)
+must be 12–72 characters with at least one letter and one number. Symbols are not
+required, and there is no breach-list check, so password setup works fully offline.
+
 Fresh installations create the sample Staff account with the limited `staff` role. Existing installations are not automatically changed; an administrator must review and assign the role explicitly.
 
 ### Access roles
@@ -304,7 +308,7 @@ php artisan queue:work --sleep=3 --tries=3 --timeout=60
 
 Key details the guide covers: doc root must be `public/`; `APP_DEBUG=false`;
 **do not `db:seed` in production** (it creates `admin@barangay.local` /
-`password`); and backups are built in for **SQLite, MySQL and MariaDB** — see the
+`barangay-2026`); and backups are built in for **SQLite, MySQL and MariaDB** — see the
 [backup and restore notes](docs/operations/deploy.md#backups).
 
 `public/.htaccess` ships with **no hardcoded `RewriteBase`**, so docroot,

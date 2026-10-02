@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Dashboard;
 
+use App\Models\Household;
 use App\Models\Purok;
+use App\Models\Resident;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -36,10 +38,29 @@ class DashboardOnboardingTest extends TestCase
         $this->assertStringContainsString('?open=resident', $html);
     }
 
-    public function test_seeded_dashboard_shows_stat_cards_without_checklist(): void
+    public function test_partial_setup_keeps_checklist_until_every_step_is_done(): void
     {
         $admin = User::factory()->create(['user_type' => 'admin']);
         Purok::create(['name' => 'Purok 1', 'code' => 'P1', 'created_by' => $admin->id]);
+
+        // One purok alone must NOT dismiss the checklist: households and
+        // residents are still missing.
+        $html = $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('id="onboarding-checklist"', $html);
+        $this->assertStringNotContainsString('id="dashboard-stats"', $html);
+        $this->assertStringContainsString('Done', $html);
+    }
+
+    public function test_finished_setup_shows_stat_cards_without_checklist(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+        $purok = Purok::create(['name' => 'Purok 1', 'code' => 'P1', 'created_by' => $admin->id]);
+        Household::factory()->create(['purok_id' => $purok->id]);
+        Resident::factory()->create(['purok_id' => $purok->id]);
 
         $html = $this->actingAs($admin)
             ->get('/dashboard')
@@ -67,6 +88,18 @@ class DashboardOnboardingTest extends TestCase
         $this->assertStringNotContainsString('?open=purok', $html);
         $this->assertStringNotContainsString('?open=resident', $html);
         $this->assertStringContainsString('?open=household', $html);
+    }
+
+    public function test_review_step_never_links_to_the_dashboard_itself(): void
+    {
+        // Without analytics.view there is no off-page target, so step 4
+        // must render guidance — never a link back to the page it is on.
+        $html = (string) $this->blade(
+            '<x-onboarding-checklist :purok-count="1" :household-count="1" :resident-count="1" />'
+        );
+
+        $this->assertStringContainsString('Review your dashboard', $html);
+        $this->assertStringNotContainsString(route('dashboard'), $html);
     }
 
     public function test_admin_only_step_stays_admin_only(): void

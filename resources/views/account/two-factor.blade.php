@@ -80,8 +80,16 @@
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-sm font-semibold text-slate-900">Status: disabled</h2>
             <p class="mt-1 text-sm text-slate-500">When enabled, sign-in asks for a 6-digit code from your authenticator app after your password.</p>
-            <form method="POST" action="{{ route('two-factor.enroll') }}" class="mt-4">
+            <form method="POST" action="{{ route('two-factor.enroll') }}" class="mt-4 space-y-3">
                 @csrf
+                <div>
+                    <label for="two-factor-enroll-password" class="mb-1.5 block text-sm font-medium text-slate-700">Current password</label>
+                    <input id="two-factor-enroll-password" type="password" name="password" required autocomplete="current-password"
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password') border-red-500! ring-1 ring-red-500/40 @enderror">
+                    @error('password')
+                        <p class="mt-1.5 text-[13px] text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
                 <button type="submit" class="btn btn-primary">Enable two-factor authentication</button>
             </form>
         </div>

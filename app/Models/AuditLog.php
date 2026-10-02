@@ -185,17 +185,20 @@ class AuditLog extends Model
 
     /**
      * Strip PII out of already-persisted properties for the prune-time
-     * anonymize pass (see PruneAuditLogsCommand). Event names, actor ids,
-     * timestamps and every non-PII value — names, case/control numbers,
-     * reasons, filters, counts — pass through untouched so the row stays a
-     * queryable accountability record; only emails, IPs, phone-like strings
-     * and token-shaped values become self::REDACTED.
+     * anonymize pass (see PruneAuditLogsCommand). Emails, IPs, phone-like
+     * strings, token-shaped values and actor identifiers (actor_id/user_id
+     * scalars) become self::REDACTED. Event names, timestamps and every
+     * non-PII value — names, case/control numbers, subject ids, reasons,
+     * filters, counts — pass through untouched so the row stays a
+     * queryable accountability record.
      *
-     * Key-directed first (an `email`/`ip_address`/`phone`/`token`-ish key
-     * redacts its whole scalar value), then pattern-directed over every
-     * remaining string, so a stray address inside free text (e.g. a reason)
-     * is redacted but the surrounding text survives. Structure — keys,
-     * nesting, scalars, nulls — is never altered.
+     * Key-directed first (an `email`/`ip_address`/`phone`/`token`-ish key,
+     * or an actor-identifier key, redacts its whole scalar value), then
+     * pattern-directed over every remaining string, so a stray address
+     * inside free text (e.g. a reason) is redacted but the surrounding
+     * text survives. Structure — keys, nesting, nulls — is never altered,
+     * except that a redacted actor id changes from int to the REDACTED
+     * string (there is no integer that means "anonymous").
      *
      * @param  array<string, mixed>  $properties
      * @return array<string, mixed>
@@ -208,6 +211,19 @@ class AuditLog extends Model
                     $value,
                     $inSensitiveSubtree || self::isAnonymizeSensitiveKey($key)
                 );
+
+                continue;
+            }
+
+            // Actor identifiers are PII at any depth, whatever their scalar
+            // type: recordWithSubject() stores actor_id as an int, and the
+            // string-only scrub below would otherwise let it through.
+            if (
+                self::isActorIdentifierKey($key)
+                && (is_int($value) || is_string($value))
+                && $value !== self::REDACTED && trim((string) $value) !== ''
+            ) {
+                $properties[$key] = self::REDACTED;
 
                 continue;
             }
@@ -260,6 +276,24 @@ class AuditLog extends Model
         }
 
         return $properties;
+    }
+
+    /**
+     * Keys whose whole scalar value identifies the actor account
+     * (recordWithSubject() duplicates these inside `properties` alongside
+     * the real columns). Subject-side keys (resident_id, subject_id,
+     * case/control numbers) are deliberately NOT here — they say which
+     * record the event is about and stay for accountability.
+     */
+    private static function isActorIdentifierKey(mixed $key): bool
+    {
+        if (! is_string($key)) {
+            return false;
+        }
+
+        $normalized = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $key));
+
+        return in_array($normalized, ['actorid', 'userid'], true);
     }
 
     /**
@@ -334,16 +368,25 @@ class AuditLog extends Model
             $value
         );
 
+        // Compressed IPv6 always contains "::" with a hex digit on at
+        // least one side (::1, fe80::, 2001:db8::1) — a bare "::" with
+        // neither is prose or a typo, and scrubbing it mangles the text.
+        // Both arms require that adjacent hex digit, and both start where
+        // the address starts (no address char before), so a multi-group
+        // address is consumed whole instead of leaving a fragment behind.
+        // The classes admit dotted IPv4-mapped tails (::ffff:1.2.3.4).
+        //
+        // Runs BEFORE the dotted-quad scrub below: an IPv4-mapped address
+        // must be consumed whole here, otherwise the quad pass eats the
+        // tail first and this one is left staring at "::ffff:".
         $scrubbed = preg_replace(
-            '/\\b(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\b/',
+            '/(?<![0-9A-Fa-f:.])[0-9A-Fa-f:.]*[0-9A-Fa-f]::[0-9A-Fa-f:.]*|(?<![0-9A-Fa-f:.])::[0-9A-Fa-f:.]*[0-9A-Fa-f]/',
             self::REDACTED,
             (string) $scrubbed
         );
 
-        // Compressed IPv6 always contains "::", which dotted quads, times
-        // and version strings never do — safe to match loosely.
         $scrubbed = preg_replace(
-            '/[0-9A-Fa-f:]*::[0-9A-Fa-f:]*/',
+            '/\\b(?:(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\b/',
             self::REDACTED,
             (string) $scrubbed
         );
@@ -379,17 +422,83 @@ class AuditLog extends Model
     }
 
     /**
-     * Long opaque strings (API keys, session tokens, base64 blobs): 32+
-     * chars from a token alphabet with at least one letter, so pure numeric
-     * references and short business codes are never mistaken for secrets.
+     * A whole value that is shaped exactly like an opaque secret: 32+
+     * chars from the token alphabet (letters, digits, base64 marks —
+     * deliberately NO dashes or spaces) with at least one letter, so pure
+     * numeric references and short business codes never match; or a
+     * canonical UUID, the one dashed shape that really is a token.
+     * Dash-separated business codes (control/case numbers, invoice refs)
+     * are never token-shaped, however long they run.
      */
     private static function looksLikeToken(string $value): bool
     {
-        if (strlen($value) < 32 || preg_match('/^[A-Za-z0-9\\-_+\\/=]+$/', $value) !== 1) {
+        if (strlen($value) < 32) {
+            return false;
+        }
+
+        // Dashed or spaced values are structured identifiers, not opaque
+        // secrets — with one exception: a canonical UUID.
+        if (str_contains($value, '-') || str_contains($value, ' ')) {
+            return preg_match(
+                '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/',
+                $value
+            ) === 1;
+        }
+
+        if (preg_match('/^[A-Za-z0-9_+\\/=]+$/', $value) !== 1) {
             return false;
         }
 
         return preg_match('/[A-Za-z]/', $value) === 1;
+    }
+
+    /**
+     * Redact every PII-bearing field of this row in memory — properties via
+     * anonymizeProperties() plus the identifying columns the old pass left
+     * behind for the admin search (emails, IPs) and the actor/user id
+     * columns. String columns take the REDACTED marker so the row still
+     * reads as anonymized rather than never-recorded; id columns go NULL
+     * (the user_id FK is set-null, actor_id has deliberately no FK). A
+     * subject_label that is itself an email address is redacted too; other
+     * subject fields stay — they say which record the event is about.
+     * Returns true when anything changed. Never saves: the caller owns
+     * persistence (and must save without touching timestamps).
+     */
+    public function anonymizeRetainedRow(): bool
+    {
+        $changed = false;
+
+        $scrubbed = self::anonymizeProperties($this->properties ?? []);
+
+        if ($scrubbed !== ($this->properties ?? [])) {
+            $this->properties = $scrubbed;
+            $changed = true;
+        }
+
+        foreach (['user_email', 'actor_email', 'ip_address'] as $column) {
+            $value = $this->getAttribute($column);
+
+            if ($value !== null && $value !== self::REDACTED) {
+                $this->setAttribute($column, self::REDACTED);
+                $changed = true;
+            }
+        }
+
+        foreach (['user_id', 'actor_id'] as $column) {
+            if ($this->getAttribute($column) !== null) {
+                $this->setAttribute($column, null);
+                $changed = true;
+            }
+        }
+
+        $label = $this->getAttribute('subject_label');
+
+        if (is_string($label) && filter_var(trim($label), FILTER_VALIDATE_EMAIL) !== false) {
+            $this->setAttribute('subject_label', self::REDACTED);
+            $changed = true;
+        }
+
+        return $changed;
     }
 
     public static function recordWithSubject(

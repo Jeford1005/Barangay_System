@@ -1,12 +1,15 @@
-{{-- First-run checklist for a fresh install. Shown by dashboard.blade.php INSTEAD
-    OF the stat cards when every count is still zero — never alongside them.
+{{-- First-run checklist for a fresh or half-set-up barangay. Shown by
+    dashboard.blade.php INSTEAD OF the stat cards until purok + household
+    + resident ALL exist — never alongside them.
 
     Each step reads its done/todo state from the live counts passed in as
     props (no queries run here). Permission gates mirror the dashboard Quick
     Actions below: purok setup is admin-only, household/resident steps need
     their manage permission, and analytics needs analytics.view. A step the
     signed-in user may not perform renders as muted guidance with no link,
-    so nobody is offered a shortcut that 403s. --}}
+    so nobody is offered a shortcut that 403s. The review step links to
+    analytics for permitted users and to nothing otherwise — never back to
+    the dashboard itself, which would be a self-link loop. --}}
 @props([
     'purokCount' => 0,
     'householdCount' => 0,
@@ -61,7 +64,10 @@
             'hint' => 'Once records exist, the overview, queues and analytics come alive.',
             'done' => $reviewDone,
             'allowed' => true,
-            'href' => $canAnalytics ? route('analytics.index') : route('dashboard'),
+            // No analytics permission means no off-page target: linking the
+            // dashboard to itself would be a self-link loop, so drop the
+            // link and leave the step as guidance.
+            'href' => $canAnalytics ? route('analytics.index') : null,
             'action' => $canAnalytics ? 'View analytics' : 'Review dashboard',
             'gate' => null,
         ],

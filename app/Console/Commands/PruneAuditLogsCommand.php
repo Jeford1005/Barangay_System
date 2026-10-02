@@ -14,13 +14,14 @@ use Illuminate\Console\Command;
  * (default 365) or --days, with a 30-day floor so a typo can never wipe
  * recent accountability history.
  *
- * The anonymize pass runs over every retained row before the delete: emails,
- * IPs, phone-like strings and token-shaped values inside `properties` become
- * [REDACTED] while event names, actor ids, timestamps and non-PII
- * properties stay intact. Columns (user_email, actor_email, ip_address)
- * are left alone — the admin log page and its search read those, and the
- * properties copy is the redundant one. Pass --skip-anonymize for a
- * delete-only run.
+ * The anonymize pass runs over every retained row before the delete (see
+ * AuditLog::anonymizeRetainedRow): emails, IPs and actor/user ids are
+ * redacted out of both the `properties` payload AND the identifying
+ * columns (user_email, actor_email, ip_address take the REDACTED marker;
+ * user_id and actor_id go NULL), while event names, timestamps and
+ * non-PII properties stay intact. Saves are timestamp-preserving so the
+ * retention math stays honest. Pass --skip-anonymize for a delete-only
+ * run.
  */
 class PruneAuditLogsCommand extends Command
 {
@@ -83,7 +84,7 @@ class PruneAuditLogsCommand extends Command
     }
 
     /**
-     * Rewrite PII-bearing `properties` on every row the prune keeps.
+     * Rewrite PII-bearing fields on every row the prune keeps.
      * Returns the number of rows actually changed.
      */
     private function anonymizeRetained(\DateTimeInterface $cutoff): int
@@ -94,13 +95,16 @@ class PruneAuditLogsCommand extends Command
             ->orderBy('id')
             ->chunkById(500, function ($rows) use (&$anonymized): void {
                 foreach ($rows as $row) {
-                    $scrubbed = AuditLog::anonymizeProperties($row->properties ?? []);
-
-                    if ($scrubbed !== ($row->properties ?? [])) {
-                        $row->properties = $scrubbed;
-                        $row->save();
-                        $anonymized++;
+                    if (! $row->anonymizeRetainedRow()) {
+                        continue;
                     }
+
+                    // Timestamp-preserving save: a normal save() would bump
+                    // updated_at on every anonymized row, silently rewriting
+                    // the audit trail's own timeline.
+                    $row->timestamps = false;
+                    $row->save();
+                    $anonymized++;
                 }
             });
 
@@ -109,7 +113,8 @@ class PruneAuditLogsCommand extends Command
 
     /**
      * Dry-run counterpart: how many retained rows hold PII that the
-     * anonymize pass would rewrite. Reads only, changes nothing.
+     * anonymize pass would rewrite. Reads only, changes nothing — the
+     * check runs against a clone so the live models stay pristine.
      */
     private function countAnonymizable(\DateTimeInterface $cutoff): int
     {
@@ -119,7 +124,7 @@ class PruneAuditLogsCommand extends Command
             ->orderBy('id')
             ->chunkById(500, function ($rows) use (&$count): void {
                 foreach ($rows as $row) {
-                    if (AuditLog::anonymizeProperties($row->properties ?? []) !== ($row->properties ?? [])) {
+                    if ((clone $row)->anonymizeRetainedRow()) {
                         $count++;
                     }
                 }

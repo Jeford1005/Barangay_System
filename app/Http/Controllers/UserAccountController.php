@@ -420,6 +420,19 @@ class UserAccountController extends Controller
                 $oldRole = $locked->user_type;
                 $locked->user_type = $newRole;
                 $locked->save();
+
+                // Leaving the office tiers must not leave a usable 2FA
+                // secret behind: a demoted secret is unusable (office-only
+                // checks), so wipe it instead of letting it sit encrypted.
+                if (in_array($oldRole, [User::ROLE_ADMIN, User::ROLE_STAFF, User::ROLE_OFFICIAL], true)
+                    && ! $locked->isOfficeUser()) {
+                    $locked->forceFill([
+                        'two_factor_secret' => null,
+                        'two_factor_confirmed_at' => null,
+                        'two_factor_recovery_codes' => null,
+                    ])->save();
+                }
+
                 $this->revokeUserSessions($locked);
 
                 $this->recordAudit($request, $locked, 'account.role_changed', [

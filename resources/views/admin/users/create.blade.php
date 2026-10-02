@@ -18,8 +18,8 @@
             <x-form.field name="email" label="Email address" type="email" required maxlength="150" :value="old('email')" autocomplete="username" />
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <x-form.field name="password" label="Password" type="password" required :optionalHint="false" autocomplete="new-password" />
-                <x-form.field name="password_confirmation" label="Confirm password" type="password" required autocomplete="new-password" />
+                <x-form.field name="password" label="Password" type="password" required :optionalHint="false" autocomplete="new-password" minlength="12" maxlength="72" />
+                <x-form.field name="password_confirmation" label="Confirm password" type="password" required autocomplete="new-password" minlength="12" maxlength="72" />
             </div>
             <p class="text-xs text-slate-500">At least 12 characters with letters and numbers. Share it securely — the new holder should change it after first sign-in.</p>
 

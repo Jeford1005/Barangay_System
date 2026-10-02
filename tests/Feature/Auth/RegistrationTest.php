@@ -233,4 +233,43 @@ class RegistrationTest extends TestCase
             $this->assertStringNotContainsString('placeholder="09171234567"', $html, $uri);
         }
     }
+
+    public function test_registration_rejects_passwords_missing_letters_or_numbers(): void
+    {
+        $this->post('/register', $this->validPayload([
+            'email' => 'letters-only@example.com',
+            'password' => 'abcdefghijklm',
+            'password_confirmation' => 'abcdefghijklm',
+        ]))->assertSessionHasErrorsIn('register', ['password']);
+
+        $this->post('/register', $this->validPayload([
+            'email' => 'numbers-only@example.com',
+            'password' => '1234567890123',
+            'password_confirmation' => '1234567890123',
+        ]))->assertSessionHasErrorsIn('register', ['password']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_registration_enforces_the_72_character_password_maximum(): void
+    {
+        $tooLong = str_repeat('a1', 37); // 74 characters, otherwise valid.
+
+        $this->post('/register', $this->validPayload([
+            'email' => 'too-long@example.com',
+            'password' => $tooLong,
+            'password_confirmation' => $tooLong,
+        ]))->assertSessionHasErrorsIn('register', ['password']);
+
+        $exactly72 = str_repeat('a1', 36); // 72 characters, otherwise valid.
+
+        $this->post('/register', $this->validPayload([
+            'email' => 'exact-72@example.com',
+            'password' => $exactly72,
+            'password_confirmation' => $exactly72,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('users', ['email' => 'exact-72@example.com']);
+        $this->assertDatabaseMissing('users', ['email' => 'too-long@example.com']);
+    }
 }

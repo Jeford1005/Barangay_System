@@ -45,8 +45,11 @@ class CertificateVerifyController extends Controller
                 'token' => [
                     'required',
                     'string',
+                    // Total length is fixed at TOKEN_LENGTH for both the
+                    // current `v1`+14-hex format and honored legacy bare-16-hex
+                    // tokens — keep in lockstep with CertificateVerification.
                     'size:'.CertificateVerification::TOKEN_LENGTH,
-                    'regex:/^[0-9a-fA-F]+$/',
+                    'regex:/^(?:v1[0-9a-fA-F]{14}|[0-9a-fA-F]{16})$/',
                 ],
             ]
         );

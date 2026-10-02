@@ -17,10 +17,12 @@ use Illuminate\Support\Collection;
  * is ever hydrated for the math.
  *
  * ETA days = ceil(position / dailyRate) where dailyRate =
- * max(1, decided same-type rows in the last WINDOW_DAYS / WINDOW_DAYS).
- * Fewer than MIN_COMPLETIONS_FOR_ETA decided rows means thin data, so the
- * line shows the position only and no ETA. ETAs above ETA_CAP_DAYS render
- * as "more than 30 days".
+ * decided same-type rows in the last WINDOW_DAYS / WINDOW_DAYS, with NO
+ * floor under the pace: 5 completions in 30 days is 1 row per 6 days, so
+ * position 5 is ~30 days out — flooring the rate at 1/day would print
+ * ~5 days, a lie. Fewer than MIN_COMPLETIONS_FOR_ETA decided rows means
+ * thin data, so the line shows the position only and no ETA. ETAs above
+ * ETA_CAP_DAYS render as "more than 30 days".
  *
  * The counts span every resident's rows (that is what makes a queue a
  * queue) but only as numbers — no other resident's name, ID, or details
@@ -34,6 +36,22 @@ final class QueueTracker
     public const MIN_COMPLETIONS_FOR_ETA = 5;
 
     public const ETA_CAP_DAYS = 30;
+
+    /**
+     * Normalize a free-text grouping key (complaint type, and anything
+     * else grouped by typing rather than by taxonomy): trim + casefold so
+     * " Noise complaint ", "noise complaint" and "NOISE COMPLAINT" form
+     * one queue instead of three queues of one.
+     *
+     * REPORT: no complaint_type taxonomy exists — the column is free text
+     * (maxlength 100, no lookup table, no enum), so the normalized text is
+     * the grouping key. If a taxonomy is ever introduced, group by its id
+     * instead and keep this only as a display fallback.
+     */
+    public static function normalizeKey(mixed $key): string
+    {
+        return mb_strtolower(trim((string) $key), 'UTF-8');
+    }
 
     /**
      * One muted queue line per pending row on the current page, keyed by
@@ -87,7 +105,12 @@ final class QueueTracker
             $eta = null;
 
             if ($done >= self::MIN_COMPLETIONS_FOR_ETA) {
-                $dailyRate = max(1, $done / self::WINDOW_DAYS);
+                // Honest pace, no floor: $done >= MIN_COMPLETIONS_FOR_ETA
+                // is always > 0 here, so this cannot divide by zero. A
+                // floor like max(1, …) would invent a 1/day pace the office
+                // never demonstrated and print an ETA below the measured
+                // one (e.g. ~5 days for work that really takes ~30).
+                $dailyRate = $done / self::WINDOW_DAYS;
                 $eta = (int) ceil($position / $dailyRate);
             }
 

@@ -6,15 +6,18 @@
 @section('content')
 <div class="max-w-7xl mx-auto">
 
-    {{-- Fresh install: every count is still zero, so the bare zero cards would
-         say nothing useful. Show the first-run checklist INSTEAD OF them
-         (never in addition to them). Each step reads done/todo from the same
-         live counts the cards would have shown — no extra queries. --}}
+    {{-- Fresh install or half-set-up barangay: the zero/partial cards
+         would say nothing useful yet. Show the first-run checklist INSTEAD
+         OF them (never in addition to them) until purok + household +
+         resident ALL exist — a single purok must not dismiss the checklist
+         while households and residents are still missing. Each step reads
+         done/todo from the same live counts the cards would have shown —
+         no extra queries. --}}
     @php
-        $isFreshInstall = ($residentCount ?? 0) === 0 && ($householdCount ?? 0) === 0 && ($purokCount ?? 0) === 0 && ($issuedTotal ?? 0) === 0;
+        $onboardingComplete = ($purokCount ?? 0) > 0 && ($householdCount ?? 0) > 0 && ($residentCount ?? 0) > 0;
     @endphp
 
-    @if ($isFreshInstall)
+    @if (! $onboardingComplete)
         <x-onboarding-checklist :purok-count="$purokCount" :household-count="$householdCount" :resident-count="$residentCount" />
     @else
     {{-- Scale: what this barangay holds. Every card is a link - a number you

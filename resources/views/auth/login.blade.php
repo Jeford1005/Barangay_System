@@ -48,6 +48,11 @@
         Skip to sign-in form
     </a>
 
+    {{-- View-only maintenance banner: the sign-in page sits outside the app
+         layout (guests never reach it), so the banner is mounted here
+         explicitly. --}}
+    <x-maintenance-banner />
+
     {{-- The seal, oversized and held at a whisper: enough to say whose system
          this is, never enough to argue with the form in front of it. Fixed to
          the viewport so it stays put while a short laptop window scrolls. --}}

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Maintenance;
 
+use App\Models\CertificateIssuance;
 use App\Models\User;
+use App\Services\CertificateVerification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
@@ -50,6 +52,28 @@ class MaintenanceBannerTest extends TestCase
             ->assertSee('Sunday 10:00 PM', false)
             ->assertSee('Sunday 11:00 PM', false)
             ->assertSee('data-dismiss-maintenance', false);
+    }
+
+    public function test_notice_banner_renders_on_guest_sign_in_and_verify_pages(): void
+    {
+        config()->set('app.maintenance_notice.message', 'Upgrades Sunday 10PM.');
+        config()->set('app.maintenance_notice.from', null);
+        config()->set('app.maintenance_notice.to', null);
+
+        // Guest entry point: the sign-in page at / sits outside the app
+        // layout, so the banner is mounted there explicitly.
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Scheduled maintenance', false)
+            ->assertSee('maintenance-notice', false);
+
+        // Public certificate verification: likewise outside the layout.
+        $issuance = CertificateIssuance::factory()->create(['status' => 'Issued']);
+
+        $this->get(CertificateVerification::url($issuance->control_number))
+            ->assertOk()
+            ->assertSee('maintenance-notice', false)
+            ->assertSee('<meta name="robots" content="noindex">', false);
     }
 
     public function test_active_state_is_never_dismissible(): void

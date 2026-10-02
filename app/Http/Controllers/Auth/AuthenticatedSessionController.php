@@ -45,6 +45,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Never inherit a challenge marker from an earlier login in this
+        // browser session (e.g. a resident signing in after an abandoned
+        // office challenge).
+        $request->session()->forget(['two_factor.pending_user_id', 'two_factor.pending_remember']);
+
         $user = Auth::user();
 
         // Office accounts with confirmed TOTP stop here for the second step:

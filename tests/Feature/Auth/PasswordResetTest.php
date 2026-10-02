@@ -375,6 +375,56 @@ class PasswordResetTest extends TestCase
         ])->assertSessionHasErrors('password');
     }
 
+    public function test_reset_rejects_passwords_missing_letters_or_numbers(): void
+    {
+        $user = User::factory()->create(['user_type' => 'admin']);
+
+        $code = $this->requestCodeFor($user);
+
+        $this->post('/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'abcdefghijklm',
+            'password_confirmation' => 'abcdefghijklm',
+        ])->assertSessionHasErrors('password');
+
+        $this->post('/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => '1234567890123',
+            'password_confirmation' => '1234567890123',
+        ])->assertSessionHasErrors('password');
+
+        $this->assertTrue(Hash::check('barangay-2026', $user->fresh()->password));
+    }
+
+    public function test_reset_enforces_the_72_character_password_maximum(): void
+    {
+        $user = User::factory()->create(['user_type' => 'admin']);
+
+        $code = $this->requestCodeFor($user);
+
+        $tooLong = str_repeat('a1', 37); // 74 characters, otherwise valid.
+
+        $this->post('/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => $tooLong,
+            'password_confirmation' => $tooLong,
+        ])->assertSessionHasErrors('password');
+
+        $exactly72 = str_repeat('a1', 36); // 72 characters, otherwise valid.
+
+        $this->post('/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => $exactly72,
+            'password_confirmation' => $exactly72,
+        ])->assertRedirect('/login');
+
+        $this->assertTrue(Hash::check($exactly72, $user->fresh()->password));
+    }
+
     public function test_code_requests_are_rate_limited(): void
     {
         Notification::fake();

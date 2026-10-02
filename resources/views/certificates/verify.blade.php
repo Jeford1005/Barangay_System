@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
     <title>Certificate verification — Barangay Management System</title>
     <style>
         /* Self-contained guest page: no app bundle, no auth chrome, so a
@@ -46,9 +47,22 @@
         dl.facts dd { font-weight: bold; text-align: right; word-break: break-all; }
         .note { font-size: 13px; color: #475569; margin-top: 12px; }
         .foot { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 16px; }
+        /* Maintenance banner fallback: this page ships no Tailwind, so the
+           shared banner's utility classes do nothing here — these rules
+           keep the notice/active states readable on their own. */
+        #maintenance-notice, #maintenance-active {
+            max-width: 560px; margin: 0 auto 12px; padding: 10px 14px;
+            border-radius: 10px; font-size: 13px;
+        }
+        #maintenance-notice { background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; }
+        #maintenance-active { background: #fef2f2; border: 1px solid #dc2626; color: #991b1b; }
+        #maintenance-notice strong, #maintenance-active strong { display: block; }
     </style>
 </head>
 <body>
+    {{-- View-only maintenance banner: the public verify page sits outside
+         the app layout, so the banner is mounted here explicitly. --}}
+    <x-maintenance-banner />
     <div class="card">
         <p class="office">
             Republic of the Philippines

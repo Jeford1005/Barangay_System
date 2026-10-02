@@ -208,7 +208,8 @@ php artisan migrate --force
 **Do not run `php artisan db:seed` in production.** `DatabaseSeeder` creates
 `admin@barangay.local`, `staff@barangay.local`, and `official@barangay.local` with the password `barangay-2026`, plus
 sample puroks and households. Those are development credentials — seeding them on a
-public host hands anyone the admin account.
+public host hands anyone the admin account. Real accounts set their passwords under the
+[password policy](../../README.md#default-user-access) (12–72 characters, letters + numbers).
 
 ```bash
 # 6. Permissions (Debian/Ubuntu Apache — adjust user for your host)
@@ -437,7 +438,7 @@ You need tables before anything boots. Three options, best first:
 
 > **Demo credentials.** §4 says never seed in production, and that still holds for a real
 > office install — `DatabaseSeeder` creates `admin@barangay.local` with the password
-> `password`. On a *class demo* you need a login, so either seed deliberately and change
+> `barangay-2026`. On a *class demo* you need a login, so either seed deliberately and change
 > every password immediately, or import a database where you have already set a real one.
 > Treat a seeded public URL as an open admin account, because it is.
 

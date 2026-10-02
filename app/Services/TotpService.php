@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+
 /**
  * Time-based one-time passwords (RFC 6238, SHA-1, 30-second steps).
  *
- * Dependency-free: base32 handling, HMAC-SHA1 dynamic truncation, and the
- * ±1 step clock-skew window in about forty lines. Kept here instead of a
- * package so office 2FA adds no new composer requirements.
+ * Dependency-free crypto: base32 handling, HMAC-SHA1 dynamic truncation, and
+ * the ±1 step clock-skew window in about forty lines. Kept here instead of a
+ * package so office 2FA adds no new composer requirements. Replay tracking
+ * below uses the default cache store (array in tests, file/redis in prod) —
+ * still no new composer requirements.
  */
 class TotpService
 {
@@ -20,6 +24,12 @@ class TotpService
     public const WINDOW_STEPS = 1;
 
     public const RECOVERY_CODE_COUNT = 8;
+
+    /**
+     * How long a consumed time-step stays rejected. A code is verifiable for
+     * up to 3 steps (±1 window), so 90s covers its full remaining validity.
+     */
+    public const USED_STEP_TTL_SECONDS = 90;
 
     private const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
@@ -68,21 +78,74 @@ class TotpService
      */
     public function verify(string $secret, string $code, ?int $at = null, int $window = self::WINDOW_STEPS): bool
     {
+        return $this->matchedStep($secret, $code, $at, $window) !== null;
+    }
+
+    /**
+     * The time-step $code matched for $secret, or null when it matches none.
+     * Exposed so callers can reject reuse of an already-consumed step
+     * (TOTP codes stay valid for ~90s, so a bare verify() accepts replays).
+     */
+    public function matchedStep(string $secret, string $code, ?int $at = null, int $window = self::WINDOW_STEPS): ?int
+    {
         $candidate = str_replace(' ', '', trim($code));
 
         if (! preg_match('/^\d{'.self::DIGITS.'}$/', $candidate)) {
-            return false;
+            return null;
         }
 
         $step = $this->stepFor($at ?? time());
 
         for ($offset = -$window; $offset <= $window; $offset++) {
             if (hash_equals($this->codeForStep($secret, $step + $offset), $candidate)) {
-                return true;
+                return $step + $offset;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    /**
+     * The current time-step. Exposed for replay bookkeeping and tests.
+     */
+    public function currentStep(?int $at = null): int
+    {
+        return $this->stepFor($at ?? time());
+    }
+
+    /**
+     * Strict base32 check for TOTP secrets. The decoder below silently skips
+     * unknown characters, so an unenrolled (session) or stored secret must be
+     * validated with this first — never fed straight into codeForStep().
+     */
+    public static function isValidSecret(string $secret): bool
+    {
+        return (bool) preg_match('/\A[A-Z2-7]{16,128}\z/', $secret);
+    }
+
+    /**
+     * Cache key marking a (scope, step) pair as consumed. Scope always
+     * includes the user id, so one account's codes never burn another's.
+     */
+    public static function usedStepCacheKey(string $scope, int $step): string
+    {
+        $clean = (string) preg_replace('/[^A-Za-z0-9_:\-.]/', '', $scope);
+
+        return 'two_factor.used_step:'.$clean.':'.$step;
+    }
+
+    public function stepAlreadyUsed(string $scope, int $step): bool
+    {
+        return Cache::has(self::usedStepCacheKey($scope, $step));
+    }
+
+    public function markStepUsed(string $scope, int $step): void
+    {
+        Cache::put(
+            self::usedStepCacheKey($scope, $step),
+            true,
+            now()->addSeconds(self::USED_STEP_TTL_SECONDS),
+        );
     }
 
     /**

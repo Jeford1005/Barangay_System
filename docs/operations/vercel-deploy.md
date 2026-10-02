@@ -125,7 +125,7 @@ are already baked into the image.
 > password (or delete the demo accounts and create real ones). The seeder is
 > built on `firstOrCreate`, so it never duplicates rows and never overwrites a
 > password you have already changed — but on a *fresh* database it will still
-> create `password`-only accounts on a public URL.
+> create `barangay-2026`-only accounts on a public URL.
 
 ### Why `APP_TRUSTED_PROXIES` is needed
 
