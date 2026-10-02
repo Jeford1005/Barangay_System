@@ -884,15 +884,15 @@
     }
 
     .module-toolbar--one {
-        grid-template-columns: 220px auto;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .module-toolbar--two {
-        grid-template-columns: 220px 180px auto;
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto;
     }
 
     .module-toolbar--three {
-        grid-template-columns: 220px 200px 130px auto;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
     }
 }
 
