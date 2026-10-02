@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\BackupDrillService;
 use App\Services\SystemHealthService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -35,12 +36,43 @@ class SystemHealthCommand extends Command
         $this->line('Failed jobs: '.($status['failed_jobs'] ?? 'unknown'));
 
         $this->reportQueueBacklog($status);
+        $this->reportBackupDrill($status);
 
         foreach ($this->failureReasons($status) as $reason) {
             $this->error($reason);
         }
 
         return $this->exitCode($status);
+    }
+
+    /**
+     * Monthly drill reminder. Informational only: a stale drill never fails
+     * the health check itself (that would cry wolf on fresh installs), it
+     * just nags the operator toward `backup:verify`. The --json output
+     * already carries the full `backup_drill` payload for monitoring.
+     */
+    private function reportBackupDrill(array $status): void
+    {
+        $drill = $status['backup_drill'] ?? ['state' => 'never', 'display' => 'Never verified'];
+        $state = (string) ($drill['state'] ?? 'never');
+        $display = (string) ($drill['display'] ?? 'Never verified');
+        $file = isset($drill['file']) && is_string($drill['file']) && $drill['file'] !== ''
+            ? ' ('.$drill['file'].')'
+            : '';
+
+        if ($state === 'recent') {
+            $this->line('Backup drill: last verified '.$display.$file);
+
+            return;
+        }
+
+        if ($state === 'stale') {
+            $this->warn('Backup drill STALE: last verified '.$display.$file.' (over '.BackupDrillService::STALE_AFTER_DAYS.' days). Run php artisan backup:verify to confirm the newest backup still restores. The drill uses a throwaway database and never touches live data.');
+
+            return;
+        }
+
+        $this->warn('Backup drill: never verified — run php artisan backup:verify to confirm the newest backup restores. The drill uses a throwaway database and never touches live data.');
     }
 
     /**

@@ -42,6 +42,7 @@
             <div class="flex items-center justify-between gap-4 py-3"><dt class="text-sm text-slate-500">Queue / failed jobs</dt><dd class="text-sm font-medium {{ ($health['failed_jobs'] ?? 0) > 0 ? 'text-red-700' : 'text-slate-900' }}">{{ $health['queued_jobs'] }} queued · {{ $health['failed_jobs'] ?? 'Unknown' }} failed</dd></div>
             <div class="flex items-center justify-between gap-4 py-3"><dt class="text-sm text-slate-500">Last backup</dt><dd class="text-sm font-medium text-slate-900">{{ $health['last_backup'] ? date('M j, Y g:i A', $health['last_backup']['created_at']) : 'None' }}</dd></div>
             <div class="flex items-center justify-between gap-4 py-3"><dt class="text-sm text-slate-500">Last backup run</dt><dd class="text-sm font-medium {{ data_get($health, 'last_backup_run.status') === 'Failed' ? 'text-red-700' : 'text-slate-900' }}">{{ data_get($health, 'last_backup_run.status') ?? 'None' }}{{ data_get($health, 'last_backup_run.error_message') ?? '' }}</dd></div>
+            <div class="flex items-center justify-between gap-4 py-3"><dt class="text-sm text-slate-500">Last restore drill</dt><dd class="text-sm font-medium {{ ($health['backup_drill']['state'] ?? 'never') === 'recent' ? 'text-emerald-700' : 'text-amber-700' }}">@if (($health['backup_drill']['state'] ?? 'never') === 'never')Never verified — run a drill monthly @else Last verified {{ $health['backup_drill']['display'] }} @endif</dd></div>
         </dl>
     </section>
 
@@ -61,6 +62,10 @@
 
         @if (! in_array(config('database.default'), ['sqlite', 'mysql', 'mariadb'], true))
             <p class="mt-5 border-l-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">Automatic backup creation is not supported for the "{{ config('database.default') }}" driver. Configure a database-specific backup job before using it.</p>
+        @endif
+
+        @if (($health['backup_drill']['state'] ?? 'never') !== 'recent')
+            <p class="mt-5 border-l-2 border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">@if (($health['backup_drill']['state'] ?? 'never') === 'stale')The last restore drill passed {{ $health['backup_drill']['display'] }} — drills go stale after 30 days. @else No restore drill has ever passed — these backups have never been test-restored. @endif Run <code>php artisan backup:verify</code> on the server to confirm the newest backup restores into a throwaway database. The drill never touches live data.</p>
         @endif
 
         <div class="mt-5 overflow-x-auto border-y border-slate-200">

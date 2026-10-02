@@ -97,6 +97,14 @@
         {{-- Content column: its own height is locked to the viewport; it never scrolls. --}}
         <div id="app-content" class="flex-1 flex flex-col {{ $isEmbed ? '' : 'lg:ml-64' }} min-w-0 h-full transition-[margin] duration-200 ease-in-out">
 
+            @unless ($isFragment)
+                {{-- Scheduled-downtime notice / active-maintenance banner. The
+                     component renders nothing when off, so this is a no-op for
+                     normal operation; view-only, it never touches the
+                     `php artisan down` secret-bypass flow. --}}
+                <x-maintenance-banner />
+            @endunless
+
             @hasSection('page_header')
                 {{-- Pinned title bar: flex sibling above the scroll region — cannot scroll.
                      On mobile it leads with the hamburger (replacing the removed black header). --}}

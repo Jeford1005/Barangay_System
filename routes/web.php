@@ -9,6 +9,7 @@ use App\Http\Controllers\BlotterController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateRequestAdminController;
 use App\Http\Controllers\CertificateTypeController;
+use App\Http\Controllers\CertificateVerifyController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\MailHealthController;
 use App\Http\Controllers\PurokController;
@@ -76,6 +77,13 @@ Route::get('/', function () {
         auth()->user()->user_type === 'resident' ? 'resident.portal' : 'dashboard'
     );
 });
+
+// Public certificate verification — the target of the QR printed on
+// certificates. Guest-only (no auth middleware) and throttled to slow
+// control-number enumeration; the controller always answers 200 (never
+// 404) so scanners see a friendly valid/void/not-found result.
+Route::middleware('throttle:30,1')->get('/verify/{control_number}/{token}', [CertificateVerifyController::class, 'show'])
+    ->name('certificates.verify');
 
 // Login/throttled routes - add rate limiting protection
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {

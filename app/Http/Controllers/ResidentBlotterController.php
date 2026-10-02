@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Blotter;
+use App\Services\QueueTracker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,14 +19,37 @@ class ResidentBlotterController extends Controller
     {
         $resident = $this->resident($request);
 
+        $cases = Blotter::where('complainant_id', $resident->id)
+            ->where('reported_by_resident', true)
+            ->latest('complaint_date')
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        // Queue position + honest ETA per open card, counted in SQL
+        // aggregates (never hydrated): same-type Open/Pending cases for
+        // the position, Resolved/Dismissed cases from the last 30 days
+        // for the pace.
+        $queue = QueueTracker::lines(
+            $cases->getCollection(),
+            fn (Blotter $row) => (string) $row->complaint_type,
+            fn (Blotter $row) => in_array($row->status, ['Open', 'Pending'], true),
+            fn ($complaintType) => Blotter::query()
+                ->where('complaint_type', $complaintType)
+                ->whereIn('status', ['Open', 'Pending']),
+            fn (array $complaintTypes) => Blotter::query()
+                ->whereIn('complaint_type', $complaintTypes)
+                ->whereIn('status', ['Resolved', 'Dismissed'])
+                ->where('updated_at', '>=', now()->subDays(QueueTracker::WINDOW_DAYS))
+                ->selectRaw('complaint_type as k, COUNT(*) as c')
+                ->groupBy('complaint_type')
+                ->pluck('c', 'k'),
+        );
+
         return view('resident.blotter', [
             'resident' => $resident,
-            'cases' => Blotter::where('complainant_id', $resident->id)
-                ->where('reported_by_resident', true)
-                ->latest('complaint_date')
-                ->latest('id')
-                ->paginate(10)
-                ->withQueryString(),
+            'cases' => $cases,
+            'queue' => $queue,
         ]);
     }
 

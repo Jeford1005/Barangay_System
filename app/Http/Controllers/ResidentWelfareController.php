@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Welfare;
+use App\Services\QueueTracker;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,13 +18,36 @@ class ResidentWelfareController extends Controller
     {
         $resident = $this->resident($request);
 
+        $requests = Welfare::where('beneficiary_id', $resident->id)
+            ->latest('request_date')
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        // Queue position + honest ETA per waiting card, counted in SQL
+        // aggregates (never hydrated): same-type Requested/Under Review
+        // rows for the position, decided rows from the last 30 days for
+        // the pace.
+        $queue = QueueTracker::lines(
+            $requests->getCollection(),
+            fn (Welfare $row) => (string) $row->assistance_type,
+            fn (Welfare $row) => in_array($row->status, ['Requested', 'Under Review'], true),
+            fn ($assistanceType) => Welfare::query()
+                ->where('assistance_type', $assistanceType)
+                ->whereIn('status', ['Requested', 'Under Review']),
+            fn (array $assistanceTypes) => Welfare::query()
+                ->whereIn('assistance_type', $assistanceTypes)
+                ->whereIn('status', ['Approved', 'Denied', 'Released'])
+                ->where('updated_at', '>=', now()->subDays(QueueTracker::WINDOW_DAYS))
+                ->selectRaw('assistance_type as k, COUNT(*) as c')
+                ->groupBy('assistance_type')
+                ->pluck('c', 'k'),
+        );
+
         return view('resident.welfare', [
             'resident' => $resident,
-            'requests' => Welfare::where('beneficiary_id', $resident->id)
-                ->latest('request_date')
-                ->latest('id')
-                ->paginate(10)
-                ->withQueryString(),
+            'requests' => $requests,
+            'queue' => $queue,
         ]);
     }
 

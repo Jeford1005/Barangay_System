@@ -61,6 +61,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -77,6 +79,11 @@ class User extends Authenticatable
             'reviewed_by' => 'integer',
             'suspended_at' => 'datetime',
             'suspended_by' => 'integer',
+            // The TOTP secret is encrypted at rest; the recovery-code column
+            // holds a JSON array of single-use bcrypt hashes.
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_recovery_codes' => 'array',
         ];
     }
 
@@ -180,6 +187,31 @@ class User extends Authenticatable
     public function isOfficeUser(): bool
     {
         return $this->isAdmin() || $this->isStaff() || $this->isOfficial();
+    }
+
+    /**
+     * True only for office roles with a CONFIRMED TOTP secret. Residents are
+     * always password-only, so this never returns true for them even if a
+     * secret were somehow present.
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->isOfficeUser()
+            && $this->two_factor_secret !== null
+            && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Unused recovery-code hashes still on the account.
+     *
+     * @return array<int, string>
+     */
+    public function remainingRecoveryCodeHashes(): array
+    {
+        return array_values(array_filter(
+            is_array($this->two_factor_recovery_codes) ? $this->two_factor_recovery_codes : [],
+            fn ($hash) => is_string($hash) && $hash !== '',
+        ));
     }
 
     public function roleLabel(): string

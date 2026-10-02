@@ -88,6 +88,9 @@
                                     <p class="font-medium text-slate-900">{{ $req->document->title }}</p>
                                     <p class="mt-0.5 text-sm text-slate-500">Purpose: {{ $req->purpose }} · {{ $req->copies }} cop{{ $req->copies === 1 ? 'y' : 'ies' }}</p>
                                     <p class="mt-0.5 text-xs text-slate-500">Submitted {{ $req->created_at->format('M j, Y') }}</p>
+                                    @if ($req->status === 'Pending' && isset($queue[$req->id]))
+                                        <p class="mt-1 text-xs text-slate-500">{{ $queue[$req->id] }}</p>
+                                    @endif
 
                                     @if ($req->status === 'Approved' && $req->issuance)
                                         <p class="mt-2 text-sm text-emerald-700">Control No. <strong>{{ $req->issuance->control_number }}</strong> — ready for claim at the barangay hall.</p>

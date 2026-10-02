@@ -49,6 +49,9 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-slate-900">{{ $entry->program_name }}</p>
                                 <p class="mt-1 text-xs text-slate-500">{{ $entry->assistance_type }} · ₱{{ number_format((float) $entry->requested_amount, 2) }} · requested {{ $entry->request_date?->format('M j, Y') ?? '—' }}</p>
+                                @if (in_array($entry->status, ['Requested', 'Under Review'], true) && isset($queue[$entry->id]))
+                                    <p class="mt-1 text-xs text-slate-500">{{ $queue[$entry->id] }}</p>
+                                @endif
                                 @if ($entry->remarks)
                                     <p class="mt-2 text-sm text-slate-700">{{ $entry->remarks }}</p>
                                 @endif

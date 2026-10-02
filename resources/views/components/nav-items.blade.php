@@ -84,6 +84,10 @@
             <span class="nav-icon"><x-icon name="document-text" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Reports</span>
         </a>
+        <a href="{{ route('two-factor.settings') }}" title="Two-factor authentication" @if(request()->routeIs('two-factor.*')) aria-current="page" @endif class="nav-row {{ request()->routeIs('two-factor.*') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="shield-check" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Two-factor auth</span>
+        </a>
 
         @if ($isAdmin)
             <p class="nav-section"><span class="nav-section-index">03</span> Administration</p>

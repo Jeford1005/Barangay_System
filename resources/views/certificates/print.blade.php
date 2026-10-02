@@ -114,6 +114,44 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
+        /* ---------- QR verification block ----------
+           Fixed 96px QR + text column; flex row fits well inside the
+           186mm sheet and never forces A4 sideways. Renders client-side
+           from the vendored offline script (public/js/qrcode.js); when
+           JS is unavailable the bordered placeholder box and the printed
+           verify URL below still let anyone check the certificate. */
+        .verify {
+            display: flex;
+            gap: 12pt;
+            align-items: center;
+            border: 0.75pt solid #000;
+            padding: 8pt 10pt;
+            margin-top: 12pt;
+            break-inside: avoid;
+        }
+        .qr {
+            width: 96px;
+            height: 96px;
+            min-width: 96px;
+            border: 0.5pt solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 7pt;
+            color: #555;
+        }
+        .qr img, .qr canvas, .qr table { width: 96px !important; height: 96px !important; }
+        .verify-text {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            line-height: 1.5;
+            color: #222;
+            word-break: break-all;
+        }
+        .verify-text strong { font-size: 9pt; }
+
         .printed-note {
             margin-top: 14pt;
             font-size: 8pt;
@@ -291,7 +329,34 @@
 
         @php
             $issuerName = $punongBarangay?->full_name;
+            // Absolute verify URL (route() honors config app.url, never a
+            // hardcoded host). Computed in the view so both print entry
+            // points (office + resident viewer) share it with no
+            // controller changes.
+            $verifyUrl = \App\Services\CertificateVerification::url($issuance->control_number);
         @endphp
+
+        <div class="verify">
+            <div class="qr" id="cert-qr" data-verify-url="{{ $verifyUrl }}" role="img" aria-label="QR code linking to the online verification page for certificate {{ $issuance->control_number }}">
+                <span>Scan to verify</span>
+            </div>
+            <div class="verify-text">
+                <strong>Verify this certificate</strong><br>
+                Scan the QR code or visit:<br>
+                {{ $verifyUrl }}<br>
+                Control No. {{ $issuance->control_number }}
+            </div>
+        </div>
+        <script src="{{ asset('js/qrcode.js') }}"></script>
+        <script>
+            (function () {
+                var el = document.getElementById('cert-qr');
+                if (!el || typeof QRCode === 'undefined') return;
+                var url = el.getAttribute('data-verify-url');
+                el.innerHTML = '';
+                new QRCode(el, { text: url, width: 96, height: 96, correctLevel: QRCode.CorrectLevel.M });
+            })();
+        </script>
 
         <div class="signatures">
             <div class="sig">

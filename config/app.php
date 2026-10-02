@@ -129,4 +129,25 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduled Maintenance Notice
+    |--------------------------------------------------------------------------
+    |
+    | A pre-downtime notice rendered as a banner by the
+    | components/maintenance-banner Blade component (mounted in
+    | components/app-layout). MAINTENANCE_NOTICE carries the message;
+    | MAINTENANCE_FROM/TO optionally bound the window shown as the
+    | "scheduled <date>" state. None of this puts the app into maintenance
+    | mode — only `php artisan down` does that (the banner then switches to
+    | its non-dismissible "active" state for secret-bypass sessions).
+    |
+    */
+
+    'maintenance_notice' => [
+        'message' => env('MAINTENANCE_NOTICE'),
+        'from' => env('MAINTENANCE_FROM'),
+        'to' => env('MAINTENANCE_TO'),
+    ],
+
 ];

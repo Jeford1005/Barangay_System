@@ -6,6 +6,7 @@ use App\Models\CertificateRequest;
 use App\Models\Document;
 use App\Models\Official;
 use App\Models\Resident;
+use App\Services\QueueTracker;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,26 @@ class ResidentCertificateRequestController extends Controller
 
         $documents = Document::active()->certificate()->orderBy('code')->get();
 
-        return view('resident.requests', compact('requests', 'documents'));
+        // Queue position + honest ETA per pending card, counted in SQL
+        // aggregates (never hydrated): same-document Pending rows for the
+        // position, decided rows from the last 30 days for the pace.
+        $queue = QueueTracker::lines(
+            $requests->getCollection(),
+            fn (CertificateRequest $row) => $row->document_id,
+            fn (CertificateRequest $row) => $row->status === 'Pending',
+            fn ($documentId) => CertificateRequest::query()
+                ->where('document_id', $documentId)
+                ->where('status', 'Pending'),
+            fn (array $documentIds) => CertificateRequest::query()
+                ->whereIn('document_id', $documentIds)
+                ->whereIn('status', ['Approved', 'Rejected'])
+                ->where('updated_at', '>=', now()->subDays(QueueTracker::WINDOW_DAYS))
+                ->selectRaw('document_id as k, COUNT(*) as c')
+                ->groupBy('document_id')
+                ->pluck('c', 'k'),
+        );
+
+        return view('resident.requests', compact('requests', 'documents', 'queue'));
     }
 
     public function store(Request $request)

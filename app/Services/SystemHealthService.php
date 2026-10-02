@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BackupRun;
+use App\Services\BackupDrillService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -102,6 +103,16 @@ class SystemHealthService
             $lastBackupRun = null;
         }
 
+        // The restore-drill reminder. Read straight from the cache (never a
+        // new query): when the cache is unreachable the drill simply reads
+        // as "never verified" and the page degrades instead of 500ing.
+        try {
+            $backupDrill = BackupDrillService::statusFor(Cache::get(BackupDrillService::CACHE_KEY));
+            $backupDrill['file'] = Cache::get(BackupDrillService::CACHE_FILE_KEY);
+        } catch (\Throwable) {
+            $backupDrill = BackupDrillService::statusFor(null);
+        }
+
         return [
             'database_connected' => $databaseConnected,
             'database_message' => $databaseMessage,
@@ -116,6 +127,7 @@ class SystemHealthService
             'last_backup' => $backups[0] ?? null,
             'backup_count' => count($backups),
             'last_backup_run' => $lastBackupRun?->only(['id', 'status', 'file_name', 'error_message', 'finished_at']),
+            'backup_drill' => $backupDrill,
         ];
     }
 }

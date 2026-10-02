@@ -6,9 +6,20 @@
 @section('content')
 <div class="max-w-7xl mx-auto">
 
+    {{-- Fresh install: every count is still zero, so the bare zero cards would
+         say nothing useful. Show the first-run checklist INSTEAD OF them
+         (never in addition to them). Each step reads done/todo from the same
+         live counts the cards would have shown — no extra queries. --}}
+    @php
+        $isFreshInstall = ($residentCount ?? 0) === 0 && ($householdCount ?? 0) === 0 && ($purokCount ?? 0) === 0 && ($issuedTotal ?? 0) === 0;
+    @endphp
+
+    @if ($isFreshInstall)
+        <x-onboarding-checklist :purok-count="$purokCount" :household-count="$householdCount" :resident-count="$residentCount" />
+    @else
     {{-- Scale: what this barangay holds. Every card is a link - a number you
          cannot go anywhere from is a dead end, not a statistic. --}}
-    <div class="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div id="dashboard-stats" class="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <a href="{{ route('residents.index') }}" class="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Residents</p>
@@ -38,6 +49,7 @@
             <p class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{{ $issuedTotal }}</p>
         </a>
     </div>
+    @endif
 
     {{-- Work and flow: what is waiting, and what has moved this month. --}}
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">

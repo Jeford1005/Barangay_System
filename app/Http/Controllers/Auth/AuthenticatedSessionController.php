@@ -47,6 +47,20 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // Office accounts with confirmed TOTP stop here for the second step:
+        // the session is parked (logged out) with only a pending-user marker,
+        // so auth.login is recorded only after the code verifies. Residents
+        // are always password-only and never enter this branch.
+        if ($user->isOfficeUser() && $user->hasTwoFactorEnabled()) {
+            $request->session()->put('two_factor.pending_user_id', $user->id);
+            $request->session()->put('two_factor.pending_remember', $request->boolean('remember'));
+
+            Auth::guard('web')->logout();
+            $request->session()->regenerate();
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         AuditLog::record(
             'auth.login',
             $user?->id,

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetCodeController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,9 +47,36 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [PasswordResetCodeController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('password.update');
+
+    // Second login step for office accounts with confirmed TOTP. Reached only
+    // after the password passes (the login controller parks a pending-user
+    // marker and logs the session out), so both endpoints stay guest-only.
+    // Residents never receive a marker and are unaffected.
+    Route::get('two-factor/challenge', [TwoFactorController::class, 'challenge'])
+        ->name('two-factor.challenge');
+
+    Route::post('two-factor/challenge', [TwoFactorController::class, 'verify'])
+        ->middleware('throttle:20,1')
+        ->name('two-factor.verify');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    // Office account area: TOTP enrollment and management. Every action
+    // aborts for non-office roles, so resident accounts see zero changes.
+    Route::prefix('account/two-factor')->name('two-factor.')->group(function () {
+        Route::get('/', [TwoFactorController::class, 'show'])
+            ->name('settings');
+        Route::post('/enroll', [TwoFactorController::class, 'enroll'])
+            ->middleware('throttle:10,1')
+            ->name('enroll');
+        Route::post('/confirm', [TwoFactorController::class, 'confirm'])
+            ->middleware('throttle:10,1')
+            ->name('confirm');
+        Route::delete('/', [TwoFactorController::class, 'destroy'])
+            ->middleware('throttle:10,1')
+            ->name('destroy');
+    });
 });
