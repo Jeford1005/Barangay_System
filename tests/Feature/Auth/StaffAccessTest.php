@@ -37,7 +37,7 @@ class StaffAccessTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => $staff->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'office',
         ]);
 
@@ -52,7 +52,7 @@ class StaffAccessTest extends TestCase
         // The office tab admits staff; the resident tab must not.
         $response = $this->post('/login', [
             'email' => $staff->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ]);
 

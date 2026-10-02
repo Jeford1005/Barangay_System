@@ -253,8 +253,8 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertRedirect('/login');
 
         // A new code can be requested right away after a successful reset.
@@ -284,12 +284,12 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertRedirect('/login')
             ->assertSessionHas('status');
 
-        $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('new-secure-password-12', $user->fresh()->password));
 
         // The code is single-use.
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
@@ -297,7 +297,7 @@ class PasswordResetTest extends TestCase
         // And the new password actually works at login.
         $this->post('/login', [
             'email' => $user->email,
-            'password' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
             'user_type' => 'office',
         ]);
         $this->assertAuthenticated();
@@ -312,11 +312,11 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => 'XXXXXX',
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertSessionHasErrors('code');
 
-        $this->assertTrue(Hash::check('password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('barangay-2026', $user->fresh()->password));
     }
 
     public function test_reset_fails_when_the_code_has_expired(): void
@@ -332,8 +332,8 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertSessionHasErrors('code');
     }
 
@@ -347,11 +347,11 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $userB->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertSessionHasErrors('code');
 
-        $this->assertTrue(Hash::check('password', $userB->fresh()->password));
+        $this->assertTrue(Hash::check('barangay-2026', $userB->fresh()->password));
     }
 
     public function test_new_passwords_must_be_confirmed_and_long_enough(): void
@@ -370,7 +370,7 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'long-enough-password',
+            'password' => 'long-enough-password-12',
             'password_confirmation' => 'different-password',
         ])->assertSessionHasErrors('password');
     }
@@ -456,12 +456,12 @@ class PasswordResetTest extends TestCase
         $this->postJson('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertOk()
             ->assertJsonPath('message', fn (string $message) => str_contains($message, 'has been reset'));
 
-        $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('new-secure-password-12', $user->fresh()->password));
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
     }
 
@@ -473,12 +473,12 @@ class PasswordResetTest extends TestCase
         $this->postJson('/reset-password', [
             'email' => $user->email,
             'code' => 'XXXXXX',
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertStatus(422)
             ->assertJsonValidationErrors('code');
 
-        $this->assertTrue(Hash::check('password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('barangay-2026', $user->fresh()->password));
     }
 
     public function test_json_reset_validates_the_new_password(): void

@@ -29,8 +29,8 @@ class RegistrationTest extends TestCase
             'address' => '123 Rizal St.',
             'purok_id' => null,
             'household_id' => null,
-            'password' => 'secure-password',
-            'password_confirmation' => 'secure-password',
+            'password' => 'secure-password-12',
+            'password_confirmation' => 'secure-password-12',
         ], $overrides);
     }
 

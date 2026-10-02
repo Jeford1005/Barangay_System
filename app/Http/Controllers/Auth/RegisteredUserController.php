@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -58,7 +59,7 @@ class RegisteredUserController extends Controller
             'address' => ['required', 'string', 'max:255'],
             'purok_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', 'exists:puroks,id'],
             'household_id' => ['nullable', 'integer', 'min:1', 'max:4294967295', 'exists:households,id'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'max:72', 'confirmed', Password::min(12)->letters()->numbers()],
         ], [
             'email.unique' => 'An account with this email already exists.',
             'password.confirmed' => 'The password confirmation does not match.',

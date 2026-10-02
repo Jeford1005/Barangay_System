@@ -111,9 +111,9 @@ Sessions are stored in the database by default. Update `SESSION_DRIVER` in `.env
 
 After running seeders (when implemented), use these credentials:
 
-- **Administrator**: admin@barangay.local / password
-- **Staff**: staff@barangay.local / password
-- **Official**: official@barangay.local / password
+- **Administrator**: admin@barangay.local / barangay-2026
+- **Staff**: staff@barangay.local / barangay-2026
+- **Official**: official@barangay.local / barangay-2026
 
 Fresh installations create the sample Staff account with the limited `staff` role. Existing installations are not automatically changed; an administrator must review and assign the role explicitly.
 

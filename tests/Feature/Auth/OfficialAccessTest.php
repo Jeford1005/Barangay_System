@@ -45,7 +45,7 @@ class OfficialAccessTest extends TestCase
 
         $this->post('/login', [
             'email' => $official->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'office',
         ])->assertRedirect(route('dashboard'));
 
@@ -58,7 +58,7 @@ class OfficialAccessTest extends TestCase
 
         $this->post('/login', [
             'email' => $official->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ])->assertSessionHasErrors('password');
 

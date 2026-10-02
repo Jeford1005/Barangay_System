@@ -109,7 +109,7 @@
                                     id="forgot-password"
                                     type="password"
                                     required
-                                    minlength="8"
+                                    minlength="12"
                                     autocomplete="new-password"
                                     class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 pr-10 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600"
                                 >
@@ -134,7 +134,7 @@
                                     id="forgot-password-confirmation"
                                     type="password"
                                     required
-                                    minlength="8"
+                                    minlength="12"
                                     autocomplete="new-password"
                                     class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 pr-10 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600"
                                 >

@@ -56,11 +56,11 @@ class PasswordResetEndToEndTest extends TestCase
         $this->post(route('password.update'), [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'brand-new-password',
-            'password_confirmation' => 'brand-new-password',
+            'password' => 'brand-new-password-12',
+            'password_confirmation' => 'brand-new-password-12',
         ])->assertRedirect(route('login'));
 
-        $this->assertTrue(Hash::check('brand-new-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('brand-new-password-12', $user->fresh()->password));
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
 
         // 4. The audit trail records the request and the completion.
@@ -70,7 +70,7 @@ class PasswordResetEndToEndTest extends TestCase
         // 5. The new password signs the visitor in; the code is single-use.
         $this->post(route('login'), [
             'email' => $user->email,
-            'password' => 'brand-new-password',
+            'password' => 'brand-new-password-12',
             'user_type' => 'office',
         ]);
         $this->assertAuthenticated();
@@ -81,10 +81,10 @@ class PasswordResetEndToEndTest extends TestCase
         $this->post(route('password.update'), [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'another-password',
-            'password_confirmation' => 'another-password',
+            'password' => 'another-password-12',
+            'password_confirmation' => 'another-password-12',
         ])->assertSessionHasErrors('code');
 
-        $this->assertTrue(Hash::check('brand-new-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('brand-new-password-12', $user->fresh()->password));
     }
 }

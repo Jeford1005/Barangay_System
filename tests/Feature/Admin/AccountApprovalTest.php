@@ -65,7 +65,7 @@ class AccountApprovalTest extends TestCase
 
         $this->post('/login', [
             'email' => $applicant->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ])->assertSessionHasErrors('email');
 
@@ -82,7 +82,7 @@ class AccountApprovalTest extends TestCase
 
         $this->post('/login', [
             'email' => $applicant->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ])->assertSessionHasErrors('email');
 
@@ -99,7 +99,7 @@ class AccountApprovalTest extends TestCase
 
         $this->post('/login', [
             'email' => $resident->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ]);
 
@@ -195,8 +195,8 @@ class AccountApprovalTest extends TestCase
             'civil_status' => 'Single',
             'email' => 'juan@example.com',
             'address' => '12 Mabini St.',
-            'password' => 'secure-password',
-            'password_confirmation' => 'secure-password',
+            'password' => 'secure-password-12',
+            'password_confirmation' => 'secure-password-12',
         ]);
 
         $applicant = User::where('email', 'juan@example.com')->first();
@@ -204,7 +204,7 @@ class AccountApprovalTest extends TestCase
         // 2. Cannot sign in while pending.
         $this->post('/login', [
             'email' => 'juan@example.com',
-            'password' => 'secure-password',
+            'password' => 'secure-password-12',
             'user_type' => 'resident',
         ]);
         $this->assertGuest();
@@ -223,7 +223,7 @@ class AccountApprovalTest extends TestCase
         // 4. Sign-in works, and lands on the resident portal.
         $this->post('/login', [
             'email' => 'juan@example.com',
-            'password' => 'secure-password',
+            'password' => 'secure-password-12',
             'user_type' => 'resident',
         ]);
 

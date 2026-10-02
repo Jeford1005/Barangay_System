@@ -42,7 +42,7 @@ class LoginTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'office',
         ]);
 
@@ -56,7 +56,7 @@ class LoginTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'resident',
         ]);
 
@@ -77,7 +77,7 @@ class LoginTest extends TestCase
 
             $response = $this->post('/login', [
                 'email' => $user->email,
-                'password' => 'password',
+                'password' => 'barangay-2026',
                 'user_type' => 'office',
             ]);
 
@@ -94,7 +94,7 @@ class LoginTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'office',
         ]);
 
@@ -109,7 +109,7 @@ class LoginTest extends TestCase
 
             $response = $this->post('/login', [
                 'email' => $user->email,
-                'password' => 'password',
+                'password' => 'barangay-2026',
                 'user_type' => 'resident',
             ]);
 
@@ -124,7 +124,7 @@ class LoginTest extends TestCase
 
         $this->post('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
             'user_type' => 'office',
         ])->assertRedirect(route('dashboard'));
 
@@ -282,7 +282,7 @@ class LoginTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'barangay-2026',
         ]);
 
         $response->assertSessionHasErrors('user_type');

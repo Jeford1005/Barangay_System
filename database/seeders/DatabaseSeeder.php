@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'admin@barangay.local'],
             [
                 'name' => 'Admin User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('barangay-2026'),
                 'email_verified_at' => now(),
                 'user_type' => 'admin',
                 'status' => 'approved',
@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'staff@barangay.local'],
             [
                 'name' => 'Staff User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('barangay-2026'),
                 'email_verified_at' => now(),
                 'user_type' => 'staff',
                 'status' => 'approved',
@@ -71,7 +71,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'official@barangay.local'],
             [
                 'name' => 'Official User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('barangay-2026'),
                 'email_verified_at' => now(),
                 'user_type' => 'official',
                 'status' => 'approved',
@@ -280,7 +280,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'resident@barangay.local'],
             [
                 'name' => 'Juan Dela Cruz',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('barangay-2026'),
                 'email_verified_at' => now(),
                 'user_type' => 'resident',
                 'status' => 'approved',

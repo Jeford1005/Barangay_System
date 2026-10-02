@@ -53,8 +53,8 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertRedirect('/login');
 
         $log = AuditLog::where('event', 'password_reset.completed')->first();
@@ -73,8 +73,8 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => 'ZZZZZZ',
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ])->assertSessionHasErrors('code');
 
         $log = AuditLog::where('event', 'password_reset.failed_code')->first();
@@ -102,15 +102,15 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => 'WRNG2A',
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ]);
 
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ]);
 
         $events = AuditLog::orderBy('occurred_at')->orderBy('id')->pluck('event')->all();
@@ -136,8 +136,8 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ]);
 
         $this->actingAs($this->admin ?? User::factory()->create(['user_type' => 'admin']))
@@ -158,8 +158,8 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ]);
 
         $response = $this->actingAs(User::factory()->create(['user_type' => 'admin']))
@@ -191,8 +191,8 @@ class AuditLogTest extends TestCase
         $this->post('/reset-password', [
             'email' => $user->email,
             'code' => $code,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'new-secure-password-12',
+            'password_confirmation' => 'new-secure-password-12',
         ]);
 
         $this->actingAs(User::factory()->create(['user_type' => 'admin']))

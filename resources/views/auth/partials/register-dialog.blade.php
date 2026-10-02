@@ -157,7 +157,7 @@
                             <div>
                                 <label for="register-password" class="mb-1.5 block text-sm font-medium text-slate-700">Password *</label>
                                 <div class="relative">
-                                    <input id="register-password" type="password" name="password" required minlength="8" autocomplete="new-password"
+                                    <input id="register-password" type="password" name="password" required minlength="12" autocomplete="new-password"
                                         class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('password', 'register') border-red-500! @enderror">
                                 </div>
                                 @error('password', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror

@@ -213,7 +213,7 @@ class ResidentPortalTest extends TestCase
                 'address' => $resident->address,
                 'email' => 'new-resident@example.com',
                 'email_confirmation' => 'new-resident@example.com',
-                'current_password' => 'password',
+                'current_password' => 'barangay-2026',
             ])
             ->assertRedirect()
             ->assertSessionHas('success');

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class PasswordResetCodeController extends Controller
@@ -276,7 +277,7 @@ class PasswordResetCodeController extends Controller
         $request->validate([
             'code' => ['required', 'string', 'size:6', 'regex:'.PasswordResetCodeService::CODE_REGEX],
             'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'max:72', 'confirmed', Password::min(12)->letters()->numbers()],
         ], [
             'password.confirmed' => 'The password confirmation does not match.',
         ]);

@@ -116,7 +116,7 @@ are already baked into the image.
 > runs `db:seed --force` only when the `users` table is empty, so a fresh
 > database is populated with `admin@barangay.local`,
 > `staff@barangay.local`, `official@barangay.local` and
-> `resident@barangay.local`, all with the password `password`. That is
+> `resident@barangay.local`, all with the password `barangay-2026`. That is
 > deliberate for a demo or stakeholder walkthrough. On later boots — when
 > accounts already exist — seeding is skipped, so passwords you have changed
 > (or accounts you have deleted) stay that way.
@@ -229,7 +229,7 @@ four variables** and redeploy.
 2. `/login` returns 200 **and is styled**. Unstyled means the asset build in
    the image failed.
 3. `GET /up` returns 200 — Laravel's health endpoint.
-4. Sign in as `admin@barangay.local` / `password`; you should land on
+4. Sign in as `admin@barangay.local` / `barangay-2026`; you should land on
    `/dashboard` with live counts (Residents, Households, Puroks).
 5. `https://<project>.vercel.app/.env` must **404**.
 6. Check Vercel → Logs: expect `Nothing to migrate` and `Seed complete`, with

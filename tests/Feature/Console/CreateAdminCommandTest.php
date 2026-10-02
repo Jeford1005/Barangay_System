@@ -57,7 +57,7 @@ class CreateAdminCommandTest extends TestCase
         ])->assertExitCode(1);
 
         // The original password survives the refused overwrite.
-        $this->assertTrue(Hash::check('password', User::where('email', 'taken@example.com')->firstOrFail()->password));
+        $this->assertTrue(Hash::check('barangay-2026', User::where('email', 'taken@example.com')->firstOrFail()->password));
     }
 
     public function test_force_replaces_the_existing_account_password(): void

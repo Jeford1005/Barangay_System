@@ -21,7 +21,7 @@
                 <x-form.field name="password" label="Password" type="password" required :optionalHint="false" autocomplete="new-password" />
                 <x-form.field name="password_confirmation" label="Confirm password" type="password" required autocomplete="new-password" />
             </div>
-            <p class="text-xs text-slate-500">At least 8 characters. Share it securely — the new holder should change it after first sign-in.</p>
+            <p class="text-xs text-slate-500">At least 12 characters with letters and numbers. Share it securely — the new holder should change it after first sign-in.</p>
 
             <x-form.field name="user_type" label="Access tier" type="select" required :value="old('user_type', 'staff')" :options="['admin' => 'Administrator', 'staff' => 'Staff', 'official' => 'Official', 'resident' => 'Resident']" />
             <p class="text-xs text-slate-500">Administrators can manage everything, including other administrators.</p>

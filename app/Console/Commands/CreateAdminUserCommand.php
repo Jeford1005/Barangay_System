@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Creates the first administrator account.
@@ -44,7 +45,7 @@ class CreateAdminUserCommand extends Command
         $email = $email ?: $this->ask('Administrator email');
 
         if (blank($password)) {
-            $password = $this->secret('Password (min 8 characters, hidden)');
+            $password = $this->secret('Password (min 12 characters with letters and numbers, hidden)');
         }
 
         $validator = Validator::make(
@@ -52,7 +53,7 @@ class CreateAdminUserCommand extends Command
             [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'email', 'max:255'],
-                'password' => ['required', 'string', 'min:8'],
+                'password' => ['required', 'string', 'max:72', Password::min(12)->letters()->numbers()],
             ],
         );
 
