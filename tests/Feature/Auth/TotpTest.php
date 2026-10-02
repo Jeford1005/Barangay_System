@@ -42,6 +42,22 @@ class TotpTest extends TestCase
         $this->assertTrue(AuditLog::where('event', 'two_factor.enrolled')->exists());
     }
 
+    public function test_disable_form_collects_a_live_factor_code(): void
+    {
+        $user = User::factory()->admin()->create();
+        $this->actingAs($user)->post(route('two-factor.enroll'), ['password' => 'barangay-2026']);
+        $secret = session('two_factor.pending_secret');
+        $this->actingAs($user)->post(route('two-factor.confirm'), [
+            'code' => app(TotpService::class)->currentCode($secret),
+        ]);
+
+        // Regression: destroy() requires a live TOTP-or-recovery code, so
+        // the form must actually collect one.
+        $this->actingAs($user)->get(route('two-factor.settings'))
+            ->assertOk()
+            ->assertSee('id="two-factor-disable-code"', false);
+    }
+
     public function test_confirm_rejects_a_wrong_code(): void
     {
         $user = User::factory()->create(['user_type' => 'staff']);

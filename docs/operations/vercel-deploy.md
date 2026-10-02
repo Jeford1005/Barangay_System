@@ -219,7 +219,8 @@ The route needs four variables that exist only while it does:
 `ADMIN_BOOTSTRAP_TOKEN`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`. Set the
 token to a long random string, visit `/__bootstrap-admin?token=…`, confirm the
 output says `Created administrator`, then **remove the route and delete all
-four variables** and redeploy.
+four variables** and redeploy. The password must satisfy the app policy
+(12–72 chars, ≥1 letter + ≥1 number) or the command rejects it.
 
 ## Verify
 

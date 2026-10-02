@@ -44,6 +44,15 @@
                         <p class="mt-1.5 text-[13px] text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+                <div>
+                    <label for="two-factor-disable-code" class="mb-1.5 block text-sm font-medium text-slate-700">Authenticator code or recovery code</label>
+                    <input id="two-factor-disable-code" type="text" name="code" required inputmode="text" autocomplete="one-time-code" maxlength="64" placeholder="123456"
+                        value="{{ old('code') }}"
+                        class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('code') border-red-500! ring-1 ring-red-500/40 @enderror">
+                    @error('code')
+                        <p class="mt-1.5 text-[13px] text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
                 <button type="submit" class="btn btn-danger">Disable two-factor authentication</button>
             </form>
         </div>
