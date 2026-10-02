@@ -26,9 +26,13 @@ class AuthenticatedSessionController extends Controller
             'resetCooldown' => PasswordResetCodeController::cooldownRemaining(),
 
             // Dropdown options for the create-account dialog on the login page
-            // (same lists the standalone registration form uses).
+            // (same lists the standalone registration form uses). The
+            // household list is guest-visible, so it is capped at 100 rows
+            // with no street detail — the field is optional and staff link
+            // the household at approval, so an uncapped code+street list
+            // would only serve registry harvesting.
             'puroks' => Cache::remember('auth.purok-options', now()->addMinutes(5), fn () => Purok::orderBy('name')->get(['id', 'name'])),
-            'households' => Cache::remember('auth.household-options', now()->addMinutes(5), fn () => Household::orderBy('household_code')->get(['id', 'household_code', 'street'])),
+            'households' => Cache::remember('auth.household-options-capped', now()->addMinutes(5), fn () => Household::orderBy('household_code')->limit(100)->get(['id', 'household_code'])),
         ]);
     }
 

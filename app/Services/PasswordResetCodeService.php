@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Notifications\ResetPasswordCodeNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use InvalidArgumentException;
 
 class PasswordResetCodeService
@@ -20,6 +21,10 @@ class PasswordResetCodeService
 
     /**
      * Generate a code, store only its hash, and email it to the user.
+     *
+     * The code is bcrypt-hashed (one-way, salted, slow): a read of the
+     * password_reset_tokens table no longer yields anything an attacker can
+     * brute-force offline at sha256 speed.
      */
     public function issue(User $user): string
     {
@@ -33,7 +38,7 @@ class PasswordResetCodeService
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $user->email],
             [
-                'token' => hash('sha256', $code),
+                'token' => Hash::make(strtoupper($code)),
                 'created_at' => now(),
             ],
         );

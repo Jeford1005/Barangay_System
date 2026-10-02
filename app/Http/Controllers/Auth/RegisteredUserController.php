@@ -19,12 +19,17 @@ class RegisteredUserController extends Controller
 {
     /**
      * Display the registration form.
+     *
+     * The household dropdown is guest-visible, so it is capped and carries
+     * no street detail: the field is optional (staff link the household at
+     * approval), and an uncapped code+street list would let anyone harvest
+     * the household registry one page load at a time.
      */
     public function create(Request $request): View
     {
         return view('auth.register', [
             'puroks' => Cache::remember('auth.purok-options', now()->addMinutes(5), fn () => Purok::orderBy('name')->get(['id', 'name'])),
-            'households' => Cache::remember('auth.household-options', now()->addMinutes(5), fn () => Household::orderBy('household_code')->get(['id', 'household_code', 'street'])),
+            'households' => Cache::remember('auth.household-options-capped', now()->addMinutes(5), fn () => Household::orderBy('household_code')->limit(100)->get(['id', 'household_code'])),
             'old' => $request->old(),
         ]);
     }

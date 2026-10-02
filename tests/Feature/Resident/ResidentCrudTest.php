@@ -376,6 +376,32 @@ class ResidentCrudTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'resident.restored']);
     }
 
+    public function test_restore_404s_for_a_live_resident_record(): void
+    {
+        $resident = Resident::factory()->create(['status' => 'Active']);
+
+        $this->actingAs($this->admin)
+            ->post(route('residents.restore', $resident))
+            ->assertNotFound();
+
+        $this->assertSame('Active', $resident->fresh()->status);
+        $this->assertNull($resident->fresh()->deleted_at);
+        $this->assertDatabaseMissing('audit_logs', ['event' => 'resident.restored']);
+    }
+
+    public function test_store_with_archived_status_lands_soft_deleted(): void
+    {
+        $this->actingAs($this->admin)->post('/residents', $this->validPayload([
+            'first_name' => 'Arch',
+            'last_name' => 'Ived',
+            'status' => 'Archived',
+        ]))->assertRedirect('/residents');
+
+        $resident = Resident::withTrashed()->where('last_name', 'Ived')->firstOrFail();
+        $this->assertSame('Archived', $resident->status);
+        $this->assertNotNull($resident->deleted_at);
+    }
+
     public function test_resident_index_uses_compact_crud_toolbar(): void
     {
         $this->actingAs($this->admin)->get('/residents')

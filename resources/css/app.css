@@ -896,6 +896,23 @@
     }
 }
 
+/* Tablet (640–1023) resident toolbar only: 5 cells (search + 3 filters +
+   actions) fall into the generic 2-col grid as 3 rows. A resident-scoped
+   3-col grid keeps it to 2 rows (3 + 2, actions spanning the last two
+   tracks and pinned end). The doubled class outranks the generic
+   last-child rule above without depending on source order, and no other
+   variant's behavior changes — only .module-toolbar--resident is touched. */
+@media (min-width: 640px) and (max-width: 1023px) {
+    .module-toolbar.module-toolbar--resident {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .module-toolbar.module-toolbar--resident > :last-child {
+        grid-column: 2 / span 2;
+        justify-self: end;
+    }
+}
+
 /* ------------------------------------------------------------------
    Print styles — index lists print cleanly for barangay record-keeping.
    Strategy: hide app chrome, expand tables to full width with visible

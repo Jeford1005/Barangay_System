@@ -103,7 +103,7 @@
                             <div>
                                 <label for="register-phone_number" class="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
                                 <input id="register-phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="09XX XXX XXXX" maxlength="15" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*"
-                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                                    class="min-h-11 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('phone_number', 'register') border-red-500! @enderror">
                                 @error('phone_number', 'register') <p class="register-error mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div>

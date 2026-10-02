@@ -97,7 +97,7 @@ class PasswordResetTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertNotSame($code, $row->token, 'the code must never be stored in plain text');
-        $this->assertSame(hash('sha256', $code), $row->token);
+        $this->assertTrue(Hash::check($code, $row->token), 'the stored token must verify with bcrypt');
     }
 
     public function test_unknown_emails_get_a_generic_success_response(): void
@@ -178,10 +178,10 @@ class PasswordResetTest extends TestCase
 
         $this->assertNotSame($firstCode, $secondCode);
 
-        // Only one row remains, holding the newest code's hash.
+        // Only one row remains, holding the newest code's bcrypt hash.
         $this->assertDatabaseCount('password_reset_tokens', 1);
         $row = DB::table('password_reset_tokens')->where('email', $user->email)->first();
-        $this->assertSame(hash('sha256', $secondCode), $row->token);
+        $this->assertTrue(Hash::check($secondCode, $row->token));
     }
 
     public function test_immediate_resend_is_blocked_by_the_cooldown(): void
@@ -216,9 +216,12 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_screen_without_a_valid_token_returns_to_step_one(): void
     {
-        // Direct access with no outstanding code is refused: the visitor is
-        // sent back to step 1 instead of a form that could never succeed.
-        $this->get('/reset-password?email=juan.delacruz@gmail.com')
+        // Direct access with a session email but no outstanding code is
+        // refused: the visitor is sent back to step 1 instead of a form that
+        // could never succeed. The address travels in the session, never in
+        // the URL query.
+        $this->withSession(['password_reset.email' => 'juan.delacruz@gmail.com'])
+            ->get('/reset-password')
             ->assertRedirect(route('password.request'))
             ->assertSessionHasErrors('email');
     }
@@ -228,7 +231,8 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create(['user_type' => 'admin', 'email' => 'juan.delacruz@gmail.com']);
         $this->requestCodeFor($user);
 
-        $response = $this->get('/reset-password?email=juan.delacruz@gmail.com')
+        $response = $this->withSession(['password_reset.email' => 'juan.delacruz@gmail.com'])
+            ->get('/reset-password')
             ->assertOk()
             ->assertSee('ju***********@gmail.com'); // ju + 11 stars
 
@@ -263,7 +267,8 @@ class PasswordResetTest extends TestCase
     {
         // Prefill is only possible with an outstanding code: without one the
         // visitor is sent back to step 1 instead of a form that could never succeed.
-        $this->get('/reset-password?email=user@example.com')
+        $this->withSession(['password_reset.email' => 'user@example.com'])
+            ->get('/reset-password')
             ->assertRedirect(route('password.request'))
             ->assertSessionHasErrors('email');
     }
@@ -532,8 +537,8 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_page_ships_the_digit_preferring_code_extractor(): void
     {
-        // The step-2 screen without an email query renders directly (there is
-        // no address to gate on); a queried address with no outstanding code
+        // The step-2 screen with no session email renders directly (there is
+        // no address to gate on); a session address with no outstanding code
         // redirects to step 1 instead.
         $response = $this->get('/reset-password')->assertOk();
 

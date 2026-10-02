@@ -66,12 +66,25 @@
         @if ($residents->isEmpty())
             <div class="px-6 py-14 text-center">
                 <x-icon name="residents" class="mx-auto h-10 w-10 text-slate-300" />
-                <h2 class="mt-3 text-sm font-semibold text-slate-900">No residents found</h2>
-                <p class="mt-1 text-sm text-slate-500">Try clearing the filters or add the first resident record.</p>
-                @if (auth()->user()?->hasPermission('residents.manage'))
-                <x-primary-action :href="route('residents.create')" data-dialog-open="resident-dialog" class="no-print mt-5">
-                    <x-icon name="plus" class="h-4 w-4" /> Add Resident
-                </x-primary-action>
+                @if (request('status') === 'Archived')
+                    {{-- The Archived filter only mirrors the admin-only Archive
+                         module (the canonical recovery list) — creating a new
+                         resident never populates it, so no create CTA here. --}}
+                    <h2 class="mt-3 text-sm font-semibold text-slate-900">No archived residents found</h2>
+                    <p class="mt-1 text-sm text-slate-500">Archived profiles are kept for recovery in the Archive module; this filter only mirrors that list.</p>
+                    @if (auth()->user()?->isAdmin())
+                        <a href="{{ route('archive.type', 'residents') }}" class="btn btn-neutral mt-5">Open Archive</a>
+                    @else
+                        <a href="{{ route('residents.index') }}" class="btn btn-neutral mt-5">Browse active residents</a>
+                    @endif
+                @else
+                    <h2 class="mt-3 text-sm font-semibold text-slate-900">No residents found</h2>
+                    <p class="mt-1 text-sm text-slate-500">Try clearing the filters or add the first resident record.</p>
+                    @if (auth()->user()?->hasPermission('residents.manage'))
+                    <x-primary-action :href="route('residents.create')" data-dialog-open="resident-dialog" class="no-print mt-5">
+                        <x-icon name="plus" class="h-4 w-4" /> Add Resident
+                    </x-primary-action>
+                    @endif
                 @endif
             </div>
         @else
@@ -137,6 +150,11 @@
     </div>
 </div>
 
-<x-crud-dialog id="resident-dialog" title="Resident Record" description="Personal, contact, and location details" :fetch-base="route('residents.create')" size="full" />
+{{-- Sibling dialogs cap at lg (household, blotter, welfare, certificate)
+     and md for the 2-field purok form — none use full. Resident keeps xl
+     (one step above lg, still capped): its Personal Information grid runs
+     4 columns at lg breakpoints and would crush at lg width, while an
+     uncapped full-bleed panel hurts readability. --}}
+<x-crud-dialog id="resident-dialog" title="Resident Record" description="Personal, contact, and location details" :fetch-base="route('residents.create')" size="xl" />
 @endsection
 </x-app-layout>

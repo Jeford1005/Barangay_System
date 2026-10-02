@@ -45,7 +45,9 @@ class PasswordResetEndToEndTest extends TestCase
         $this->assertDatabaseHas('password_reset_tokens', ['email' => $user->email]);
 
         // 2. The code screen shows a masked hint, never the raw address.
-        $this->get(route('password.reset', ['email' => $user->email]))
+        // The address travels in the session, never in the URL (no PII in Location).
+        $this->withSession(['password_reset.email' => $user->email])
+            ->get(route('password.reset'))
             ->assertOk()
             ->assertSee('ju***********@gmail.com')
             ->assertDontSee('We sent a 6-character code to juan.delacruz@gmail.com', false);

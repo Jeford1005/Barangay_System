@@ -37,6 +37,15 @@ class AddSecurityHeaders
 
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
 
+        // HSTS is only meaningful (and only safe) over TLS: emitting it on
+        // plain HTTP would be ignored by browsers, and unconditionally
+        // setting it would pin HTTPS during local HTTP development.
+        // Conservative policy: one year + subdomains, no preload directive
+        // (preload is a one-way commitment owned by another workstream).
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
         // `no-store` keeps account and resident pages out of shared caches and
         // out of the back/forward cache after sign-out. It applies to every
         // response kind (GET, POST, JSON): a signed-in JSON payload or a

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -235,18 +236,17 @@ class PasswordResetCodeController extends Controller
      * Direct access without a prior code request is refused: an email that
      * has no outstanding (unexpired, unconsumed) token is sent back to step
      * 1 instead of being shown a form that could never succeed.
+     *
+     * The address comes from the session (put there by email()) and from
+     * flashed old input only — never from the URL query, so the address
+     * never travels in server/proxy logs or shared caches via ?email=.
      */
     public function create(Request $request): View|RedirectResponse
     {
-        // The address travels in the session (put there by email()), never
-        // in the URL query: ?email= lands in server/proxy logs and shared
-        // caches. The query string remains as a legacy fallback so bookmarked
-        // or in-flight step-2 links keep working; session wins when both
-        // carry a value.
         $sessionEmail = trim((string) $request->session()->get('password_reset.email', ''));
         $email = $sessionEmail !== ''
             ? $sessionEmail
-            : trim((string) $request->query('email', old('email', '')));
+            : trim((string) old('email', ''));
 
         if ($email !== '') {
             $hasToken = DB::table('password_reset_tokens')
@@ -291,7 +291,7 @@ class PasswordResetCodeController extends Controller
 
         $expired = ! $reset
             || $expiresAt->isPast()
-            || ! hash_equals((string) $reset->token, hash('sha256', strtoupper($request->input('code'))));
+            || ! Hash::check(strtoupper((string) $request->input('code')), (string) $reset->token);
 
         if ($expired) {
             // The route throttle is IP scoped, so a rotating attacker gets a

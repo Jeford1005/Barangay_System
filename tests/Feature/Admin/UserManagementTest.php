@@ -93,7 +93,7 @@ class UserManagementTest extends TestCase
         $profile = Resident::factory()->create(['user_id' => $resident->id]);
         DB::table('password_reset_tokens')->insert([
             'email' => $resident->email,
-            'token' => hash('sha256', 'ABC123'),
+            'token' => Hash::make('ABC123'),
             'created_at' => now(),
         ]);
 
@@ -211,7 +211,7 @@ class UserManagementTest extends TestCase
         ]);
         DB::table('password_reset_tokens')->insert([
             'email' => 'old@example.com',
-            'token' => hash('sha256', 'ABC123'),
+            'token' => Hash::make('ABC123'),
             'created_at' => now(),
         ]);
 
@@ -290,7 +290,7 @@ class UserManagementTest extends TestCase
         $resident = User::factory()->resident()->create();
         DB::table('password_reset_tokens')->insert([
             'email' => $resident->email,
-            'token' => hash('sha256', 'ABC123'),
+            'token' => Hash::make('ABC123'),
             'created_at' => now(),
         ]);
 

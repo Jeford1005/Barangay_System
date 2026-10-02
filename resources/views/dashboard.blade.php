@@ -112,7 +112,13 @@
         </section>
     </div>
 
-    {{-- Shortcuts come last: they are what you reach for after you have looked. --}}
+    {{-- Shortcuts come last: they are what you reach for after you have looked.
+         Each create shortcut mirrors its route/controller gate (residents.manage,
+         households.manage, certificates.issue; purok create is admin-only), the
+         same hasPermission pattern as the analytics link above — so an Official
+         (read-only on clerical records) never sees a shortcut that 403s. The
+         whole card hides when nothing inside is permitted. --}}
+    @if (auth()->user()?->hasPermission('residents.manage') || auth()->user()?->hasPermission('households.manage') || auth()->user()?->hasPermission('certificates.issue') || auth()->user()?->isAdmin())
     <div class="mt-6 bg-white rounded-xl shadow overflow-hidden">
         <div class="bg-slate-50 px-6 py-4">
             <h3 class="text-sm font-semibold text-slate-900">Quick Actions</h3>
@@ -124,18 +130,24 @@
              Every count on this page arrives from the controller — this view
              runs no queries of its own, so nothing here recounts the sidebar. --}}
         <div class="p-6 grid grid-cols-1 gap-4 {{ auth()->user()?->isAdmin() ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3' }}">
+            @if (auth()->user()?->hasPermission('residents.manage'))
             <a href="{{ route('residents.index') }}?open=resident" class="btn btn-outline w-full justify-start">
                 <x-icon name="user-plus" class="h-4 w-4 text-sky-600" />
                 Register a resident
             </a>
+            @endif
+            @if (auth()->user()?->hasPermission('households.manage'))
             <a href="{{ route('households.index') }}?open=household" class="btn btn-outline w-full justify-start">
                 <x-icon name="households" class="h-4 w-4 text-sky-600" />
                 Add a household
             </a>
+            @endif
+            @if (auth()->user()?->hasPermission('certificates.issue'))
             <a href="{{ route('certificates.index') }}?open=certificate" class="btn btn-outline w-full justify-start">
                 <x-icon name="document-text" class="h-4 w-4 text-sky-600" />
                 Issue a certificate
             </a>
+            @endif
             @if (auth()->user()?->isAdmin())
                 <a href="{{ route('puroks.index') }}?open=purok" class="btn btn-outline w-full justify-start">
                     <x-icon name="plus" class="h-4 w-4 text-sky-600" />
@@ -144,6 +156,7 @@
             @endif
         </div>
     </div>
+    @endif
 </div>
 @endsection
 </x-app-layout>

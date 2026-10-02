@@ -193,10 +193,16 @@
                             </div>
                         </div>
 
-                        <button type="submit"
-                            class="btn btn-primary w-full">
-                            Submit Application
-                        </button>
+                        {{-- Sticky footer: same bar pattern as the register dialog
+                             (shrink-0 border-t, submit pinned via sticky bottom
+                             so short windows never cut it in half). The button
+                             stays a plain in-form submit, so no-JS posts work. --}}
+                        <div class="sticky bottom-0 -mx-6 mt-6 shrink-0 border-t border-slate-200 bg-white px-6 py-4">
+                            <button type="submit"
+                                class="btn btn-primary w-full">
+                                Submit Application
+                            </button>
+                        </div>
                     </form>
 
                     <p class="mt-5 border-t border-slate-200 pt-4 text-center text-sm text-slate-500">

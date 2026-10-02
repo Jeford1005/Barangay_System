@@ -136,6 +136,13 @@ class ResidentController extends Controller
         if (Auth::user()?->isStaff()) {
             $validated['status'] = 'Active';
         }
+        // Invariant: Archived <=> soft-deleted. An admin may submit
+        // status=Archived on the create form; mirror archive() so the new
+        // row never stays live+Archived (visible in the residents list but
+        // unrestorable from the Archive module).
+        if (($validated['status'] ?? 'Active') === 'Archived') {
+            $validated['is_household_head'] = false;
+        }
         // The upload is captured, not stored: the file lands on disk inside
         // the transaction under a random hashed name, and is deleted again if
         // the transaction rolls back, so a failed save never leaves an orphan.
@@ -152,6 +159,12 @@ class ResidentController extends Controller
             if ($photoFile) {
                 $newPhotoPath = $photoFile->storeAs('residents', $photoFile->hashName(), 'local');
                 $resident->update(['photo' => $newPhotoPath]);
+            }
+
+            // Same as archive(): the status change also soft-deletes, so a
+            // record created as Archived lands trashed+Archived.
+            if ($resident->status === 'Archived' && ! $resident->trashed()) {
+                $resident->delete();
             }
 
             $householdResidentSync->syncResidentAfterSave($resident);
@@ -403,6 +416,10 @@ class ResidentController extends Controller
     public function restore(Resident $resident)
     {
         abort_unless(Auth::user()?->isAdmin(), 403);
+
+        // onlyTrashed guard: restoring a live record must 404, mirroring
+        // ArchiveController::restore (onlyTrashed()->firstOrFail()).
+        abort_if(! $resident->trashed(), 404);
 
         DB::beginTransaction();
         try {
