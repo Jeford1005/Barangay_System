@@ -650,4 +650,80 @@ class CleanupDriveTest extends TestCase
         $this->actingAs($staff)->get(route('cleanup.create'))->assertOk();
         $this->actingAs($staff)->get(route('cleanup.edit', $drive))->assertOk();
     }
+
+    public function test_staff_checks_in_a_volunteer_with_hours(): void
+    {
+        $staff = User::factory()->staff()->create();
+        $drive = CleanupDrive::factory()->create(['status' => 'Ongoing']);
+        $resident = Resident::factory()->create();
+        $participant = CleanupParticipant::factory()->create([
+            'drive_id' => $drive->id,
+            'resident_id' => $resident->id,
+            'attended' => false,
+        ]);
+
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$drive, $participant]), ['hours' => 2.5])
+            ->assertRedirect(route('cleanup.logbook', $drive));
+
+        $participant->refresh();
+        $this->assertTrue($participant->attended);
+        $this->assertNotNull($participant->checked_in_at);
+        $this->assertEquals(2.5, (float) $participant->hours);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'cleanup.checked_in']);
+    }
+
+    public function test_check_in_is_guarded_and_idempotent(): void
+    {
+        $staff = User::factory()->staff()->create();
+        $resident = User::factory()->resident()->create();
+        $drive = CleanupDrive::factory()->create(['status' => 'Ongoing']);
+        $other = CleanupDrive::factory()->create(['status' => 'Ongoing']);
+        $participant = CleanupParticipant::factory()->create([
+            'drive_id' => $drive->id,
+            'resident_id' => Resident::factory()->create()->id,
+        ]);
+
+        // Guests bounce to sign-in; residents without the permission bounce out.
+        $this->post(route('cleanup.check-in', [$drive, $participant]))->assertRedirect('/login');
+        $this->actingAs($resident)->post(route('cleanup.check-in', [$drive, $participant]))->assertRedirect();
+
+        // A participant from another drive is not checkable here.
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$other, $participant]))
+            ->assertNotFound();
+
+        // Bad hours rejected; re-check keeps the first check-in time.
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$drive, $participant]), ['hours' => -1])
+            ->assertSessionHasErrors('hours');
+
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$drive, $participant]), ['hours' => 3])
+            ->assertRedirect();
+        $first = $participant->fresh()->checked_in_at;
+
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$drive, $participant]), ['hours' => 4])
+            ->assertRedirect();
+        $this->assertEquals(4.0, (float) $participant->fresh()->hours);
+        $this->assertEquals($first->toDateTimeString(), $participant->fresh()->checked_in_at->toDateTimeString());
+        $this->assertSame(1, CleanupParticipant::where('drive_id', $drive->id)->count());
+    }
+
+    public function test_cancelled_drives_refuse_check_in(): void
+    {
+        $staff = User::factory()->staff()->create();
+        $drive = CleanupDrive::factory()->create(['status' => 'Cancelled']);
+        $participant = CleanupParticipant::factory()->create([
+            'drive_id' => $drive->id,
+            'resident_id' => Resident::factory()->create()->id,
+        ]);
+
+        $this->actingAs($staff)
+            ->post(route('cleanup.check-in', [$drive, $participant]))
+            ->assertSessionHasErrors('drive');
+
+        $this->assertFalse($participant->fresh()->attended);
+    }
 }

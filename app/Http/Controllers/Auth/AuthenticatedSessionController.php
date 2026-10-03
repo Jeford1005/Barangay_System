@@ -52,7 +52,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // Office accounts with confirmed TOTP stop here for the second step:
+        // Office accounts with confirmed 2FA stop here for the second step:
         // the session is parked (logged out) with only a pending-user marker,
         // so auth.login is recorded only after the code verifies. Residents
         // are always password-only and never enter this branch.

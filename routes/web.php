@@ -204,6 +204,17 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
         Route::get('/{user}', [UserAccountController::class, 'show'])->name('show');
     });
 
+    // Email 2FA fallback toggle. Deliberately outside the `admin` middleware
+    // group (but on the same URL/name pattern): the group redirects
+    // non-admins to the dashboard, while this action must answer 403 via the
+    // controller's admin abort — like every other method in
+    // UserAccountController. Guests still bounce to login via `auth`.
+    Route::middleware('auth')->prefix('admin/users')->name('admin.users.')->group(function () {
+        Route::match(['PATCH', 'PUT'], '/{user}/email-otp-fallback', [UserAccountController::class, 'updateEmailOtpFallback'])
+            ->middleware('throttle:10,1')
+            ->name('email-otp-fallback');
+    });
+
     Route::post('/admin/mail-health/send-test', [MailHealthController::class, 'sendTest'])
         ->middleware(['admin', 'throttle:mailhealth'])
         ->name('admin.mail.test');
@@ -418,6 +429,9 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
             Route::post('/{drive}/join', [CleanupDriveController::class, 'join'])
                 ->middleware(['permission:cleanup.manage', 'throttle:10,1'])
                 ->name('join');
+            Route::post('/{drive}/participants/{participant}/check-in', [CleanupDriveController::class, 'checkIn'])
+                ->middleware(['permission:cleanup.manage', 'throttle:15,1'])
+                ->name('check-in');
             Route::get('/{drive}/edit', [CleanupDriveController::class, 'edit'])
                 ->middleware('permission:cleanup.manage')
                 ->name('edit');

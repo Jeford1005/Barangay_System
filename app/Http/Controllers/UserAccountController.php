@@ -543,9 +543,37 @@ class UserAccountController extends Controller
             ->with('success', 'Account reactivated.');
     }
 
-    public function sendResetCode(Request $request, User $user): RedirectResponse
+    /**
+     * Toggle the per-user email 2FA fallback (lost-card bridge). Admin-only
+     * like every other access action here, audited with the acting admin as
+     * actor. Office accounts only: residents never enter 2FA, so the flag
+     * would be meaningless on them.
+     */
+    public function updateEmailOtpFallback(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()?->isAdmin(), 403);
+        abort_unless($user->isOfficeUser(), 422, 'Email sign-in codes are only available for office accounts.');
+
+        $validated = $request->validate([
+            'email_otp_fallback' => ['required', 'boolean'],
+        ]);
+
+        // Privileged key: assigned explicitly, never mass-assigned (same rule
+        // as user_type, which is also absent from $fillable).
+        $user->forceFill(['email_otp_fallback' => (bool) $validated['email_otp_fallback']])->save();
+
+        $this->recordAudit($request, $user, 'account.email_otp_fallback_changed', [
+            'enabled' => (bool) $validated['email_otp_fallback'],
+        ]);
+
+        $state = $validated['email_otp_fallback'] ? 'enabled' : 'disabled';
+
+        return redirect()->route('admin.users.show', $user)
+            ->with('success', "Email sign-in codes {$state} for this account.");
+    }
+
+    public function sendResetCode(Request $request, User $user): RedirectResponse
+    {        abort_unless($request->user()?->isAdmin(), 403);
 
         if ($user->id === $request->user()->id) {
             return back()->withErrors(['user' => 'Use the normal Forgot Password flow for your own account.']);

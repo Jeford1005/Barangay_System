@@ -281,6 +281,51 @@ class CleanupDriveController extends Controller
     }
 
     /**
+     * Staff check-in: mark a roster row attended with an optional hours
+     * figure. Re-checks only refresh the hours (first check-in time is
+     * kept), and finished-but-not-cancelled drives still accept late
+     * entries so day-of paperwork can be recorded afterwards.
+     */
+    public function checkIn(Request $request, CleanupDrive $drive, CleanupParticipant $participant)
+    {
+        abort_unless($request->user()?->hasPermission('cleanup.manage'), 403);
+        abort_unless($participant->drive_id === $drive->getKey(), 404);
+
+        if ($drive->status === 'Cancelled') {
+            throw ValidationException::withMessages([
+                'drive' => "This drive is Cancelled; attendance cannot be recorded.",
+            ]);
+        }
+
+        $validated = $request->validate([
+            'hours' => ['nullable', 'numeric', 'min:0', 'max:999.9'],
+        ]);
+
+        DB::transaction(function () use ($request, $drive, $participant, $validated) {
+            $participant->lockForUpdate()->firstOrFail();
+
+            $participant->attended = true;
+            $participant->checked_in_at ??= now();
+            if (array_key_exists('hours', $validated)) {
+                $participant->hours = $validated['hours'];
+            }
+            $participant->save();
+
+            AuditLog::record(
+                'cleanup.checked_in',
+                Auth::id(),
+                Auth::user()?->email,
+                $request->ip(),
+                $request->userAgent(),
+                ['drive_id' => $drive->id, 'participant_id' => $participant->id, 'hours' => $participant->hours],
+            );
+        });
+
+        return redirect()->route('cleanup.logbook', $drive)
+            ->with('success', 'Attendance recorded.');
+    }
+
+    /**
      * Resident portal: upcoming drives the signed-in resident can join,
      * plus their summed volunteer hours.
      *

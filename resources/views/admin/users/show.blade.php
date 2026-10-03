@@ -237,6 +237,28 @@
                     </form>
                 @endif
             </div>
+
+            <div class="mt-5 border-t border-slate-200 pt-5">
+                <h3 class="text-sm font-semibold text-slate-900">Email sign-in codes (lost-card bridge)</h3>
+                @if (! $user->isOfficeUser())
+                    <p class="mt-2 text-sm text-slate-500">Resident accounts never use two-factor sign-in, so email sign-in codes do not apply.</p>
+                @else
+                    <p class="mt-2 text-sm text-slate-500">
+                        Currently: <span class="font-semibold {{ $user->email_otp_fallback ? 'text-sky-700' : 'text-slate-700' }}">{{ $user->email_otp_fallback ? 'enabled' : 'disabled' }}</span>.
+                        When enabled, the login challenge emails this account a one-time sign-in code instead of asking for an authenticator or login-card code. Every change is recorded in the audit log.
+                    </p>
+                    <form method="POST" action="{{ route('admin.users.email-otp-fallback', $user) }}" class="mt-3"
+                        data-confirm="{{ $user->email_otp_fallback ? 'Disable email sign-in codes for this account?' : 'Enable email sign-in codes for this account? The login challenge will email a code instead of asking for an authenticator or card code.' }}"
+                        data-confirm-title="Email sign-in codes"
+                        data-confirm-accept="{{ $user->email_otp_fallback ? 'Disable' : 'Enable' }}"
+                        data-confirm-icon="envelope" data-confirm-tone="primary">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="email_otp_fallback" value="{{ $user->email_otp_fallback ? '0' : '1' }}">
+                        <button type="submit" class="btn btn-outline">{{ $user->email_otp_fallback ? 'Disable email sign-in codes' : 'Enable email sign-in codes' }}</button>
+                    </form>
+                @endif
+            </div>
         </section>
     </div>
 

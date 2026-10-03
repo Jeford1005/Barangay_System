@@ -75,6 +75,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/confirm', [TwoFactorController::class, 'confirm'])
             ->middleware('throttle:10,1')
             ->name('confirm');
+        Route::post('/paper-confirm', [TwoFactorController::class, 'paperConfirm'])
+            ->middleware('throttle:10,1')
+            ->name('paper-confirm');
         Route::delete('/', [TwoFactorController::class, 'destroy'])
             ->middleware('throttle:10,1')
             ->name('destroy');

@@ -84,6 +84,7 @@ class User extends Authenticatable
             'two_factor_secret' => 'encrypted',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_recovery_codes' => 'array',
+            'email_otp_fallback' => 'boolean',
         ];
     }
 
@@ -190,15 +191,41 @@ class User extends Authenticatable
     }
 
     /**
-     * True only for office roles with a CONFIRMED TOTP secret. Residents are
-     * always password-only, so this never returns true for them even if a
-     * secret were somehow present.
+     * True for office roles with CONFIRMED two-factor enrollment, in EITHER
+     * mode: authenticator-app (TOTP secret present) or printed login card
+     * (paper-only: confirmed_at set, secret null, recovery hashes on file).
+     * Residents are always password-only, so this never returns true for
+     * them even if 2FA columns were somehow present.
+     *
+     * DELIBERATE BEHAVIOR CHANGE (paper-first 2FA): this used to also
+     * require a non-null secret. Paper-only enrollment confirms with no
+     * secret, so confirmation alone is now the enabled marker and the mode
+     * is derived from whether a secret exists (see isPaperTwoFactor()).
      */
     public function hasTwoFactorEnabled(): bool
     {
         return $this->isOfficeUser()
-            && $this->two_factor_secret !== null
             && $this->two_factor_confirmed_at !== null;
+    }
+
+    /**
+     * Paper-only mode: confirmed enrollment with no TOTP secret. Derived
+     * from (confirmed, secret null) — no extra boolean column. Daily login
+     * for these accounts is password + the next unused login-card code.
+     */
+    public function isPaperTwoFactor(): bool
+    {
+        return $this->hasTwoFactorEnabled()
+            && $this->two_factor_secret === null;
+    }
+
+    /**
+     * Authenticator-app mode: confirmed enrollment with a TOTP secret.
+     */
+    public function hasAppTwoFactor(): bool
+    {
+        return $this->hasTwoFactorEnabled()
+            && $this->two_factor_secret !== null;
     }
 
     /**
@@ -212,6 +239,15 @@ class User extends Authenticatable
             is_array($this->two_factor_recovery_codes) ? $this->two_factor_recovery_codes : [],
             fn ($hash) => is_string($hash) && $hash !== '',
         ));
+    }
+
+    /**
+     * Count of unused login-card codes still on the account. Drives the
+     * low-code (<= 2) renewal warning for paper-mode sign-in.
+     */
+    public function remainingRecoveryCodeCount(): int
+    {
+        return count($this->remainingRecoveryCodeHashes());
     }
 
     public function roleLabel(): string

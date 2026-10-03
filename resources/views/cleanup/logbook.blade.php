@@ -206,6 +206,56 @@
         }
         .toolbar .primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
 
+        /* ---------- Walk-in form (screen only) ---------- */
+        .walkin {
+            max-width: 186mm;
+            margin: 0 auto 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+        }
+        .walkin select {
+            flex: 1 1 200px;
+            min-height: 44px;
+            font-size: 13px;
+            padding: 9px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+        }
+        .walkin button {
+            font-size: 13px;
+            padding: 9px 16px;
+            border-radius: 6px;
+            border: 1px solid #1d4ed8;
+            background: #1d4ed8;
+            color: #fff;
+            cursor: pointer;
+            min-height: 44px;
+            white-space: nowrap;
+        }
+        .walkin p { flex-basis: 100%; margin: 0; color: #475569; }
+
+        /* ---------- Inline check-in form (screen only) ---------- */
+        .checkin-form { display: inline-flex; gap: 6px; align-items: center; }
+        .checkin-form input {
+            width: 64px; min-height: 44px; font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px; padding: 9px 8px; border-radius: 6px; border: 1px solid #cbd5e1;
+        }
+        .checkin-form button {
+            font-family: Arial, Helvetica, sans-serif; font-size: 13px; padding: 9px 16px;
+            border-radius: 6px; border: 1px solid #1d4ed8; background: #1d4ed8; color: #fff;
+            cursor: pointer; min-height: 44px; white-space: nowrap;
+        }
+        .roster-error {
+            font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #991b1b;
+            background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px;
+            margin: 0 0 8px;
+        }
+
         /* ---------- Print ---------- */
         @page { size: A4 portrait; margin: 12mm; }
 
@@ -213,6 +263,7 @@
             body { background: #fff; padding: 0; }
             .sheet { box-shadow: none; padding: 0; max-width: none; overflow: visible; }
             .toolbar { display: none !important; }
+            .no-print { display: none !important; }
             .printed-note .pagenum::after { content: 'Page ' counter(page); }
             section, .drive-meta, .signatures, .verify { break-inside: avoid; }
             table.roster tr { break-inside: avoid; }
@@ -277,6 +328,9 @@
 
         <section>
             <h2>Participant Roster</h2>
+            @if ($errors->has('hours'))
+                <p class="roster-error no-print">{{ $errors->first('hours') }}</p>
+            @endif
             @if ($shown === 0)
                 <p class="empty">No sign-ups recorded for this drive as of this printing.</p>
             @else
@@ -289,6 +343,7 @@
                             <th scope="col">Attended</th>
                             <th scope="col" class="hours">Hours</th>
                             <th scope="col">Checked-in</th>
+                            <th scope="col" class="no-print">Check in</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -300,6 +355,17 @@
                                 <td>{{ $row->attended ? 'Yes' : 'No' }}</td>
                                 <td class="hours">{{ $row->hours !== null ? number_format((float) $row->hours, 1) : '—' }}</td>
                                 <td>{{ $row->checked_in_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                                <td class="no-print">
+                                    @if (! $row->attended)
+                                        <form method="POST" action="{{ route('cleanup.check-in', [$drive, $row]) }}" class="checkin-form">
+                                            @csrf
+                                            <input type="number" name="hours" min="0" max="999.9" step="0.5" placeholder="Hrs" aria-label="Hours for {{ $row->resident?->full_name ?? 'volunteer' }}">
+                                            <button type="submit">Check in</button>
+                                        </form>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

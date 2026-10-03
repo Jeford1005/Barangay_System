@@ -31,6 +31,19 @@
             class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
     </div>
 
+    @php
+        $mode = $mode ?? 'app';
+        $lowCodes = $lowCodes ?? false;
+        $remainingCodes = $remainingCodes ?? null;
+        $emailSendFailed = $emailSendFailed ?? false;
+        $heading = $mode === 'email' ? 'Check your email' : ($mode === 'paper' ? 'Use your login card' : 'Check your authenticator');
+        $intro = $mode === 'email'
+            ? 'Your password was accepted. A one-time sign-in code was sent to your email — enter it below.'
+            : ($mode === 'paper'
+                ? 'Your password was accepted. Enter the next unused code from your printed login card.'
+                : 'Your password was accepted. Enter the 6-digit code from your authenticator app — or one unused recovery code.');
+    @endphp
+
     <main id="main-content" class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="w-full max-w-md">
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
@@ -41,9 +54,19 @@
                     <p class="mt-2 text-[13px] font-medium text-slate-500">
                         {{ config('app.name', 'Barangay Management System') }}
                     </p>
-                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900">Check your authenticator</h1>
-                    <p class="mt-1 text-sm text-slate-500">Your password was accepted. Enter the 6-digit code from your authenticator app — or one unused recovery code.</p>
+                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900">{{ $heading }}</h1>
+                    <p class="mt-1 text-sm text-slate-500">{{ $intro }}</p>
                 </header>
+
+                @if ($emailSendFailed)
+                    <p class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">The sign-in email could not be sent. Reload this page to try again.</p>
+                @endif
+
+                @if ($mode === 'paper' && $lowCodes)
+                    <p class="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="alert">
+                        Running low — only {{ $remainingCodes }} login {{ $remainingCodes == 1 ? 'code' : 'codes' }} left on this card. Re-enroll for a fresh card before they run out.
+                    </p>
+                @endif
 
                 <form method="POST" action="{{ route('two-factor.verify') }}" class="mt-4">
                     @csrf
@@ -60,7 +83,7 @@
                             autocomplete="one-time-code"
                             inputmode="text"
                             maxlength="12"
-                            placeholder="6-digit code or recovery code"
+                            placeholder="{{ $mode === 'email' ? '6-character email code' : ($mode === 'paper' ? 'Next code from your login card' : '6-digit code or recovery code') }}"
                             class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600 @error('code') border-red-500! ring-1 ring-red-500/40 @enderror"
                             @if ($errors->has('code')) aria-invalid="true" aria-describedby="two-factor-code-error" @endif
                         >
