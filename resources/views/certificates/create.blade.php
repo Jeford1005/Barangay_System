@@ -42,6 +42,7 @@
                         @endforeach
                     </select>
                     @error('resident_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-xs text-slate-500">{{ $residents->count() }} resident{{ $residents->count() === 1 ? '' : 's' }} on the list — search the residents list if the person is missing.</p>
                 </div>
 
                 <div class="sm:col-span-2">

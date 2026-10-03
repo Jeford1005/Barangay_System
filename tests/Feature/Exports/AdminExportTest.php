@@ -280,6 +280,82 @@ class AdminExportTest extends TestCase
         $this->assertSame("'-12.50", ExportService::neutralizeSpreadsheetFormula('-12.50'));
     }
 
+    public function test_resident_export_ignores_unknown_status_like_the_index(): void
+    {
+        Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Active', 'status' => 'Active']);
+        Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Archived', 'status' => 'Archived']);
+
+        // The residents index whitelists Active/Archived: an unknown value
+        // filters nothing instead of returning an empty list. The export
+        // must match that instead of filtering on the raw value.
+        $indexRows = $this->actingAs($this->admin)->get('/residents?status=Bogus')->assertOk();
+        $exportRows = $this->dataRows($this->export('residents', ['status' => 'Bogus']));
+
+        $this->assertCount(2, $exportRows);
+        $this->assertStringContainsString('Parity', $indexRows->getContent());
+    }
+
+    public function test_resident_export_archived_slice_matches_the_index(): void
+    {
+        $archived = Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Gone', 'status' => 'Archived']);
+        $archived->delete();
+        Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Here', 'status' => 'Active']);
+
+        $rows = $this->dataRows($this->export('residents', ['status' => 'Archived']));
+
+        $this->assertSame([(string) $archived->id], array_column($rows, 0));
+    }
+
+    public function test_other_datasets_ignore_unknown_status_and_type_like_their_indexes(): void
+    {
+        Blotter::factory()->create(['case_number' => 'BLTR-PARITY-OPEN', 'complainant_name' => 'Parity Open', 'status' => 'Open']);
+        Blotter::factory()->create(['case_number' => 'BLTR-PARITY-RESOLVED', 'complainant_name' => 'Parity Resolved', 'status' => 'Resolved']);
+
+        Welfare::factory()->create([
+            'beneficiary_name' => 'Parity Requested',
+            'program_name' => 'Parity Program',
+            'assistance_type' => 'Food',
+            'status' => 'Requested',
+        ]);
+        Welfare::factory()->create([
+            'beneficiary_name' => 'Parity Approved',
+            'program_name' => 'Parity Program',
+            'assistance_type' => 'Medical',
+            'status' => 'Approved',
+        ]);
+
+        $document = Document::where('code', 'CLR')->firstOrFail();
+        $issuedResident = Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Issued']);
+        $voidedResident = Resident::factory()->create(['first_name' => 'Parity', 'last_name' => 'Voided']);
+        CertificateIssuance::factory()->create([
+            'control_number' => 'CLR-PARITY-ISSUED',
+            'document_id' => $document->id,
+            'resident_id' => $issuedResident->id,
+            'status' => 'Issued',
+        ]);
+        CertificateIssuance::factory()->create([
+            'control_number' => 'CLR-PARITY-VOIDED',
+            'document_id' => $document->id,
+            'resident_id' => $voidedResident->id,
+            'status' => 'Voided',
+        ]);
+
+        // Every module index whitelists its status/type values: an unknown
+        // value filters nothing instead of returning an empty list. Each
+        // export must honor the same lists so exports never disagree with
+        // the page they were launched from.
+        $this->assertCount(2, $this->dataRows($this->export('blotter', ['status' => 'Bogus'])));
+        $this->assertCount(2, $this->dataRows($this->export('welfare', ['status' => 'Bogus', 'assistance_type' => 'Bogus'])));
+        $this->assertCount(2, $this->dataRows($this->export('certificates', ['status' => 'Bogus'])));
+
+        $this->actingAs($this->admin)->get('/blotter?status=Bogus')->assertOk()
+            ->assertSee('Parity Open')->assertSee('Parity Resolved');
+        $this->actingAs($this->admin)->get('/welfare?status=Bogus&assistance_type=Bogus')->assertOk()
+            ->assertSee('Parity Requested')->assertSee('Parity Approved');
+        $this->actingAs($this->admin)->get('/certificates?status=Bogus')->assertOk()
+            ->assertSee('CLR-PARITY-ISSUED')->assertSee('CLR-PARITY-VOIDED');
+    }
+
     private function export(string $dataset, array $query = [], array $server = []): TestResponse
     {
         $url = '/admin/exports/'.$dataset;

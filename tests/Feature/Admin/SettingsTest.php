@@ -7,8 +7,10 @@ use App\Models\Resident;
 use App\Models\User;
 use App\Services\BackupService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -143,6 +145,80 @@ class SettingsTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('audit_logs', ['event' => 'system.cache_cleared']);
+    }
+
+    public function test_login_throttles_survive_a_cache_clear(): void
+    {
+        // RateLimiter state lives in the dedicated `cache.limiter` store, so
+        // the maintenance Clear-caches button (Artisan cache:clear on the
+        // default store) must not reset brute-force protection.
+        RateLimiter::hit('throttle-survival-probe', 300);
+        $this->assertSame(1, RateLimiter::attempts('throttle-survival-probe'));
+
+        Artisan::call('cache:clear');
+
+        $this->assertSame(
+            1,
+            RateLimiter::attempts('throttle-survival-probe'),
+            'A cache:clear must not wipe rate-limiter counters.'
+        );
+        $this->assertSame('limiter', (string) config('cache.limiter'));
+
+        RateLimiter::clear('throttle-survival-probe');
+    }
+
+    public function test_clear_caches_via_maintenance_keeps_login_throttles(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $victim = User::factory()->create(['user_type' => 'admin']);
+
+        $throttleKey = strtolower($victim->email).'|127.0.0.1';
+        RateLimiter::hit($throttleKey, 300);
+        RateLimiter::hit($throttleKey, 300);
+        $this->assertSame(2, RateLimiter::attempts($throttleKey));
+
+        $this->actingAs($admin)
+            ->from('/admin/settings/maintenance')
+            ->post('/admin/settings/cache/clear')
+            ->assertRedirect('/admin/settings/maintenance')
+            ->assertSessionHas('success');
+
+        $this->assertSame(
+            2,
+            RateLimiter::attempts($throttleKey),
+            'The Clear-caches button must not reset login throttles.'
+        );
+
+        RateLimiter::clear($throttleKey);
+    }
+
+    public function test_clear_caches_is_admin_only_confirmed_and_throttled(): void
+    {
+        // Admin-only: guests go to sign-in, non-admins bounce to dashboard.
+        $this->post('/admin/settings/cache/clear')->assertRedirect('/login');
+
+        $official = User::factory()->official()->create();
+        $this->actingAs($official)
+            ->post('/admin/settings/cache/clear')
+            ->assertRedirect(route('dashboard'));
+
+        // Confirmed: the maintenance form asks for confirmation client-side.
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->get('/admin/settings/maintenance')
+            ->assertOk()
+            ->assertSee('data-confirm="Clear the application and view caches?"', false);
+
+        // Throttled: a second immediate clear is rejected server-side, both
+        // by the route throttle and the controller's one-per-30s guard.
+        $this->actingAs($admin)
+            ->from('/admin/settings/maintenance')
+            ->post('/admin/settings/cache/clear')
+            ->assertSessionHas('success');
+
+        $this->actingAs($admin)
+            ->from('/admin/settings/maintenance')
+            ->post('/admin/settings/cache/clear')
+            ->assertSessionHasErrors('cache');
     }
 
     public function test_backup_creation_is_queued(): void

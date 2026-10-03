@@ -23,6 +23,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Rate Limiter Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | Login and route throttles live here instead of in the default store, so
+    | `php artisan cache:clear` (and the maintenance Clear-caches button,
+    | which calls it) cannot wipe brute-force protection. Only an explicit
+    | `cache:clear --store=limiter` touches these keys.
+    |
+    | The `limiter` store below is a separate file path in production and a
+    | separate array instance under tests (CACHE_STORE=array), so flushing
+    | the default store never flushes this one in either environment.
+    |
+    */
+
+    'limiter' => env('CACHE_LIMITER_STORE', 'limiter'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------
     |
@@ -55,6 +73,27 @@ return [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
             'lock_path' => storage_path('framework/cache/data'),
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Throttle store (survives cache:clear)
+        |--------------------------------------------------------------------------
+        |
+        | Dedicated file path so the default store's flush never touches
+        | rate-limiter keys. When the test suite pins CACHE_STORE=array this
+        | resolves to a separate array instance (still isolated per test,
+        | still a different store from `default`), so `cache:clear` in tests
+        | proves the same survival property. Override the driver with
+        | CACHE_LIMITER_DRIVER if a host prefers database/redis instead.
+        |
+        */
+
+        'limiter' => [
+            'driver' => env('CACHE_LIMITER_DRIVER', env('CACHE_STORE', 'database') === 'array' ? 'array' : 'file'),
+            'serialize' => false,
+            'path' => storage_path('framework/cache/limiter'),
+            'lock_path' => storage_path('framework/cache/limiter'),
         ],
 
         'memcached' => [

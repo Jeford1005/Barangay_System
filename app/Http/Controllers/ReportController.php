@@ -339,8 +339,11 @@ class ReportController extends Controller
 
             // The printed extract lists the period's beneficiaries; cap the
             // rows so an unbounded period cannot exhaust memory. The totals
-            // above still cover the whole period.
-            $records = $listQuery()->limit(2000)->get();
+            // above still cover the whole period, and the sheet says so
+            // explicitly instead of silently dropping rows past the cap.
+            $printCap = 2000;
+            $records = $listQuery()->limit($printCap)->get();
+            $totalMatching = (int) ($statusTotals->total ?? 0);
 
             return view('reports.welfare-print', [
                 'records' => $records,
@@ -351,6 +354,9 @@ class ReportController extends Controller
                 'from' => $from,
                 'to' => $to,
                 'asOf' => $asOf,
+                'printCap' => $printCap,
+                'totalMatching' => $totalMatching,
+                'printTruncated' => $totalMatching > $records->count(),
             ]);
         }
 

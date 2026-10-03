@@ -92,11 +92,13 @@ Worth knowing:
   both are frequently restricted on shared hosting.
 - It streams to disk as it goes, so the database never has to fit in PHP's memory.
 - Rows are read inside one transaction, so the file describes a single moment even if
-  an office worker saves a record mid-backup.
+  an office worker saves a record mid-backup — with plain SELECTs and no table
+  locks, so writes are never blocked for the duration of the backup (the
+  `--single-transaction --skip-lock-tables` equivalent, InnoDB-consistent).
 - Keeping one copy **outside** the app is still wise:
 
 ```cron
-0 2 * * * mysqldump --single-transaction --routines --triggers -u USER -p'PASSWORD' DBNAME | gzip > /backups/db-$(date +\%F).sql.gz
+0 2 * * * mysqldump --single-transaction --quick --skip-lock-tables --routines --triggers --events -u USER -p'PASSWORD' DBNAME | gzip > /backups/db-$(date +\%F).sql.gz
 ```
 
 ---
@@ -230,6 +232,11 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 > `php artisan cache:clear` on each deploy so the directory does not grow
 > unbounded. (`SESSION_DRIVER`/`CACHE_STORE`/`QUEUE_CONNECTION` on `database`
 > avoid this entirely — see section 3.)
+>
+> > **Throttles survive `cache:clear`.** Login and route rate-limiter counters live
+> > in a dedicated `limiter` cache store (`config/cache.php`), not the default
+> > store — so the maintenance Clear-caches button and deploy-time `cache:clear`
+> > never wipe brute-force protection.
 
 Two things you do **not** need:
 

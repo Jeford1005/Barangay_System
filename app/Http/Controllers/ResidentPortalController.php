@@ -39,10 +39,16 @@ class ResidentPortalController extends Controller
             : collect();
 
         // The correction form only renders in edit mode, so its two lookup
-        // queries only run when it is actually on screen.
+        // queries only run when it is actually on screen. Both are capped
+        // like the office dropdowns (1000) so the portal never hydrates the
+        // full registry into two selects.
         $editing = $request->boolean('edit');
-        $puroks = $editing ? Purok::orderBy('name')->pluck('name', 'id') : collect();
-        $households = $editing ? Household::orderBy('household_code')->pluck('household_code', 'id') : collect();
+        $purokOptions = $editing ? Purok::orderBy('name')->limit(1001)->pluck('name', 'id') : collect();
+        $householdOptions = $editing ? Household::orderBy('household_code')->limit(1001)->pluck('household_code', 'id') : collect();
+        $puroksCapped = $purokOptions->count() > 1000;
+        $householdsCapped = $householdOptions->count() > 1000;
+        $puroks = $puroksCapped ? $purokOptions->take(1000) : $purokOptions;
+        $households = $householdsCapped ? $householdOptions->take(1000) : $householdOptions;
 
         return view('resident.portal', [
             'resident' => $resident->load(['purok', 'household']),
@@ -51,6 +57,8 @@ class ResidentPortalController extends Controller
             'editing' => $editing,
             'puroks' => $puroks,
             'households' => $households,
+            'puroksCapped' => $puroksCapped,
+            'householdsCapped' => $householdsCapped,
         ]);
     }
 

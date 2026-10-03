@@ -84,8 +84,14 @@
                 <x-form.field name="occupation" label="Occupation" :value="old('occupation', $resident->occupation)" maxlength="100" />
                 <x-form.field name="religion" label="Religion" :value="old('religion', $resident->religion)" maxlength="100" />
                 <x-form.field name="residency_status" label="Residency status" :value="old('residency_status', $resident->residency_status)" maxlength="50" />
-                <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" :value="old('purok_id', $resident->purok_id)" optional-hint />
-                <x-form.field name="household_id" label="Household code" type="select" :options="$households" :value="old('household_id', $resident->household_id)" optional-hint />
+                <div>
+                    <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" :value="old('purok_id', $resident->purok_id)" optional-hint />
+                    <p class="mt-1 text-xs text-slate-500">@if ($puroksCapped ?? false)Showing the first 1000 puroks — ask the office if yours is missing.@else{{ $puroks->count() }} on the list.@endif</p>
+                </div>
+                <div>
+                    <x-form.field name="household_id" label="Household code" type="select" :options="$households" :value="old('household_id', $resident->household_id)" optional-hint />
+                    <p class="mt-1 text-xs text-slate-500">@if ($householdsCapped ?? false)Showing the first 1000 households — ask the office if yours is missing.@else{{ $households->count() }} on the list.@endif</p>
+                </div>
                 <div class="sm:col-span-2">
                     <x-form.field name="notes" label="Notes for staff (optional)" type="textarea" :rows="3" maxlength="1000" :value="old('notes')" />
                 </div>

@@ -121,7 +121,8 @@
                         <span class="text-[10px] font-semibold text-slate-500 opacity-0 group-hover:opacity-100">{{ $bar['count'] ?: '' }}</span>
                         <div class="w-full rounded-t bg-sky-600 group-hover:bg-sky-700"
                             style="height: {{ $bar['count'] * 100 / max(1, collect($registrationTrend)->max('count')) }}%; min-height: {{ $bar['count'] ? '2px' : '0' }}"></div>
-                        <span class="text-[10px] text-slate-500">{{ explode(' ', $bar['label'])[0] }}</span>
+                        {{-- Full year-month label: month-only text merged Jan-2025 with Jan-2026 visually. --}}
+                        <span class="text-[10px] text-slate-500 text-center leading-tight">{{ $bar['label'] }}</span>
                     </div>
                 @endforeach
             </div>
@@ -136,7 +137,7 @@
                         <span class="text-[10px] font-semibold text-slate-500 opacity-0 group-hover:opacity-100">{{ $bar['count'] ?: '' }}</span>
                         <div class="w-full rounded-t bg-sky-600 group-hover:bg-sky-700"
                             style="height: {{ $bar['count'] * 100 / max(1, collect($certTrend)->max('count')) }}%; min-height: {{ $bar['count'] ? '2px' : '0' }}"></div>
-                        <span class="text-[10px] text-slate-500">{{ explode(' ', $bar['label'])[0] }}</span>
+                        <span class="text-[10px] text-slate-500 text-center leading-tight">{{ $bar['label'] }}</span>
                     </div>
                 @endforeach
             </div>

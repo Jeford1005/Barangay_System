@@ -25,8 +25,8 @@
                 </div>
                 <div class="min-w-0">
                     <label for="resident-household" class="sr-only">Filter by household</label>
-                    <select id="resident-household" name="household_id" onchange="this.form.submit()" class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
-                        <option value="">All households</option>
+                    <select id="resident-household" name="household_id" onchange="this.form.submit()" @if ($householdsCapped ?? false)title="Showing the first 1000 households" @endif class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-600">
+                        <option value="">All households @if ($householdsCapped ?? false)(first 1000 listed)@endif</option>
                         @foreach ($households as $id => $code)
                             <option value="{{ $id }}" @selected(request('household_id') == $id)>{{ $code }}</option>
                         @endforeach

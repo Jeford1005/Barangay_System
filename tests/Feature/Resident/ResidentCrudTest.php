@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Resident;
 
+use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
 use App\Models\User;
@@ -319,7 +320,7 @@ class ResidentCrudTest extends TestCase
         // Per-purok headings with counts (summary table + roster section each show them)
         $this->assertSame(2, substr_count($html, 'Purok 1'));
         $this->assertSame(2, substr_count($html, 'Purok 2'));
-        $this->assertStringContainsString('2 residents', $html);
+        $this->assertStringContainsString('2 shown on this page (page 1 of 1)', $html);
 
         // Residents listed under their purok, sorted by surname
         $this->assertStringContainsString('Santos, Maria', $html);
@@ -339,6 +340,74 @@ class ResidentCrudTest extends TestCase
 
         // Standalone document, not the app shell
         $this->assertStringNotContainsString('x-app-layout', $html);
+    }
+
+    public function test_directory_summary_math_matches_the_full_set_and_labels_the_page(): void
+    {
+        $purok = Purok::factory()->create(['name' => 'Purok Math']);
+        Resident::factory()->count(3)->create(['purok_id' => $purok->id, 'status' => 'Active']);
+
+        $response = $this->actingAs($this->admin)->get('/residents/directory');
+
+        $response->assertOk();
+
+        // The summary table covers the full directory: its rows sum to the
+        // header total, and the roster is explicitly labeled as its page.
+        $total = $response->viewData('total');
+        $purokCounts = $response->viewData('purokCounts');
+        $grouped = $response->viewData('grouped');
+
+        $this->assertSame($purokCounts->sum(), $total);
+        $this->assertSame(3, $total);
+        $this->assertLessThanOrEqual($total, $grouped->flatten()->count());
+
+        $html = $response->getContent();
+        $this->assertStringContainsString('Total active residents (all puroks):', $html);
+        $this->assertStringContainsString('page <b>1 of 1</b>', $html);
+        $this->assertStringContainsString('showing <b>3</b> of <b>3</b> residents', $html);
+        $this->assertStringContainsString('Summary by Purok (all puroks, full directory)', $html);
+    }
+
+    public function test_household_dropdown_is_capped_with_a_hint_and_keeps_the_selected_option(): void
+    {
+        $purok = Purok::factory()->create();
+        for ($i = 1; $i <= 1001; $i++) {
+            Household::factory()->create([
+                'household_code' => 'HH-'.str_pad((string) $i, 4, '0', STR_PAD_LEFT),
+                'purok_id' => $purok->id,
+            ]);
+        }
+        $pastTheCap = Household::where('household_code', 'HH-1001')->firstOrFail();
+        $resident = Resident::factory()->create(['household_id' => $pastTheCap->id]);
+
+        // The filter select is capped like the office forms and says so.
+        $this->actingAs($this->admin)->get('/residents')->assertOk()
+            ->assertSee('All households (first 1000 listed)', false);
+
+        // An active filter past the cap stays selectable instead of losing
+        // its selected option.
+        $this->actingAs($this->admin)
+            ->get('/residents?household_id='.$pastTheCap->id)->assertOk()
+            ->assertSee('HH-1001', false);
+
+        // The create form is capped and says so.
+        $this->actingAs($this->admin)->get('/residents/create')->assertOk()
+            ->assertSee('Showing the first 1000 households', false);
+
+        // The edit form keeps the resident's own household selectable even
+        // past the cap, so the current value is never dropped from the list.
+        $this->actingAs($this->admin)->get('/residents/'.$resident->id.'/edit')->assertOk()
+            ->assertSee('Showing the first 1000 households', false)
+            ->assertSee('HH-1001', false);
+    }
+
+    public function test_household_dropdown_shows_the_exact_count_when_under_the_cap(): void
+    {
+        Household::factory()->create(['household_code' => 'HH-0001']);
+        Household::factory()->create(['household_code' => 'HH-0002']);
+
+        $this->actingAs($this->admin)->get('/residents/create')->assertOk()
+            ->assertSee('2 households on the list', false);
     }
 
     public function test_directory_requires_authentication(): void

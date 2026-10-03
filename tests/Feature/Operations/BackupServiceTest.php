@@ -115,6 +115,34 @@ class BackupServiceTest extends TestCase
     }
 
     /**
+     * The MySQL writer is pure PHP: no `mysqldump` binary, no `LOCK TABLES`,
+     * no `--lock-tables`. Rows are read inside a single InnoDB transaction
+     * (the `--single-transaction --quick --skip-lock-tables` equivalent), so
+     * the dump never blocks writes. This pins that property without a live
+     * MySQL: the writer must open a transaction and must not contain any
+     * table-locking statement. Comments are stripped first so documentation
+     * that names the forbidden flags does not trip the assertion.
+     */
+    public function test_mysql_writer_holds_a_snapshot_without_locking_tables(): void
+    {
+        $source = (string) file_get_contents(app_path('Services/BackupService.php'));
+
+        $this->assertStringContainsString('DB::beginTransaction()', $source);
+        $this->assertStringContainsString('DB::commit()', $source);
+
+        $code = (string) preg_replace('#//.*$#m', '', $source);
+        $code = (string) preg_replace('#/\*.*?\*/#s', '', $code);
+
+        foreach (['--lock-tables', '--lock_tables', 'LOCK TABLES', 'mysqldump', 'exec('] as $forbidden) {
+            $this->assertStringNotContainsString(
+                $forbidden,
+                $code,
+                "BackupService code must not contain '{$forbidden}': the dump must stay non-blocking."
+            );
+        }
+    }
+
+    /**
      * The real proof that the MySQL writer works: take a backup of a scratch
      * database, restore it into an empty one, and require the two to match
      * row for row. Anything the writer escapes wrongly shows up here as a

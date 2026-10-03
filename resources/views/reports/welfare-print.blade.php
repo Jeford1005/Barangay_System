@@ -69,6 +69,10 @@
         @if ($records->isEmpty())
             <p class="empty">No welfare records for this period.</p>
         @else
+            {{-- The printed list is capped; the totals above always cover the
+                 whole period. Say exactly what is shown so rows past the cap
+                 are never silently dropped. --}}
+            <p>Showing {{ $records->count() }} of {{ $totalMatching }} matching record{{ $totalMatching === 1 ? '' : 's' }}@if ($printTruncated) (first {{ $printCap }} shown)@endif. Totals above cover the full period.</p>
             <table>
                 <thead>
                     <tr>

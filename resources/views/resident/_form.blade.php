@@ -43,7 +43,7 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-form.field name="purok_id" label="Purok" type="select" :options="$puroks" placeholder-option="None" :value="$resident->purok_id ?? null" />
         <x-form.field name="household_id" label="Household" type="select" :options="$households" placeholder-option="None" :value="$resident->household_id ?? null" />
-        <p class="text-xs text-slate-500 sm:col-span-2 lg:col-span-4">Choose a purok or household from the list. Names and codes are shown for readability; the system stores the selected record ID.</p>
+        <p class="text-xs text-slate-500 sm:col-span-2 lg:col-span-4">Choose a purok or household from the list. Names and codes are shown for readability; the system stores the selected record ID. @if ($householdsCapped ?? false)Showing the first 1000 households — search the households list if the household is missing.@else{{ $households->count() }} household{{ $households->count() === 1 ? '' : 's' }} on the list.@endif</p>
         @php
             // Fixed options for new input; a legacy free-text value already
             // stored on this record is appended so it stays visible/selected.

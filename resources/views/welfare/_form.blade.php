@@ -13,6 +13,7 @@ $residentAutofill = $residents->mapWithKeys(fn ($r) => [$r->id => [
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <x-form.field name="beneficiary_name" label="Full Name" required :value="$welfare->beneficiary_name ?? null" maxlength="255" />
         <x-form.field name="beneficiary_id" label="Linked Resident" type="select" optional-hint :options="$residentOptions" placeholder-option="Walk-in / not registered" :value="$welfare->beneficiary_id ?? null" data-resident-autofill="beneficiary" data-linked-fields="beneficiary_name,beneficiary_address,beneficiary_phone" />
+        <p class="mt-1 text-xs text-slate-500">@if ($residents->count() >= 1000)Showing the first 1000 residents — search the residents list if the beneficiary is missing.@else{{ $residents->count() }} resident{{ $residents->count() === 1 ? '' : 's' }} on the list.@endif</p>
         <x-form.field name="beneficiary_address" label="Address" :value="$welfare->beneficiary_address ?? null" maxlength="255" />
         <x-form.field name="beneficiary_phone" label="Phone" type="tel" inputmode="numeric" data-phone="true" pattern="[0-9+()\- ]*" :value="$welfare->beneficiary_phone ?? null" maxlength="15" placeholder="09XX XXX XXXX" />
     </div>

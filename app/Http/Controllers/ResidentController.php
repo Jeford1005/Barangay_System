@@ -57,11 +57,16 @@ class ResidentController extends Controller
         $residents = $query->orderBy('last_name')->paginate(20)->withQueryString();
 
         $puroks = Purok::pluck('name', 'id');
-        $households = Household::pluck('household_code', 'id');
+        // Bounded filter options: the full household table must never be
+        // loaded into a select. The active filter stays selectable even past
+        // the cap so a filtered view never loses its selected option.
+        [$households, $householdsCapped] = $this->householdOptions(
+            $request->filled('household_id') ? $request->integer('household_id') : null
+        );
 
         $page = max(1, (int) $request->input('page', 1));
 
-        return view('resident.index', compact('residents', 'puroks', 'households'))
+        return view('resident.index', compact('residents', 'puroks', 'households', 'householdsCapped'))
             ->with('i', ($page - 1) * $residents->perPage());
     }
 
@@ -75,7 +80,9 @@ class ResidentController extends Controller
     {
         // The roster page is paginated (500 per page) with screen/print
         // columns only, so a large barangay never hydrates every resident at
-        // once. The summary counts below still cover the full directory.
+        // once. The summary counts below still cover the full directory
+        // (all puroks), and the view labels them as such so the page-scoped
+        // roster is never mistaken for the full totals.
         $page = Resident::active()
             ->with('purok:id,name')
             ->select(['id', 'first_name', 'middle_name', 'last_name', 'suffix', 'sex', 'birth_date', 'phone_number', 'voter_status', 'purok_id'])
@@ -111,6 +118,11 @@ class ResidentController extends Controller
             'grouped' => $grouped,
             'purokCounts' => $purokCounts,
             'total' => $page->total(),
+            // Page scope for the roster below: the view labels the roster as
+            // the current page and the summary as the full directory so the
+            // two can never be read as disagreeing totals.
+            'directoryPage' => $page,
+            'shownOnPage' => $page->count(),
         ]);
     }
 
@@ -119,9 +131,9 @@ class ResidentController extends Controller
         abort_unless(Auth::user()?->hasPermission('residents.manage'), 403);
 
         $puroks = Purok::pluck('name', 'id');
-        $households = Household::pluck('household_code', 'id');
+        [$households, $householdsCapped] = $this->householdOptions();
 
-        return view('resident.create', compact('puroks', 'households'));
+        return view('resident.create', compact('puroks', 'households', 'householdsCapped'));
     }
 
     public function store(Request $request, HouseholdResidentSync $householdResidentSync)
@@ -205,9 +217,11 @@ class ResidentController extends Controller
         abort_unless(Auth::user()?->hasPermission('residents.manage'), 403);
 
         $puroks = Purok::pluck('name', 'id');
-        $households = Household::pluck('household_code', 'id');
+        // The resident's own household stays selectable even past the cap so
+        // the form never drops its current value from the list.
+        [$households, $householdsCapped] = $this->householdOptions($resident->household_id);
 
-        return view('resident.edit', compact('resident', 'puroks', 'households'));
+        return view('resident.edit', compact('resident', 'puroks', 'households', 'householdsCapped'));
     }
 
     public function update(Request $request, Resident $resident, HouseholdResidentSync $householdResidentSync)
@@ -449,6 +463,30 @@ class ResidentController extends Controller
 
             return back()->withErrors(['error' => 'Failed to restore resident.']);
         }
+    }
+
+    /**
+     * Bounded household options for selects: the full household table must
+     * never be loaded into a dropdown. Capped at 1000 like the other office
+     * forms; the given id (active filter or record being edited) is always
+     * kept selectable so its selected option never vanishes past the cap.
+     *
+     * @return array{0: \Illuminate\Support\Collection<int, string>, 1: bool}
+     */
+    private function householdOptions(?int $keepId = null): array
+    {
+        $options = Household::orderBy('household_code')->limit(1001)->pluck('household_code', 'id');
+        $capped = $options->count() > 1000;
+        $options = $capped ? $options->take(1000) : $options;
+
+        if ($keepId && ! $options->has($keepId)) {
+            $kept = Household::whereKey($keepId)->value('household_code');
+            if ($kept !== null) {
+                $options->put($keepId, $kept);
+            }
+        }
+
+        return [$options, $capped];
     }
 
     private function validateResident(Request $request, $residentId = null)

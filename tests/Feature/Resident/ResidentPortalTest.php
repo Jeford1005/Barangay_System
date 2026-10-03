@@ -73,6 +73,21 @@ class ResidentPortalTest extends TestCase
             ->assertDontSee('placeholder="09171234567"');
     }
 
+    public function test_correction_lookups_are_bounded_and_say_how_much_is_listed(): void
+    {
+        [$user] = $this->approvedResident();
+
+        // The portal correction selects are capped like the office dropdowns
+        // (1000): with a small registry the page says exactly how much is on
+        // the list instead of going silent, and the capped copy exists for
+        // large registries.
+        $this->actingAs($user)
+            ->get('/my?edit=1')
+            ->assertOk()
+            ->assertSee('on the list')
+            ->assertSee('Request a profile correction');
+    }
+
     public function test_rendered_contact_form_uses_the_put_route(): void
     {
         [$user] = $this->approvedResident();

@@ -163,6 +163,26 @@ class ArchiveTest extends TestCase
         ]);
     }
 
+    public function test_purge_succeeds_when_only_archived_members_remain(): void
+    {
+        $household = Household::factory()->create();
+        $member = Resident::factory()->create(['household_id' => $household->id]);
+        $member->delete();
+
+        // Destroying the household releases every member pointer — live or
+        // already-archived — so the purge below is never blocked forever.
+        $this->actingAs($this->admin)->delete('/households/'.$household->id)
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->admin)->delete('/archive/households/'.$household->id)
+            ->assertRedirect(route('archive.type', 'households'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('households', ['id' => $household->id]);
+        $this->assertSoftDeleted('residents', ['id' => $member->id]);
+        $this->assertNull(Resident::withTrashed()->find($member->id)->household_id);
+    }
+
     public function test_purge_is_blocked_while_a_resident_has_certificate_history(): void
     {
         $resident = Resident::factory()->create();

@@ -201,6 +201,16 @@ class HouseholdController extends Controller
 
         DB::beginTransaction();
         try {
+            // Trashing the household must not strand its members on a deleted
+            // id (or block the archive purge forever): release every member
+            // pointer — live or already-archived — the same way the archive
+            // purge detaches them, and record the count on the audit entry.
+            // Detached members keep no head flag: the household is gone, so a
+            // lingering is_household_head=true would claim headship of nothing.
+            $detachedMembers = Resident::withTrashed()
+                ->where('household_id', $household->getKey())
+                ->update(['household_id' => null, 'is_household_head' => false]);
+
             $household->delete();
             DB::commit();
             Cache::forget('auth.household-options');
@@ -211,7 +221,7 @@ class HouseholdController extends Controller
                 Auth::user()?->email,
                 $request->ip(),
                 $request->userAgent(),
-                ['household_id' => $householdId, 'household_code' => $householdCode],
+                ['household_id' => $householdId, 'household_code' => $householdCode, 'detached_members' => $detachedMembers],
             );
 
             return redirect()->route('households.index')

@@ -102,7 +102,7 @@ class WelfareController extends Controller
     {
         abort_unless($request->user()?->hasPermission('welfare.approve'), 403);
 
-        $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request, $welfare));
+        $validated = $this->synchronizeLinkedResidentFields($this->validateWelfare($request, $welfare), $welfare);
 
         // The workflow is a state machine, not a free dropdown: anything
         // outside the whitelisted transitions is rejected, so money can only
@@ -191,9 +191,21 @@ class WelfareController extends Controller
             ->with('success', "Assistance request for {$beneficiary} deleted successfully.");
     }
 
-    private function synchronizeLinkedResidentFields(array $validated): array
+    /**
+     * A linked resident is the source of truth for beneficiary identity/contact data.
+     * Blank IDs intentionally remain walk-in records and keep their free text.
+     *
+     * On update the sync only fires when the linked resident actually changed:
+     * re-syncing on every save would silently discard the clerk's manual
+     * edits to the name/address/phone fields. (Same guard as BlotterController.)
+     */
+    private function synchronizeLinkedResidentFields(array $validated, ?Welfare $welfare = null): array
     {
         if (blank($validated['beneficiary_id'] ?? null)) {
+            return $validated;
+        }
+
+        if ($welfare && (int) ($welfare->beneficiary_id ?? 0) === (int) $validated['beneficiary_id']) {
             return $validated;
         }
 

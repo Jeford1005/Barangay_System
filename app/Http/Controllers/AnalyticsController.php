@@ -151,10 +151,12 @@ class AnalyticsController extends Controller
 
     /**
      * Monthly counts for the last 12 months for a model/date column.
-     * Returns labels like "Oct 25" and counts, zero-filled. Buckets are
-     * grouped in SQL (one aggregate query) instead of hydrating every row
-     * and bucketing in PHP; the month expression is driver-aware so the
-     * query stays portable across sqlite (dev/tests) and MySQL (production).
+     * Returns labels like "Oct 2025" and counts, zero-filled. Buckets are
+     * grouped in SQL by year-month (`%Y-%m`, never month number alone) in
+     * one aggregate query instead of hydrating every row and bucketing in
+     * PHP; the month expression is driver-aware so the query stays portable
+     * across sqlite (dev/tests) and MySQL (production). Grouping by
+     * year-month keeps Jan-2025 and Jan-2026 in separate buckets.
      */
     private function monthlyTrend(string $model, string $dateColumn, bool $activeOnly = false): array
     {
@@ -180,7 +182,11 @@ class AnalyticsController extends Controller
         for ($i = 0; $i < 12; $i++) {
             $key = $cursor->format('Y-m');
             $out[] = [
-                'label' => $cursor->format('M y'),
+                // Full year on purpose ("Jan 2026", not "Jan 26"): the
+                // 12-month window always spans a year boundary, and the
+                // chart below renders the whole label so Jan-2025 can never
+                // be mistaken for Jan-2026.
+                'label' => $cursor->format('M Y'),
                 'count' => (int) ($raw[$key] ?? 0),
             ];
             $cursor->addMonth();

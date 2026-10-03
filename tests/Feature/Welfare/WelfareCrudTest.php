@@ -105,6 +105,16 @@ class WelfareCrudTest extends TestCase
             ->assertSee('Record Assistance Request');
     }
 
+    public function test_create_names_how_much_of_the_registry_is_listed(): void
+    {
+        // The linked-resident select is capped at 1000: the form must say so
+        // (or give the exact count when under the cap) instead of silently
+        // dropping residents past the cap.
+        $this->actingAs($this->admin)->get('/welfare/create')
+            ->assertOk()
+            ->assertSee('on the list');
+    }
+
     public function test_store_creates_a_request(): void
     {
         $response = $this->actingAs($this->admin)->post('/welfare', $this->validPayload([
@@ -302,5 +312,79 @@ class WelfareCrudTest extends TestCase
         $this->actingAs($this->admin)->get('/welfare/create')
             ->assertOk()
             ->assertSee('Marcos, Elena');
+    }
+
+    public function test_update_keeps_manual_edits_when_the_linked_resident_is_unchanged(): void
+    {
+        $resident = Resident::factory()->create([
+            'first_name' => 'Ligaya',
+            'last_name' => 'Santos',
+            'address' => 'Purok 1, Rizal St.',
+            'phone_number' => '09171234567',
+        ]);
+
+        $this->actingAs($this->admin)->post('/welfare', $this->validPayload([
+            'beneficiary_id' => $resident->id,
+        ]))->assertRedirect('/welfare');
+
+        $request = Welfare::firstOrFail();
+        $this->assertSame('Ligaya Santos', $request->beneficiary_name);
+
+        // An unrelated save (status review plus corrected contact details)
+        // must not re-sync the linked resident over the clerk's edits.
+        $this->actingAs($this->admin)->put("/welfare/{$request->id}", $this->validPayload([
+            'beneficiary_id' => $resident->id,
+            'beneficiary_name' => 'Ligaya S. Santos (corrected)',
+            'beneficiary_address' => 'Purok 1, Rizal St., Apt 2',
+            'beneficiary_phone' => '09179998888',
+            'status' => 'Under Review',
+        ]))->assertRedirect('/welfare');
+
+        $this->assertDatabaseHas('welfare', [
+            'id' => $request->id,
+            'beneficiary_id' => $resident->id,
+            'beneficiary_name' => 'Ligaya S. Santos (corrected)',
+            'beneficiary_address' => 'Purok 1, Rizal St., Apt 2',
+            'beneficiary_phone' => '09179998888',
+            'status' => 'Under Review',
+        ]);
+    }
+
+    public function test_update_resyncs_details_when_the_linked_resident_changes(): void
+    {
+        $first = Resident::factory()->create([
+            'first_name' => 'Ligaya',
+            'last_name' => 'Santos',
+            'address' => 'Old Address',
+            'phone_number' => '09171111111',
+        ]);
+        $second = Resident::factory()->create([
+            'first_name' => 'Ramon',
+            'last_name' => 'Cruz',
+            'address' => 'Blk 9 Lot 4, Purok 2',
+            'phone_number' => '09172222222',
+        ]);
+        $request = Welfare::factory()->create([
+            'status' => 'Requested',
+            'beneficiary_id' => $first->id,
+            'beneficiary_name' => 'Whatever Manual',
+            'beneficiary_address' => 'Whatever Address',
+            'beneficiary_phone' => '09170000000',
+        ]);
+
+        $this->actingAs($this->admin)->put("/welfare/{$request->id}", $this->validPayload([
+            'beneficiary_id' => $second->id,
+            'beneficiary_name' => 'Stale Name',
+            'beneficiary_address' => 'Stale Address',
+            'beneficiary_phone' => '09170000000',
+        ]))->assertRedirect('/welfare');
+
+        $this->assertDatabaseHas('welfare', [
+            'id' => $request->id,
+            'beneficiary_id' => $second->id,
+            'beneficiary_name' => 'Ramon Cruz',
+            'beneficiary_address' => 'Blk 9 Lot 4, Purok 2',
+            'beneficiary_phone' => '09172222222',
+        ]);
     }
 }

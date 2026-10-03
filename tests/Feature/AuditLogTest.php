@@ -201,4 +201,83 @@ class AuditLogTest extends TestCase
             ->assertSee('Password reset completed')
             ->assertSee('1 record'); // the code_requested row is filtered out (option labels aside)
     }
+
+    public function test_audit_page_ignores_an_unknown_event_filter(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 1, 'resident_name' => 'Juan Dela Cruz']);
+        AuditLog::record('blotter.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['case_number' => 'BLTR-2026-0001']);
+
+        // An event outside the known list applies no filtering instead of
+        // narrowing the log to an attacker-chosen slice.
+        $this->actingAs($admin)->get('/admin/audit-logs?event=no.such.event')
+            ->assertOk()
+            ->assertSee('Juan Dela Cruz')
+            ->assertSee('BLTR-2026-0001')
+            ->assertSee('2 records');
+    }
+
+    public function test_audit_page_ignores_unknown_actor_and_subject_type_filters(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 1, 'resident_name' => 'Juan Dela Cruz']);
+
+        $this->actingAs($admin)->get('/admin/audit-logs?actor_type=superuser&subject_type=barangay')
+            ->assertOk()
+            ->assertSee('Juan Dela Cruz')
+            ->assertSee('1 record');
+    }
+
+    public function test_audit_page_filters_by_known_subject_type(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 1, 'resident_name' => 'Juan Dela Cruz']);
+        AuditLog::record('blotter.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['case_number' => 'BLTR-2026-0001']);
+
+        $this->actingAs($admin)->get('/admin/audit-logs?subject_type=resident')
+            ->assertOk()
+            ->assertSee('Juan Dela Cruz')
+            ->assertDontSee('BLTR-2026-0001')
+            ->assertSee('1 record');
+    }
+
+    public function test_audit_page_ignores_malformed_date_filters(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 1, 'resident_name' => 'Juan Dela Cruz']);
+
+        // Free text, calendar overflows, and implausibly early years are not
+        // dates: they are ignored and the page still renders everything.
+        $this->actingAs($admin)->get('/admin/audit-logs?from=not-a-date&to=2026-02-30')
+            ->assertOk()
+            ->assertSee('Juan Dela Cruz')
+            ->assertSee('1 record');
+
+        $this->actingAs($admin)->get('/admin/audit-logs?from=1899-12-31')
+            ->assertOk()
+            ->assertSee('Juan Dela Cruz');
+    }
+
+    public function test_audit_page_applies_a_valid_date_range(): void
+    {
+        $admin = User::factory()->create(['user_type' => 'admin']);
+
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 1, 'resident_name' => 'Old Juan'])
+            ->update(['occurred_at' => now()->subDays(10)]);
+        AuditLog::record('resident.created', $admin->id, $admin->email, '127.0.0.1', 'test-agent', ['resident_id' => 2, 'resident_name' => 'Recent Juan']);
+
+        $this->actingAs($admin)->get('/admin/audit-logs?from='.now()->subDays(5)->toDateString())
+            ->assertOk()
+            ->assertSee('Recent Juan')
+            ->assertDontSee('Old Juan');
+
+        $this->actingAs($admin)->get('/admin/audit-logs?to='.now()->subDays(5)->toDateString())
+            ->assertOk()
+            ->assertSee('Old Juan')
+            ->assertDontSee('Recent Juan');
+    }
 }

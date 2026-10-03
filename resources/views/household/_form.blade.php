@@ -35,7 +35,7 @@ $residentOptions = $residents->mapWithKeys(fn ($r) => [$r->id => $r->first_name.
 <fieldset>
     <legend class="text-sm font-semibold text-slate-900 mb-4">Head Assignment</legend>
     <x-form.field name="head_of_household_id" label="Head of Household" type="select" optional-hint :options="$residentOptions" placeholder-option="None" :value="$household->head_of_household_id ?? null" />
-    <p class="mt-1 text-xs text-slate-500">Register residents first, then assign a head here.</p>
+    <p class="mt-1 text-xs text-slate-500">Register residents first, then assign a head here. @if ($residents->count() >= 1000)Showing the first 1000 residents — search the residents list if the head is missing.@else{{ $residents->count() }} resident{{ $residents->count() === 1 ? '' : 's' }} on the list.@endif</p>
 </fieldset>
 
 <fieldset>

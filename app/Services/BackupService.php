@@ -136,6 +136,19 @@ class BackupService
      * its related row in another. InnoDB's default REPEATABLE READ level
      * establishes the snapshot at the first read.
      *
+     * This is the pure-PHP equivalent of
+     * `mysqldump --single-transaction --quick --skip-lock-tables`: plain
+     * SELECTs under REPEATABLE READ take no table locks, so writes are never
+     * blocked for the duration of the dump. There is deliberately no
+     * `--lock-tables` / `LOCK TABLES` anywhere in this path (grep for it in
+     * tests). No `mysqldump` binary or `exec()` is required.
+     *
+     * Routines, triggers and events: this schema defines none (see
+     * database/migrations), so the writer covers base tables only. Hosts that
+     * later add routines should keep an off-app
+     * `mysqldump --single-transaction --routines --triggers --events` cron
+     * alongside the in-app backup (see docs/operations/deploy.md).
+     *
      * The script is streamed to disk as it is produced rather than assembled
      * in memory, so the database never has to fit inside PHP's heap.
      */

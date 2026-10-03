@@ -380,7 +380,14 @@ class ExportService
         }
 
         $status = $this->inputString($request, 'status');
-        if ($status !== null) {
+        // Same whitelist as ResidentController@index: an unknown value
+        // filters nothing instead of silently returning an empty export.
+        // Archived residents are soft-deleted, so that slice must include
+        // trashed rows exactly like the index does.
+        if ($status !== null && in_array($status, ['Active', 'Archived'], true)) {
+            if ($status === 'Archived') {
+                $query->withTrashed();
+            }
             $query->where('status', $status);
         }
 

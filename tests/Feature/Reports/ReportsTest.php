@@ -157,6 +157,36 @@ class ReportsTest extends TestCase
             ->assertSee('No blotter cases recorded for this period');
     }
 
+    public function test_blotter_monthly_trend_keeps_same_month_across_years_separate(): void
+    {
+        // Jan-2025 and Jan-2026 must land in different buckets: a month-number
+        // GROUP BY would merge them into a single January column with count 2.
+        Blotter::factory()->create(['complaint_type' => 'Noise Complaint', 'status' => 'Open', 'complaint_date' => '2025-01-15 10:00:00']);
+        Blotter::factory()->create(['complaint_type' => 'Noise Complaint', 'status' => 'Open', 'complaint_date' => '2026-01-15 10:00:00']);
+
+        $html = $this->actingAs($this->admin)
+            ->get('/reports/blotter?from=2025-01-01&to=2026-02-28')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Jan 2025', $html);
+        $this->assertStringContainsString('Jan 2026', $html);
+
+        // Scope count assertions to the Monthly Trend table only: the
+        // by-type table legitimately shows Noise Complaint = 2, so a
+        // whole-page `>2</td>` check would false-positive.
+        $start = strpos($html, 'Monthly Trend');
+        $this->assertNotFalse($start);
+        $trend = substr($html, $start);
+        $end = strpos($trend, 'Most Recent Cases');
+        if ($end !== false) {
+            $trend = substr($trend, 0, $end);
+        }
+
+        $this->assertSame(2, substr_count($trend, '>1</td>'), 'Jan 2025 and Jan 2026 must each count 1 in the trend.');
+        $this->assertStringNotContainsString('>2</td>', $trend);
+    }
+
     public function test_welfare_report_lists_beneficiaries_and_amounts(): void
     {
         $resident = Resident::factory()->create(['first_name' => 'Ana', 'last_name' => 'Bautista']);
@@ -205,6 +235,35 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Breakdown by Assistance Type', $html);
         $this->assertStringContainsString('true and correct summary', $html);
         $this->assertStringNotContainsString('x-app-layout', $html);
+    }
+
+    public function test_welfare_print_states_how_many_rows_are_shown_out_of_the_total(): void
+    {
+        Welfare::factory()->create([
+            'beneficiary_name' => 'Cap Notice One',
+            'assistance_type' => 'Food',
+            'program_name' => 'Ayuda Program',
+            'status' => 'Released',
+            'approved_amount' => 1000,
+            'request_date' => now(),
+        ]);
+        Welfare::factory()->create([
+            'beneficiary_name' => 'Cap Notice Two',
+            'assistance_type' => 'Food',
+            'program_name' => 'Ayuda Program',
+            'status' => 'Approved',
+            'approved_amount' => 500,
+            'request_date' => now(),
+        ]);
+
+        $html = $this->actingAs($this->admin)->get('/reports/welfare?print=1')
+            ->assertOk()
+            ->getContent();
+
+        // The printed list is capped at 2000: the sheet must say exactly
+        // what is shown so rows past the cap are never silently dropped.
+        $this->assertStringContainsString('Showing 2 of 2 matching records', $html);
+        $this->assertStringContainsString('Totals above cover the full period', $html);
     }
 
     public function test_reports_reject_malformed_or_reversed_date_ranges(): void

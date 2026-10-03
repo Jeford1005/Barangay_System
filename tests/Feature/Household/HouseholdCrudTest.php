@@ -308,4 +308,42 @@ class HouseholdCrudTest extends TestCase
 
         $this->assertSoftDeleted($household);
     }
+
+    public function test_destroy_releases_members_instead_of_stranding_them(): void
+    {
+        $household = Household::factory()->create();
+        $head = Resident::factory()->create([
+            'household_id' => $household->id,
+            'is_household_head' => true,
+        ]);
+        $household->update(['head_of_household_id' => $head->id]);
+        $member = Resident::factory()->create(['household_id' => $household->id]);
+        $archivedMember = Resident::factory()->create(['household_id' => $household->id]);
+        $archivedMember->delete();
+
+        $this->actingAs($this->admin)->delete("/households/{$household->id}")
+            ->assertRedirect('/households')
+            ->assertSessionHas('success');
+
+        $this->assertSoftDeleted($household);
+        $this->assertNull(Household::withTrashed()->find($household->id)->head_of_household_id);
+
+        // No resident — live or already-archived — may keep pointing at the
+        // trashed household, and nobody keeps a head flag for a household
+        // that no longer exists.
+        foreach ([$head->id, $member->id, $archivedMember->id] as $residentId) {
+            $fresh = Resident::withTrashed()->find($residentId);
+            $this->assertNull($fresh->household_id);
+            $this->assertFalse((bool) $fresh->is_household_head);
+        }
+
+        $this->assertSame(
+            0,
+            Resident::withTrashed()->where('household_id', $household->id)->count()
+        );
+
+        $log = \App\Models\AuditLog::where('event', 'household.deleted')->firstOrFail();
+        $this->assertSame($this->admin->id, $log->user_id);
+        $this->assertSame(3, $log->properties['detached_members']);
+    }
 }

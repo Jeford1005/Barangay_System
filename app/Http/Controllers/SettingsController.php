@@ -112,9 +112,14 @@ class SettingsController extends Controller
     {
         // Throttle rapid repeated clears (double-clicks, refresh-resubmits).
         // The form already asks for confirmation (data-confirm); this is the
-        // server-side half. The hit is recorded AFTER the flush on purpose:
-        // cache:clear wipes the default store, so a hit taken before it
-        // would be erased along with everything else it just cleared.
+        // server-side half.
+        //
+        // Rate-limiter state lives in the dedicated `cache.limiter` store
+        // (config/cache.php), not the default store, so `cache:clear` below
+        // no longer wipes login/route throttles — option (a) from the audit.
+        // The hit is still recorded AFTER the flush so the ordering stays
+        // correct even if the limiter is ever pointed back at the default
+        // store: a hit taken before a default-store flush would be erased.
         $key = 'cache-clear:'.($request->user()?->getKey() ?? $request->ip());
 
         if (RateLimiter::tooManyAttempts($key, 1)) {

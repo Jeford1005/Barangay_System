@@ -212,15 +212,18 @@
         <p class="doc-sub">Master list of active residents organized by purok</p>
 
         <div class="summary">
-            <span>Total active residents: <b>{{ $total }}</b></span>
-            <span>Puroks listed: <b>{{ $purokCounts->count() }}</b></span>
+            <span>Total active residents (all puroks): <b>{{ $total }}</b></span>
+            <span>Puroks listed (all puroks): <b>{{ $purokCounts->count() }}</b></span>
             <span>Generated: <b>{{ now()->format('M j, Y') }}</b></span>
+            <span>Roster below: page <b>{{ $directoryPage->currentPage() }} of {{ $directoryPage->lastPage() }}</b> · showing <b>{{ $shownOnPage }}</b> of <b>{{ $total }}</b> residents</span>
         </div>
 
-        {{-- Per-purok summary table first, then the rosters. --}}
+        {{-- Per-purok summary table first, then the rosters. The summary covers
+             the full directory (all puroks); the roster sections below show
+             only the current page. --}}
         <section>
             <div class="purok-head">
-                <h2>Summary by Purok</h2>
+                <h2>Summary by Purok (all puroks, full directory)</h2>
             </div>
             <table>
                 <thead>
@@ -245,7 +248,7 @@
             <section>
                 <div class="purok-head">
                     <h2>{{ $purokName }}</h2>
-                    <span class="count">{{ $rows->count() }} resident{{ $rows->count() === 1 ? '' : 's' }}</span>
+                    <span class="count">{{ $rows->count() }} shown on this page (page {{ $directoryPage->currentPage() }} of {{ $directoryPage->lastPage() }})</span>
                 </div>
                 <table>
                     <thead>
@@ -277,7 +280,9 @@
         <p class="cert">
             I certify that this directory is a true and correct list of the active residents
             of Barangay Bidduang as recorded in the Barangay Management System as of
-            {{ now()->format('M j, Y') }}, totaling {{ $total }} resident{{ $total === 1 ? '' : 's' }}.
+            {{ now()->format('M j, Y') }}, totaling {{ $total }} resident{{ $total === 1 ? '' : 's' }} across all puroks.
+            The roster sections above show page {{ $directoryPage->currentPage() }} of {{ $directoryPage->lastPage() }}
+            ({{ $shownOnPage }} of {{ $total }} residents); the summary table covers the full directory.
         </p>
 
         <div class="signatures">
@@ -292,6 +297,16 @@
                 <div class="role">Punong Barangay</div>
             </div>
         </div>
+
+        @if ($directoryPage->hasPages())
+            <section>
+                <p style="font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #333; margin-bottom: 6pt;">
+                    Roster pages: page {{ $directoryPage->currentPage() }} of {{ $directoryPage->lastPage() }}.
+                    The summary above covers the full directory (all puroks).
+                </p>
+                {{ $directoryPage->links() }}
+            </section>
+        @endif
 
         <footer class="printed-note">
             <span>Printed {{ now()->format('M j, Y g:i A') }} · Barangay Management System</span>
