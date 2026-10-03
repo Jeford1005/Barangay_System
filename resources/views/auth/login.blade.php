@@ -58,7 +58,7 @@
          the viewport so it stays put while a short laptop window scrolls. --}}
     <div aria-hidden="true" class="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden">
         <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt=""
-            class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11]">
+            class="h-auto w-[min(150vmin,1150px)] max-w-none select-none opacity-[0.11] [@media(max-height:700px)]:w-[min(110vmin,800px)]">
     </div>
 
     {{-- py-3 rather than py-10: on a tall window the card is centred and the
@@ -79,15 +79,15 @@
          height. --}}
     <main id="main-content" class="relative z-10 flex min-h-dvh items-center justify-center px-4 py-3 sm:px-6">
         <div class="w-full max-w-md">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 [@media(max-height:700px)]:p-4">
 
                 <header class="text-center">
                     <img src="{{ asset('images/bidduang-seal-circle.png') }}" alt=""
-                        class="mx-auto h-11 w-11 rounded-full">
+                        class="mx-auto h-11 w-11 rounded-full [@media(max-height:700px)]:h-8 [@media(max-height:700px)]:w-8">
                     <p class="mt-2 text-[13px] font-medium text-slate-500">
                         {{ config('app.name', 'Barangay Management System') }}
                     </p>
-                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900">Sign in</h1>
+                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 [@media(max-height:700px)]:mt-1">Sign in</h1>
                 </header>
 
                 @if (session('status'))
@@ -141,7 +141,7 @@
                          below already carry the choice. role-switch guards on
                          [data-role-summary] with an `if`, so dropping the node
                          is safe. --}}
-                    <div class="mt-3 space-y-3">
+                    <div class="mt-3 space-y-3 [@media(max-height:700px)]:space-y-2">
                         <div>
                             <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">Email address</label>
                             <input
@@ -236,6 +236,9 @@
                     </span>
                 </p>
             </div>
+
+            <!-- TEMPORARY credit line: remove before handoff/production. -->
+            <p class="mt-3 text-center text-xs text-slate-500">Created by Jeford M. Bitun</p>
         </div>
     </main>
 
