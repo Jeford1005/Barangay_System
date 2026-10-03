@@ -37,12 +37,14 @@ class AddSecurityHeaders
 
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
 
-        // HSTS is only meaningful (and only safe) over TLS: emitting it on
-        // plain HTTP would be ignored by browsers, and unconditionally
-        // setting it would pin HTTPS during local HTTP development.
-        // Conservative policy: one year + subdomains, no preload directive
-        // (preload is a one-way commitment owned by another workstream).
-        if ($request->isSecure()) {
+        // HSTS is only meaningful (and only safe) over TLS in production:
+        // emitting it on plain HTTP would be ignored by browsers, and
+        // emitting it on dev/staging HTTPS (self-signed local certs) would
+        // pin browsers for a year with no bypass on cert errors. Gate on
+        // production AND secure. Conservative policy: one year +
+        // subdomains, no preload directive (preload is a one-way commitment
+        // owned by another workstream).
+        if ($request->isSecure() && app()->isProduction()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 

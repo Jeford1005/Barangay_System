@@ -37,6 +37,10 @@ class SettingsTest extends TestCase
         $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
         $response->assertHeader('Referrer-Policy', 'same-origin');
         $response->assertHeaderMissing('X-Powered-By');
+
+        // HSTS is production-HTTPS-only: dev/staging browsers must never be
+        // pinned (a year with no bypass on self-signed cert errors).
+        $response->assertHeaderMissing('Strict-Transport-Security');
     }
 
     public function test_admin_can_open_settings_and_maintenance_pages(): void
