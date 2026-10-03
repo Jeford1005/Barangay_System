@@ -133,6 +133,19 @@
         </section>
     @endif
 
+    {{-- Community cleanups live on their own portal page (the data comes
+         from its own controller), so Profile only links there — no drive
+         data is loaded here. --}}
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Community cleanups</h2>
+                <p class="mt-0.5 text-sm text-slate-500">Join an upcoming drive and track your volunteer hours.</p>
+            </div>
+            <a href="{{ route('resident.cleanups') }}" class="btn btn-neutral">View drives</a>
+        </div>
+    </section>
+
     {{-- The details this resident controls, and the household they belong to. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">

@@ -73,6 +73,10 @@
             <span class="nav-icon"><x-icon name="shield-check" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Welfare</span>
         </a>
+        <a href="{{ route('cleanup.index') }}" title="Cleanups" @if(request()->routeIs('cleanup.*')) aria-current="page" @endif class="nav-row {{ request()->routeIs('cleanup.*') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="clipboard-document-list" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Cleanups</span>
+        </a>
         <a href="{{ route('certificates.index') }}" title="Certificates" @if(request()->routeIs('certificates.*', 'admin.certificate-requests.*', 'admin.certificate-types.*')) aria-current="page" @endif class="nav-row {{ request()->routeIs('certificates.*', 'admin.certificate-requests.*', 'admin.certificate-types.*') ? 'nav-row-active' : '' }}">
             <span class="nav-icon"><x-icon name="printer" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Certificates</span>
@@ -125,6 +129,10 @@
         <a href="{{ route('resident.welfare') }}" title="Request Assistance" @if(request()->routeIs('resident.welfare')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.welfare') ? 'nav-row-active' : '' }}">
             <span class="nav-icon"><x-icon name="shield-check" class="h-[18px] w-[18px]" /></span>
             <span class="sidebar-label truncate">Request Assistance</span>
+        </a>
+        <a href="{{ route('resident.cleanups') }}" title="Community Cleanups" @if(request()->routeIs('resident.cleanups')) aria-current="page" @endif class="nav-row {{ request()->routeIs('resident.cleanups') ? 'nav-row-active' : '' }}">
+            <span class="nav-icon"><x-icon name="clipboard-document-list" class="h-[18px] w-[18px]" /></span>
+            <span class="sidebar-label truncate">Community Cleanups</span>
         </a>
 
         <p class="nav-section"><span class="nav-section-index">03</span> Barangay</p>

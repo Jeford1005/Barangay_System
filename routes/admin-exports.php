@@ -22,6 +22,7 @@ $exportTypes = [
     'blotter' => 'blotter',
     'welfare' => 'welfare',
     'certificates' => 'certificates',
+    'cleanup' => 'cleanup',
 ];
 
 Route::middleware(['auth', 'verified', 'admin', 'throttle:10,1'])
@@ -40,10 +41,10 @@ Route::middleware(['auth', 'verified', 'admin', 'throttle:10,1'])
 
 // Module-level aliases make it easy for an existing module toolbar to link to
 // an export without changing the route shape of the other admin modules.
-// NOTE: there is no {dataset} wildcard here - the loop registers five
+// NOTE: there is no {dataset} wildcard here - the loop registers six
 // concrete literal routes, so there is nothing to constrain with whereIn;
-// the PII-surface concern is that these aliases duplicate the five
-// /admin/exports/* endpoints (ten URLs for five datasets). They carry the
+// the PII-surface concern is that these aliases duplicate the six
+// /admin/exports/* endpoints (twelve URLs for six datasets). They carry the
 // same admin gate + tight throttle as the canonical group. `admin` stays the
 // gate because no `exports.*` permission key exists in User::hasPermission().
 Route::middleware(['auth', 'verified', 'admin', 'throttle:10,1'])->group(function () use ($exportTypes): void {

@@ -67,11 +67,14 @@
                                             <span class="font-medium text-slate-900">{{ e($record->household_code) }}</span>
                                         @elseif ($type === 'blotter')
                                             <span class="font-medium text-slate-900">{{ e($record->case_number) }}</span>
+                                        @elseif ($type === 'cleanup')
+                                            <span class="font-medium text-slate-900">{{ e($record->title) }}</span>
+                                            <span class="block text-xs text-slate-500">{{ e($record->purok?->name ?? 'No purok') }} · {{ $record->scheduled_at?->format('M j, Y') ?? '—' }} · {{ e($record->status) }}</span>
                                         @else
                                             <span class="font-medium text-slate-900">{{ e($record->beneficiary_name) }}</span>
                                             <span class="block text-xs text-slate-500">{{ e($record->assistance_type) }} · ₱{{ number_format((float) $record->approved_amount, 2) }}</span>
                                         @endif
-                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">@if ($type === 'residents'){{ e($record->purok?->name ?? 'No purok') }}@if($record->address) &middot; {{ e(Str::limit($record->address, 40)) }}@endif@elseif ($type === 'households'){{ e($record->purok?->name ?? 'No purok') }} &middot; {{ $record->num_members ?? '—' }} member{{ (int) ($record->num_members ?? 0) === 1 ? '' : 's' }}@elseif ($type === 'blotter'){{ e($record->complaint_type ?? '—') }}@else{{ e($record->program_name ?? '—') }} &middot; {{ e($record->status ?? '—') }}@endif</span>
+                                        <span class="mt-1 block text-xs text-slate-500 md:hidden">@if ($type === 'residents'){{ e($record->purok?->name ?? 'No purok') }}@if($record->address) &middot; {{ e(Str::limit($record->address, 40)) }}@endif@elseif ($type === 'households'){{ e($record->purok?->name ?? 'No purok') }} &middot; {{ $record->num_members ?? '—' }} member{{ (int) ($record->num_members ?? 0) === 1 ? '' : 's' }}@elseif ($type === 'blotter'){{ e($record->complaint_type ?? '—') }}@elseif ($type === 'cleanup'){{ e($record->purok?->name ?? 'No purok') }} &middot; {{ $record->scheduled_at?->format('M j, Y') ?? '—' }} &middot; {{ e($record->status ?? '—') }}@else{{ e($record->program_name ?? '—') }} &middot; {{ e($record->status ?? '—') }}@endif</span>
                                     </td>
                                     <td class="hidden print:table-cell md:table-cell px-3 sm:px-6 py-4 text-sm text-slate-500">
                                         @if ($type === 'residents')
@@ -80,6 +83,8 @@
                                             {{ e($record->purok?->name ?? 'No purok') }} · {{ $record->num_members }} member{{ $record->num_members === 1 ? '' : 's' }}
                                         @elseif ($type === 'blotter')
                                             {{ e(Str::limit($record->complaint_type, 50)) }}
+                                        @elseif ($type === 'cleanup')
+                                            {{ e($record->purok?->name ?? 'No purok') }} · {{ $record->scheduled_at?->format('M j, Y') ?? '—' }} · {{ e($record->status) }}
                                         @else
                                             {{ e(Str::limit($record->program_name, 50)) }} · {{ e($record->status) }}
                                         @endif

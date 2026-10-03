@@ -41,6 +41,11 @@ class AdminExportController extends Controller
         return $this->serve($request, 'certificates', $exports);
     }
 
+    public function cleanup(Request $request, ExportService $exports): StreamedResponse
+    {
+        return $this->serve($request, 'cleanup', $exports);
+    }
+
     public function certificateIssuances(Request $request, ExportService $exports): StreamedResponse
     {
         return $this->serve($request, 'certificates', $exports);

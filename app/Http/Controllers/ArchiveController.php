@@ -6,6 +6,8 @@ use App\Models\AuditLog;
 use App\Models\Blotter;
 use App\Models\CertificateIssuance;
 use App\Models\CertificateRequest;
+use App\Models\CleanupDrive;
+use App\Models\CleanupParticipant;
 use App\Models\Concerns\Searchable;
 use App\Models\Household;
 use App\Models\Resident;
@@ -39,6 +41,11 @@ class ArchiveController extends Controller
             'model' => Welfare::class,
             'label' => 'Welfare Requests',
             'singular' => 'Welfare request',
+        ],
+        'cleanup' => [
+            'model' => CleanupDrive::class,
+            'label' => 'Cleanup Drives',
+            'singular' => 'Cleanup drive',
         ],
     ];
 
@@ -198,6 +205,14 @@ class ArchiveController extends Controller
             $detached['residents.household_id'] = Resident::withTrashed()->where('household_id', $record->getKey())->update(['household_id' => null, 'is_household_head' => false]);
         }
 
+        if ($type === 'cleanup') {
+            // Participants are owned child rows, not nullable references:
+            // the purge erases them with the drive and reports the count on
+            // the audit entry. Deleted explicitly instead of relying on the
+            // FK cascade so stores with FK enforcement off stay consistent.
+            $detached['cleanup_participants.drive_id'] = CleanupParticipant::where('drive_id', $record->getKey())->delete();
+        }
+
         return $detached;
     }
 
@@ -225,6 +240,13 @@ class ArchiveController extends Controller
                 ->when($search !== '', fn ($q) => $q->where(function ($q) use ($like) {
                     $q->whereRaw("beneficiary_name LIKE ? ESCAPE '\\'", [$like])
                         ->orWhereRaw("program_name LIKE ? ESCAPE '\\'", [$like]);
+                })),
+            'cleanup' => CleanupDrive::onlyTrashed()
+                ->with('purok')
+                ->withCount('participants')
+                ->when($search !== '', fn ($q) => $q->where(function ($q) use ($like) {
+                    $q->whereRaw("title LIKE ? ESCAPE '\\'", [$like])
+                        ->orWhereRaw("description LIKE ? ESCAPE '\\'", [$like]);
                 })),
         };
     }
@@ -255,6 +277,7 @@ class ArchiveController extends Controller
             'households' => $record->household_code,
             'blotter' => $record->case_number,
             'welfare' => $record->beneficiary_name,
+            'cleanup' => $record->title,
         };
     }
 

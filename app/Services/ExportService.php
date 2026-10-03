@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\Blotter;
 use App\Models\CertificateIssuance;
+use App\Models\CleanupDrive;
 use App\Models\Concerns\Searchable;
 use App\Models\Household;
 use App\Models\Resident;
@@ -47,6 +48,7 @@ class ExportService
         'blotter' => 'blotter',
         'welfare' => 'welfare',
         'certificates' => 'certificate-issuances',
+        'cleanup' => 'cleanup-drives',
     ];
 
     /** @var array<string, list<string>> */
@@ -171,6 +173,14 @@ class ExportService
             'Created At',
             'Updated At',
         ],
+        'cleanup' => [
+            'ID',
+            'Title',
+            'Purok',
+            'Scheduled At',
+            'Status',
+            'Participants',
+        ],
     ];
 
     public function supports(string $dataset): bool
@@ -196,6 +206,7 @@ class ExportService
             'blotter' => $this->blotterQuery($request),
             'welfare' => $this->welfareQuery($request),
             'certificates' => $this->certificatesQuery($request),
+            'cleanup' => $this->cleanupQuery($request),
             default => throw new InvalidArgumentException("Unsupported export dataset [{$dataset}]."),
         };
     }
@@ -460,6 +471,30 @@ class ExportService
         return $query->orderBy($query->getModel()->getTable().'.id');
     }
 
+    private function cleanupQuery(Request $request): Builder
+    {
+        $query = CleanupDrive::query()->with('purok')->withCount('participants');
+        $search = $this->search($request);
+
+        if ($search !== null) {
+            // Same contains semantics as the cleanup index; the shared
+            // scope escapes wildcards and adds the ESCAPE clause.
+            $query->search($search, ['title', 'description']);
+        }
+
+        if ($request->filled('purok_id')) {
+            $query->where('purok_id', $request->integer('purok_id'));
+        }
+
+        $status = $this->inputString($request, 'status');
+        if ($status !== null && in_array($status, CleanupDrive::STATUSES, true)) {
+            $query->where('status', $status);
+        }
+
+        // Deterministic export order; also keeps chunkById paging stable.
+        return $query->orderBy($query->getModel()->getTable().'.id');
+    }
+
     private function certificatesQuery(Request $request): Builder
     {
         $query = CertificateIssuance::query()
@@ -524,6 +559,7 @@ class ExportService
             'residents' => ['purok_id', 'household_id'],
             'households' => ['purok_id'],
             'certificates' => ['document_id'],
+            'cleanup' => ['purok_id'],
             default => [],
         };
 
@@ -538,6 +574,7 @@ class ExportService
             'blotter' => ['status'],
             'welfare' => ['status', 'assistance_type'],
             'certificates' => ['status'],
+            'cleanup' => ['status'],
             default => [],
         };
 
@@ -557,6 +594,7 @@ class ExportService
                     'blotter' => ['Open', 'Pending', 'Resolved', 'Dismissed'],
                     'welfare' => ['Requested', 'Under Review', 'Approved', 'Denied', 'Released'],
                     'certificates' => ['Issued', 'Voided'],
+                    'cleanup' => CleanupDrive::STATUSES,
                     default => null,
                 },
                 'assistance_type' => ['Financial', 'Food', 'Medical', 'Educational', 'Housing', 'Other'],
@@ -580,6 +618,7 @@ class ExportService
             'blotter' => $this->blotterRow($record),
             'welfare' => $this->welfareRow($record),
             'certificates' => $this->certificateRow($record),
+            'cleanup' => $this->cleanupRow($record),
             default => throw new InvalidArgumentException("Unsupported export dataset [{$dataset}]."),
         };
     }
@@ -728,6 +767,27 @@ class ExportService
             $this->dateTime($issuance->voided_at),
             $this->dateTime($issuance->created_at),
             $this->dateTime($issuance->updated_at),
+        ];
+    }
+
+    /**
+     * One row per drive with its sign-up headcount.
+     *
+     * FOLLOW-UP: a per-participant export (names, attendance, hours) is not
+     * part of this dataset — it needs its own query/route once the
+     * check-in flow lands.
+     *
+     * @return list<mixed>
+     */
+    private function cleanupRow(CleanupDrive $drive): array
+    {
+        return [
+            $drive->id,
+            $drive->title,
+            $drive->purok?->name,
+            $this->dateTime($drive->scheduled_at),
+            $drive->status,
+            $drive->participants_count ?? $drive->participants()->count(),
         ];
     }
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateRequestAdminController;
 use App\Http\Controllers\CertificateTypeController;
 use App\Http\Controllers\CertificateVerifyController;
+use App\Http\Controllers\CleanupDriveController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\MailHealthController;
 use App\Http\Controllers\PurokController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\WelfareController;
 use App\Models\Blotter;
 use App\Models\CertificateIssuance;
 use App\Models\CertificateRequest;
+use App\Models\CleanupDrive;
 use App\Models\Household;
 use App\Models\Purok;
 use App\Models\Resident;
@@ -85,6 +87,12 @@ Route::get('/', function () {
 Route::middleware('throttle:30,1')->get('/verify/{control_number}/{token}', [CertificateVerifyController::class, 'show'])
     ->name('certificates.verify');
 
+// Public cleanup drive sheet — target of the venue QR on the logbook
+// print. Guest-only (no auth middleware), URL-signed, throttled like
+// verify. Aggregates only, never volunteer names.
+Route::middleware(['signed', 'throttle:30,1'])->get('/cleanup/{drive}/sheet', [CleanupDriveController::class, 'sheet'])
+    ->name('cleanup.sheet');
+
 // Login/throttled routes - add rate limiting protection
 Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     Route::get('/dashboard', function () {
@@ -106,6 +114,9 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
             ['label' => 'Resident corrections', 'count' => ResidentRecordChange::where('status', 'Pending')->count(), 'href' => route('admin.resident-changes.index'), 'critical' => false],
             ['label' => 'Welfare requests', 'count' => Welfare::whereIn('status', ['Requested', 'Under Review'])->count(), 'href' => route('welfare.index'), 'critical' => false],
             ['label' => 'Open blotter cases', 'count' => Blotter::whereIn('status', ['Open', 'Pending'])->count(), 'href' => route('blotter.index'), 'critical' => true],
+            // Drives still on the office's plate: scheduled plus already
+            // running. Finished (Completed/Cancelled) drives need no action.
+            ['label' => 'Scheduled cleanups', 'count' => CleanupDrive::whereIn('status', ['Scheduled', 'Ongoing'])->count(), 'href' => route('cleanup.index'), 'critical' => false],
         ];
 
         // Account approvals sit behind the admin middleware, so a staff member
@@ -207,15 +218,15 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
             // wildcard cannot shadow future subpaths and unknown types 404 at
             // the router (the controller 404s them too - defence in depth).
             Route::get('/{type}', [ArchiveController::class, 'index'])
-                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare', 'cleanup'])
                 ->name('type');
             Route::post('/{type}/{id}/restore', [ArchiveController::class, 'restore'])
                 ->middleware('throttle:30,1')
-                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare', 'cleanup'])
                 ->name('restore');
             Route::delete('/{type}/{id}', [ArchiveController::class, 'destroy'])
                 ->middleware('throttle:15,1')
-                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare'])
+                ->whereIn('type', ['residents', 'households', 'blotter', 'welfare', 'cleanup'])
                 ->name('destroy');
         });
 
@@ -388,6 +399,35 @@ Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
                 ->middleware('admin')
                 ->name('destroy');
         });
+
+    // Cleanup drives (office-managed; officials read, staff/admin manage).
+    // Write endpoints carry tight throttles like the sibling modules:
+    // sign-ups and intake at 10/min, edits and deletes at 15/min. There is
+    // deliberately no show route here: show() stays ready in the controller
+    // for the venue-QR / public-sheet workstream to mount its own routes.
+    Route::middleware('permission:cleanup.view')
+        ->prefix('cleanup')->name('cleanup.')->group(function () {
+            Route::get('/', [CleanupDriveController::class, 'index'])->name('index');
+            Route::get('/{drive}/logbook', [CleanupDriveController::class, 'logbook'])->name('logbook');
+            Route::get('/create', [CleanupDriveController::class, 'create'])
+                ->middleware('permission:cleanup.manage')
+                ->name('create');
+            Route::post('/', [CleanupDriveController::class, 'store'])
+                ->middleware(['permission:cleanup.manage', 'throttle:10,1'])
+                ->name('store');
+            Route::post('/{drive}/join', [CleanupDriveController::class, 'join'])
+                ->middleware(['permission:cleanup.manage', 'throttle:10,1'])
+                ->name('join');
+            Route::get('/{drive}/edit', [CleanupDriveController::class, 'edit'])
+                ->middleware('permission:cleanup.manage')
+                ->name('edit');
+            Route::put('/{drive}', [CleanupDriveController::class, 'update'])
+                ->middleware(['permission:cleanup.manage', 'throttle:15,1'])
+                ->name('update');
+            Route::delete('/{drive}', [CleanupDriveController::class, 'destroy'])
+                ->middleware(['admin', 'throttle:15,1'])
+                ->name('destroy');
+        });
 });
 
 // Resident profile correction review (staff may view; officials decide)
@@ -461,6 +501,19 @@ Route::middleware(['auth', 'verified', 'resident', 'throttle:60,1'])->group(func
     Route::post('/my/welfare', [ResidentWelfareController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('resident.welfare.store');
+
+    // Community cleanups. The list shows Scheduled/Ongoing drives with a
+    // Join button each, plus the resident's summed volunteer hours. The
+    // self sign-up writes straight into the office's own participant
+    // roster (no parallel queue), throttled like the sibling portal
+    // writes; ownership comes from the session, so there is no
+    // resident_id input. The GET carries resident.profile like the other
+    // portal pages (friendly no-profile screen); the POST keeps the
+    // controller abort because there is no page to show.
+    Route::get('/my/cleanups', [CleanupDriveController::class, 'portal'])->middleware('resident.profile')->name('resident.cleanups');
+    Route::post('/my/cleanups/{drive}/join', [CleanupDriveController::class, 'joinSelf'])
+        ->middleware('throttle:10,1')
+        ->name('resident.cleanups.join');
 });
 
 // Office queue for online certificate requests (staff may view; officials decide)

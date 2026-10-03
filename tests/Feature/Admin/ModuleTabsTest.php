@@ -20,15 +20,15 @@ class ModuleTabsTest extends TestCase
         return preg_match_all('/<a [^>]*title="[^"]*"[^>]*class="nav-row /', $html);
     }
 
-    public function test_admin_sidebar_is_eleven_rows_across_three_sections(): void
+    public function test_admin_sidebar_is_twelve_rows_across_three_sections(): void
     {
         $admin = User::factory()->admin()->create();
 
         $response = $this->actingAs($admin)->get(route('dashboard'))->assertOk();
 
         // Dashboard, Residents, Households, Puroks | Blotter, Welfare,
-        // Certificates, Reports, Two-factor auth | Archive, Settings.
-        $this->assertSame(11, $this->sidebarRows($response->getContent()));
+        // Cleanups, Certificates, Reports, Two-factor auth | Archive, Settings.
+        $this->assertSame(12, $this->sidebarRows($response->getContent()));
 
         $response->assertSee('01</span> Main', false);
         $response->assertSee('02</span> Governance', false);
@@ -49,7 +49,7 @@ class ModuleTabsTest extends TestCase
         $response = $this->actingAs($staff)->get(route('dashboard'))->assertOk();
 
         // Same list minus Archive and Settings.
-        $this->assertSame(9, $this->sidebarRows($response->getContent()));
+        $this->assertSame(10, $this->sidebarRows($response->getContent()));
 
         $response->assertDontSee('03</span> Administration', false);
         $response->assertDontSee('title="Archive"', false);

@@ -1,6 +1,6 @@
 # SRS — Requirements Validation Checklist
 
-*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (580 tests / 2942 assertions passing as of October 2, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
+*Barangay Management System · Barangay Didduag. Every requirement is validated against working code and, where shown, an automated feature test in the PHPUnit suite (620 tests / 3190 assertions passing as of October 2, 2026). A requirement is **Validated** only when both the implementation and its evidence exist.*
 
 ## Legend
 
@@ -56,14 +56,14 @@
 | NFR8 | **Reliability — data integrity.** Validation server-side on every form; workflow rules enforced; referential integrity with safe unlinking (`set null`) | no invalid state persisted | form requests/validators, FK constraints | validation assertions in every CRUD suite | ✅ |
 | NFR9 | **Correctness under concurrency.** Case numbers unique under simultaneous submissions | zero duplicates | `lockForUpdate` inside the creation transaction | `BlotterCrudTest` sequence tests | ✅ |
 | NFR10 | **Maintainability.** Shared components for repeated UI; no byte-identical copies of logic | single source of truth | `x-form.field`, `x-form.actions` (color prop), `x-table.actions`, `x-print-button`, `x-primary-action`, the `.btn` button family in `app.css` (one 44px height / `rounded-lg` / semibold weight for every action control, with `btn-row` keeping row actions a fixed 96px), `nav-items`, `x-module-tabs` (one tab strip for all eight folded module pages), `x-settings-nav` (the settings dialog rail's one section list), `_form` partials | dedup audit (~1,600 duplicate lines removed); suites green against components; `ButtonSystemTest` guards the family | ✅ |
-| NFR11 | **Testability.** Automated regression suite covering CRUD, auth, workflows, print artifacts | suite green | 580 tests / 2942 assertions passing | `php artisan test` (2026-09-30) | ✅ |
+| NFR11 | **Testability.** Automated regression suite covering CRUD, auth, workflows, print artifacts | suite green | 620 tests / 3190 assertions passing | `php artisan test` (2026-09-30) | ✅ |
 | NFR12 | **Portability.** Runs on PHP 8.2 + SQLite (dev) and MySQL (production-ready via config) | env-driven | `.env` database config, migrations portable | suite runs on SQLite; MySQL documented in run doc | ✅ |
 | NFR13 | **Performance.** Index pages paginate; dashboard counters aggregated, not per-row | ≤ 25 rows/page | pagination + aggregate queries | visible in controllers; manual response-time check | ✅ |
 | NFR14 | **Print quality.** Printed documents use official-form layouts with letterhead, certification, and signatures where accountability requires them | barangay-ready paper output | case sheet, directory, audit extract, list printouts | live print-output verification + content-pinning tests | ✅ |
 
 ## 3. Validation methods used
 
-1. **Automated feature testing** — every FR above maps to at least one PHPUnit feature test (552 tests / 2801 assertions green).
+1. **Automated feature testing** — every FR above maps to at least one PHPUnit feature test (620 tests / 3190 assertions green).
 2. **Code review against requirements** — each FR traced to a controller/route; traceability note in `use-case-descriptions.md`.
 3. **Programmatic UI audits** — DOM-level contrast math (WCAG ratios from the actual Tailwind v4 palette), overflow scans, computed-style measurements (tap targets, print-hidden elements). Reproducible with `npm run audit:responsive` (13 viewports × 4 auth pages), `npm run audit:targets` (auth tap targets) and `npm run audit:app` (33 office pages + 6 resident-portal pages × 2 viewports), and `npm run audit:official` (22 official-role permission checks rendered live), each run against a local `php artisan serve`.
 4. **Live end-to-end walkthroughs** — real browser flows for login, password reset (with clipboard auto-fill), approvals, blotter intake → case sheet, welfare intake → approval, and print output inspection.
