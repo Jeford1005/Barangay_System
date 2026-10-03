@@ -726,4 +726,32 @@ class CleanupDriveTest extends TestCase
 
         $this->assertFalse($participant->fresh()->attended);
     }
+
+    public function test_logbook_shows_update_form_on_attended_rows_and_any_error(): void
+    {
+        $staff = User::factory()->staff()->create();
+        $drive = CleanupDrive::factory()->create(['status' => 'Ongoing']);
+        $participant = CleanupParticipant::factory()->create([
+            'drive_id' => $drive->id,
+            'resident_id' => Resident::factory()->create()->id,
+            'attended' => true,
+            'hours' => 2.5,
+        ]);
+
+        $html = $this->actingAs($staff)->get(route('cleanup.logbook', $drive))
+            ->assertOk()
+            ->getContent();
+
+        // Hours correction path stays visible after check-in, prefilled.
+        $this->assertStringContainsString('>Update<', $html);
+        $this->assertStringContainsString('value="2.5"', $html);
+
+        // Any error (not just hours) renders in the roster slot.
+        $this->withSession(['errors' => (new \Illuminate\Support\ViewErrorBag)->put(
+            'default', new \Illuminate\Support\MessageBag(['drive' => 'Gone'])
+        )]);
+        $this->actingAs($staff)->get(route('cleanup.logbook', $drive))
+            ->assertOk()
+            ->assertSee('Gone');
+    }
 }

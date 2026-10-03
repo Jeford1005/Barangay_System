@@ -328,8 +328,8 @@
 
         <section>
             <h2>Participant Roster</h2>
-            @if ($errors->has('hours'))
-                <p class="roster-error no-print">{{ $errors->first('hours') }}</p>
+            @if ($errors->any())
+                <p class="roster-error no-print">{{ $errors->first() }}</p>
             @endif
             @if ($shown === 0)
                 <p class="empty">No sign-ups recorded for this drive as of this printing.</p>
@@ -356,15 +356,11 @@
                                 <td class="hours">{{ $row->hours !== null ? number_format((float) $row->hours, 1) : '—' }}</td>
                                 <td>{{ $row->checked_in_at?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="no-print">
-                                    @if (! $row->attended)
-                                        <form method="POST" action="{{ route('cleanup.check-in', [$drive, $row]) }}" class="checkin-form">
-                                            @csrf
-                                            <input type="number" name="hours" min="0" max="999.9" step="0.5" placeholder="Hrs" aria-label="Hours for {{ $row->resident?->full_name ?? 'volunteer' }}">
-                                            <button type="submit">Check in</button>
-                                        </form>
-                                    @else
-                                        —
-                                    @endif
+                                    <form method="POST" action="{{ route('cleanup.check-in', [$drive, $row]) }}" class="checkin-form">
+                                        @csrf
+                                        <input type="number" name="hours" min="0" max="999.9" step="0.5" placeholder="Hrs" aria-label="Hours for {{ $row->resident?->full_name ?? 'volunteer' }}" value="{{ $row->hours !== null ? $row->hours : '' }}">
+                                        <button type="submit">{{ $row->attended ? 'Update' : 'Check in' }}</button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach

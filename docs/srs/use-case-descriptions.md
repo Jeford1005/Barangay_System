@@ -369,4 +369,4 @@
 
 ---
 
-*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (632 tests / 3346 assertions as of October 4, 2026).*
+*Traceability: each use case above maps to implemented routes (see `routes/web.php`) and is exercised by the feature suite (633 tests / 3351 assertions as of October 4, 2026).*
