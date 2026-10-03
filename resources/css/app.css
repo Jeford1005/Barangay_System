@@ -749,34 +749,10 @@
     }
 }
 
-/* Pinned actions: the last toolbar cell (Export + primary action) sticks
-   to the scroll edge so it never looks broken-cut mid-swipe, with a fade
-   mask where scrolled filters slide underneath. All toolbars end with
-   their actions cell; without overflow both rules are invisible no-ops.
-   Cards behind toolbars are white, so the mask stays seamless. */
-.module-toolbar > :last-child {
-    position: sticky;
-    right: 0;
-    z-index: 1;
-    background-color: #fff;
-    padding-left: 0.5rem;
-}
-
-.module-toolbar > :last-child::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -0.75rem;
-    width: 0.75rem;
-    background: linear-gradient(to right, rgba(255, 255, 255, 0), #ffffff);
-    pointer-events: none;
-}
-
-/* Phones (<640px): every module toolbar becomes a one-row horizontal
-   swipe strip instead of a stacked block — no wrap, snap points, filters
-   min 200px wide. Dropdowns already auto-submit; there is no Filter
-   button. Tap targets keep 44px — only the layout direction changes. */
+/* Phones (<640px): every module toolbar is a two-column grid — search
+   and actions span full width, filters pair side by side (the five-cell
+   resident toolbar additionally spans its status row). Dropdowns already
+   auto-submit; there is no Filter button. Tap targets keep 44px. */
 @media (max-width: 639px) {
     #content-scroll > div {
         padding-top: 1rem;
@@ -784,20 +760,20 @@
     }
 
     .module-toolbar {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        gap: 0.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .module-toolbar > * {
-        flex: 0 0 auto;
-        scroll-snap-align: start;
+    .module-toolbar > :first-child,
+    .module-toolbar > :last-child {
+        grid-column: 1 / -1;
     }
 
-    .module-toolbar > div:not(:last-child) {
-        min-width: 200px;
+    .module-toolbar--resident > :nth-child(4) {
+        grid-column: 1 / -1;
+    }
+
+    .module-toolbar--resident > :last-child .btn {
+        flex: 1;
     }
 
     .table-scroll td {

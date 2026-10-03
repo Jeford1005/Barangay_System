@@ -5,5 +5,4 @@ import './confirm-dialog';
 import './error-dialog';
 import './settings-dialog';
 import './numeric-inputs';
-import './toolbars';
 import './row-links';
